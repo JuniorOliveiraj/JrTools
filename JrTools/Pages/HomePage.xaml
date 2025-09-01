@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <Page
     x:Class="JrTools.Pages.HomePage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -5,123 +6,120 @@
     xmlns:local="using:JrTools.Pages"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d" >
+    mc:Ignorable="d">
 
     <Page.Resources>
-        <!-- Estilo para os cards que se ajustam em grade -->
-        <Style x:Key="ResponsiveCardStyle" TargetType="Border">
+        <!-- Estilo para os cards principais -->
+        <Style x:Key="CardStyle" TargetType="Border">
             <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}"/>
             <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius" Value="8"/>
             <Setter Property="Padding" Value="16"/>
             <Setter Property="Margin" Value="8"/>
-            <Setter Property="MinWidth" Value="320"/>
-            <Setter Property="MaxWidth" Value="480"/>
         </Style>
 
-        <!-- Novo estilo para o card de terminal, que ocupa a largura total -->
-        <Style x:Key="FullWidthCardStyle" TargetType="Border" BasedOn="{StaticResource ResponsiveCardStyle}">
-            <Setter Property="MaxWidth" Value="9999"/>
-            <!-- Remove a limitação de largura máxima -->
+        <!-- Estilo para os painéis de indicadores no topo -->
+        <Style x:Key="DashboardTileStyle" TargetType="Border" BasedOn="{StaticResource CardStyle}">
+            <Setter Property="MinWidth" Value="200"/>
         </Style>
     </Page.Resources>
+    
+    
 
     <Grid>
         <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16">
             <StackPanel Spacing="16">
- 
-                <!-- BOTÃO DE AÇÃO PRINCIPAL -->
-                <Button x:Name="ProcessarButton2" 
-                        Content="PROCESSAR"
-                        HorizontalAlignment="Right" 
-                        Style="{ThemeResource AccentButtonStyle}"
-                        Click="ProcessarButton_Click"/>
-                <!-- CABEÇALHO -->
-                <TextBlock Text="Perfil: 'Padrão'" Style="{ThemeResource TitleTextBlockStyle}"/>
 
-                <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                    <TextBlock Text="Projeto" VerticalAlignment="Center" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
-                    <!-- Os itens deste ComboBox agora são controlados pelo C# -->
-                    <ComboBox x:Name="ProjetoComboBox" MinWidth="200"/>
-                </StackPanel>
+                <!-- Título da Página -->
+                <TextBlock Text="Dashboard" Style="{ThemeResource TitleTextBlockStyle}" Margin="8,0"/>
 
-                <!-- Barra para exibir mensagens de erro/validação -->
-                <InfoBar x:Name="ValidationInfoBar" IsOpen="False" Severity="Error" Margin="0,0,8,0"/>
+                <!-- Painéis de Indicadores -->
+                <Grid ColumnSpacing="16" RowSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
 
-                <!-- Container para os cards responsivos (exceto o terminal) -->
-                <ItemsControl>
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <ItemsWrapGrid Orientation="Horizontal"/>
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-
-                    <!-- CARD 1: Opções de Compilação -->
-                    <Border Style="{StaticResource ResponsiveCardStyle}">
-                        <StackPanel Spacing="12">
-                            <TextBlock Text="Opções de Compilação" Style="{ThemeResource SubtitleTextBlockStyle}"/>
-                            <ToggleSwitch x:Name="BaixarBinarioToggle" Header="Baixar binário atualizado"/>
-                            <ToggleSwitch x:Name="CriarAtalhoToggle" Header="Criar atalho para pasta de compilação" IsOn="True"/>
-                            <ToggleSwitch x:Name="CompilarEspecificosToggle" Header="Compilar Específicos"/>
-                            <ToggleSwitch x:Name="CriarAplicacaoIISToggle" Header="Criar aplicação IIS" IsOn="True"/>
-                            <ToggleSwitch x:Name="RestaurarWebAppToggle" Header="Restaurar pasta do WebApp"/>
+                    <!-- 1. Banco de Horas -->
+                    <Border Grid.Column="0" Style="{StaticResource DashboardTileStyle}">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="Banco de Horas" Style="{ThemeResource CaptionTextBlockStyle}" Opacity="0.8"/>
+                            <TextBlock Text="42h 30m" Style="{ThemeResource HeaderTextBlockStyle}" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
                         </StackPanel>
                     </Border>
 
-                    <!-- CARD 2: Configuração da Aplicação Web -->
-                    <Border Style="{StaticResource ResponsiveCardStyle}">
-                        <StackPanel Spacing="12">
-                            <TextBlock Text="Configuração da Aplicação Web" Style="{ThemeResource SubtitleTextBlockStyle}"/>
-                            <TextBox x:Name="EnderecoServidorTextBox" Header="Endereço do Benner Server" Text="BNU-RHVAPI001" />
-                            <TextBox x:Name="UsuarioInternoTextBox" Header="Nome de usuário interno" Text="sysdba" />
-                            <PasswordBox x:Name="SenhaInternoPasswordBox" Header="Senha do usuário interno" Password="******" />
-                            <Button Content="Abrir aplicativo no navegador" HorizontalAlignment="Left" Margin="0,10,0,0"/>
+                    <!-- 2. Previsão de Saída -->
+                    <Border Grid.Column="1" Style="{StaticResource DashboardTileStyle}">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="Previsão de Saída (Hoje)" Style="{ThemeResource CaptionTextBlockStyle}" Opacity="0.8"/>
+                            <TextBlock Text="17:45" Style="{ThemeResource HeaderTextBlockStyle}"/>
                         </StackPanel>
                     </Border>
 
-                    <!-- CARD 3: Outras Informações -->
-                    <Border Style="{StaticResource ResponsiveCardStyle}">
+                    <!-- 3. Economia Mensal -->
+                    <Border Grid.Column="2" Style="{StaticResource DashboardTileStyle}">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="Potencial de Economia (Mês)" Style="{ThemeResource CaptionTextBlockStyle}" Opacity="0.8"/>
+                            <TextBlock Text="R$ 600,00" Style="{ThemeResource HeaderTextBlockStyle}"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- Cards de Ferramentas -->
+                <StackPanel Spacing="16" Margin="0,16,0,0">
+
+                    <!-- Card: Calculadora de Horas -->
+                    <Border Style="{StaticResource CardStyle}">
                         <StackPanel Spacing="12">
-                            <TextBlock Text="Outras Informações" Style="{ThemeResource SubtitleTextBlockStyle}"/>
-                            <Grid ColumnDefinitions="*,*" ColumnSpacing="16" RowSpacing="8">
+                            <TextBlock Text="Calculadora de Horas" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+
+                            <Grid ColumnSpacing="24" RowSpacing="12" MaxWidth="500">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
-                                <TextBox x:Name="SiteTextBox" Grid.Row="0" Grid.Column="0" Header="Site" Text="Default Web Site"/>
-                                <TextBox x:Name="NomeAplicacaoTextBox" Grid.Row="0" Grid.Column="1" Header="Nome da aplicação" Text="ESPRH_CAJ_DESENV"/>
-                                <TextBox x:Name="PoolTextBox" Grid.Row="1" Grid.Column="0" Header="Pool" Text="RHPool"/>
-                                <TextBox x:Name="NumeroProvedoresTextBox" Grid.Row="1" Grid.Column="1" Header="Nº de Provedores" Text="2"/>
-                                <TextBox x:Name="NomeSistemaBennerTextBox" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Header="Nome do sistema no Benner Server" Text="ESPRH_CAJ_DESENV"/>
+
+                                <TimePicker x:Name="Entrada1TimePicker" Header="Entrada 1" Grid.Row="0" Grid.Column="0" ClockIdentifier="24HourClock"/>
+                                <TimePicker x:Name="Saida1TimePicker" Header="Saída 1" Grid.Row="0" Grid.Column="1" ClockIdentifier="24HourClock"/>
+                                <TimePicker x:Name="Entrada2TimePicker" Header="Entrada 2" Grid.Row="1" Grid.Column="0" ClockIdentifier="24HourClock"/>
+                                <TimePicker x:Name="Saida2TimePicker" Header="Saída 2" Grid.Row="1" Grid.Column="1" ClockIdentifier="24HourClock"/>
+
+                                <Button x:Name="CalcularHorasButton" Content="Calcular" Grid.Row="2" Grid.Column="0" Click="CalcularHorasButton_Click"/>
+
+                                <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <TextBlock Text="Total:" VerticalAlignment="Center" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                                    <TextBlock x:Name="TotalHorasTextBlock" Text="00:00" VerticalAlignment="Center" Style="{ThemeResource BodyStrongTextBlockStyle}" FontSize="18"/>
+                                </StackPanel>
+
+                                <InfoBar x:Name="CalculadoraInfoBar" Grid.Row="3" Grid.ColumnSpan="2" IsOpen="False" Severity="Error" Margin="0,12,0,0"/>
+
                             </Grid>
                         </StackPanel>
                     </Border>
-                </ItemsControl>
 
-                <!-- CARD 4: Terminal de Processamento (Agora fora do ItemsControl e com estilo próprio) -->
-                <Border Style="{StaticResource FullWidthCardStyle}">
-                    <StackPanel Spacing="12">
-                        <TextBlock Text="Terminal de Processamento" Style="{ThemeResource SubtitleTextBlockStyle}"/>
-                        <Border Background="{ThemeResource TextControlBackgroundFocused}" MinHeight="150" CornerRadius="4" Padding="12">
-                            <TextBlock Text="Aguardando execução..." 
-                                       FontFamily="Consolas" 
-                                       TextWrapping="Wrap"
-                                       VerticalAlignment="Top"/>
-                        </Border>
-                    </StackPanel>
-                </Border>
+                    <!-- Card: Menus Rápidos -->
+                    <Border Style="{StaticResource CardStyle}">
+                        <StackPanel Spacing="12">
+                            <TextBlock Text="Menus Rápidos" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <!-- TODO: Adicionar navegação para as páginas correspondentes -->
+                                <Button Content="Página de Processamento"/>
+                                <Button Content="Configurações"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
 
-                <!-- BOTÃO DE AÇÃO PRINCIPAL -->
-                <Button x:Name="ProcessarButton" 
-                        Content="PROCESSAR"
-                        HorizontalAlignment="Right"
-                        Margin="0,12,8,0"
-                        Style="{ThemeResource AccentButtonStyle}"
-                        Click="ProcessarButton_Click"/>
+                </StackPanel>
+
             </StackPanel>
         </ScrollViewer>
     </Grid>
 </Page>
-

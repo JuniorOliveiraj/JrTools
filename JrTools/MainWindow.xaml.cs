@@ -27,7 +27,6 @@ namespace JrTools
         {
             InitializeComponent();
             ContentFrame.Navigate(typeof(Pages.HomePage));
-
         }
         private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
         {
@@ -35,15 +34,16 @@ namespace JrTools
             {
                 switch (item.Tag)
                 {
-                    case "home":
+                    case "Home":
                         ContentFrame.Navigate(typeof(Pages.HomePage));
                         break;
-                    case "library":
-                        ContentFrame.Navigate(typeof(Pages.LibraryPage));
+                    case "Espesificos":
+                        ContentFrame.Navigate(typeof(Pages.EspesificosPage));
                         break;
-                    case "downloads":
-                        ContentFrame.Navigate(typeof(Pages.DownloadsPage));
+                    case "Rhprod":
+                        ContentFrame.Navigate(typeof(Pages.RhProdPage));
                         break;
+
                 }
             }
         }

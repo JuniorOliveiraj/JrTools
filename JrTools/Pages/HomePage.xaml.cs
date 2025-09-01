@@ -15,31 +15,6 @@ using Windows.Foundation.Collections;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
-public class ProcessamentoConfig
-{
-    // Projeto
-    public string Projeto { get; set; }
-
-    // Opções de Compilação
-    public bool BaixarBinario { get; set; }
-    public bool CriarAtalho { get; set; }
-    public bool CompilarEspecificos { get; set; }
-    public bool CriarAplicacaoIIS { get; set; }
-    public bool RestaurarWebApp { get; set; }
-
-    // Configuração da Aplicação Web
-    public string EnderecoServidor { get; set; }
-    public string UsuarioInterno { get; set; }
-    public string SenhaInterno { get; set; }
-
-    // Outras Informações
-    public string Site { get; set; }
-    public string NomeAplicacao { get; set; }
-    public string Pool { get; set; }
-    public string NumeroProvedores { get; set; }
-    public string NomeSistemaBenner { get; set; }
-}
-
 
 namespace JrTools.Pages
 {
@@ -48,87 +23,58 @@ namespace JrTools.Pages
     /// </summary>
     public sealed partial class HomePage : Page
     {
-        public List<string> ListaDeProjetos { get; set; }
-
         public HomePage()
         {
             InitializeComponent();
-            CarregarProjetos();
+
+
+            // Define horários padrão para facilitar o teste
+            Entrada1TimePicker.Time = new TimeSpan(7, 0, 0);
+            Saida1TimePicker.Time = new TimeSpan(12, 0, 0);
+            Entrada2TimePicker.Time = new TimeSpan(13, 0, 0);
+            Saida2TimePicker.Time = new TimeSpan(17, 0, 0);
         }
 
-
-        private void CarregarProjetos()
+        private void CalcularHorasButton_Click(object sender, RoutedEventArgs e)
         {
-            ListaDeProjetos = new List<string>
+            CalculadoraInfoBar.IsOpen = false;
+
+            try
             {
-                "caj",
-                "rh",
-                "financeiro",
-                "logistica"
-            };
+                // Pega os valores dos TimePickers
+                TimeSpan entrada1 = Entrada1TimePicker.Time;
+                TimeSpan saida1 = Saida1TimePicker.Time;
+                TimeSpan entrada2 = Entrada2TimePicker.Time;
+                TimeSpan saida2 = Saida2TimePicker.Time;
 
-            ProjetoComboBox.ItemsSource = ListaDeProjetos;
-            ProjetoComboBox.SelectedIndex = 0;
-        }
+                // Validação simples
+                if (saida1 < entrada1 || saida2 < entrada2)
+                {
+                    CalculadoraInfoBar.Title = "Erro de Lógica";
+                    CalculadoraInfoBar.Message = "O horário de saída não pode ser anterior ao de entrada.";
+                    CalculadoraInfoBar.IsOpen = true;
+                    TotalHorasTextBlock.Text = "Erro";
+                    return;
+                }
 
+                // Calcula a duração de cada período
+                TimeSpan periodo1 = saida1.Subtract(entrada1);
+                TimeSpan periodo2 = saida2.Subtract(entrada2);
 
+                // Soma os períodos para obter o total
+                TimeSpan totalHoras = periodo1.Add(periodo2);
 
-        private async void ProcessarButton_Click(object sender, RoutedEventArgs e)
-        {
-            // Esconde a barra de erro antes de validar
-            ValidationInfoBar.IsOpen = false;
-
-            // Validação dos campos de texto
-            if (string.IsNullOrWhiteSpace(EnderecoServidorTextBox.Text) ||
-                string.IsNullOrWhiteSpace(UsuarioInternoTextBox.Text) ||
-                string.IsNullOrWhiteSpace(SenhaInternoPasswordBox.Password) ||
-                string.IsNullOrWhiteSpace(SiteTextBox.Text) ||
-                string.IsNullOrWhiteSpace(NomeAplicacaoTextBox.Text) ||
-                string.IsNullOrWhiteSpace(PoolTextBox.Text) ||
-                string.IsNullOrWhiteSpace(NumeroProvedoresTextBox.Text) ||
-                string.IsNullOrWhiteSpace(NomeSistemaBennerTextBox.Text))
-            {
-                ValidationInfoBar.Title = "Campos Obrigatórios";
-                ValidationInfoBar.Message = "Por favor, preencha todos os campos antes de processar.";
-                ValidationInfoBar.IsOpen = true;
-                return; // Para a execução se a validação falhar
+                // Formata o resultado e exibe na tela
+                TotalHorasTextBlock.Text = $"{totalHoras.Hours:D2}:{totalHoras.Minutes:D2}";
             }
-
-            // Se a validação passar, cria o objeto com os dados da tela
-            var config = new ProcessamentoConfig
+            catch (Exception ex)
             {
-                // Projeto (agora pega o item selecionado diretamente da lista)
-                Projeto = ProjetoComboBox.SelectedItem as string,
-
-                // Opções de Compilação
-                BaixarBinario = BaixarBinarioToggle.IsOn,
-                CriarAtalho = CriarAtalhoToggle.IsOn,
-                CompilarEspecificos = CompilarEspecificosToggle.IsOn,
-                CriarAplicacaoIIS = CriarAplicacaoIISToggle.IsOn,
-                RestaurarWebApp = RestaurarWebAppToggle.IsOn,
-
-                // Configuração da Aplicação Web
-                EnderecoServidor = EnderecoServidorTextBox.Text,
-                UsuarioInterno = UsuarioInternoTextBox.Text,
-                SenhaInterno = SenhaInternoPasswordBox.Password,
-
-                // Outras Informações
-                Site = SiteTextBox.Text,
-                NomeAplicacao = NomeAplicacaoTextBox.Text,
-                Pool = PoolTextBox.Text,
-                NumeroProvedores = NumeroProvedoresTextBox.Text,
-                NomeSistemaBenner = NomeSistemaBennerTextBox.Text
-            };
-
-            // Exemplo de uso do objeto: exibe um diálogo de sucesso
-            /*  var dialog = new ContentDialog
-              {
-                  Title = "Sucesso",
-                  Content = $"Objeto de configuração criado para o projeto: {config.Projeto}. Agora você pode usar este objeto para o processamento.",
-                  CloseButtonText = "Ok"
-              };
-
-              await dialog.ShowAsync();*/
+                // Captura qualquer outro erro inesperado
+                CalculadoraInfoBar.Title = "Erro Inesperado";
+                CalculadoraInfoBar.Message = $"Ocorreu um erro: {ex.Message}";
+                CalculadoraInfoBar.IsOpen = true;
+                TotalHorasTextBlock.Text = "Erro";
+            }
         }
     }
 }

@@ -13,11 +13,6 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <None Remove="Pages\DownloadsPage.xaml" />
-    <None Remove="Pages\HomePage.xaml" />
-    <None Remove="Pages\LibraryPage.xaml" />
-  </ItemGroup>
-  <ItemGroup>
     <Page Remove="HomePage.xaml" />
   </ItemGroup>
 
@@ -48,17 +43,17 @@
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250606001" />
   </ItemGroup>
   <ItemGroup>
-    <Page Update="Pages\LibraryPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-  </ItemGroup>
-  <ItemGroup>
-    <Page Update="Pages\DownloadsPage.xaml">
+    <Page Update="Pages\RhProd.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
   <ItemGroup>
     <Page Update="Pages\HomePage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Pages\EspesificosPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>

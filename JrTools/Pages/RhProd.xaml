@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="JrTools.Pages.RhProdPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:JrTools.Pages"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+    <Page.Resources>
+        <!-- Estilo para os cards que se ajustam em grade -->
+        <Style x:Key="ResponsiveCardStyle" TargetType="Border">
+            <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}"/>
+            <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="16"/>
+            <Setter Property="Margin" Value="8"/>
+            <Setter Property="MinWidth" Value="320"/>
+            <Setter Property="MaxWidth" Value="500"/>
+        </Style>
+
+        <!-- Novo estilo para o card de terminal, que ocupa a largura total -->
+        <Style x:Key="FullWidthCardStyle" TargetType="Border" BasedOn="{StaticResource ResponsiveCardStyle}">
+            <Setter Property="MaxWidth" Value="9999"/>
+            <!-- Remove a limitação de largura máxima -->
+        </Style>
+    </Page.Resources>
+    <Grid>
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16">
+            <StackPanel Spacing="16">
+
+                <!-- BOTÃO DE AÇÃO PRINCIPAL -->
+                <Button x:Name="ProcessarButton2" 
+                        Content="PROCESSAR"
+                        HorizontalAlignment="Right" 
+                        Style="{ThemeResource AccentButtonStyle}"
+                        Click="ProcessarButton_Click"/>
+                <!-- CABEÇALHO -->
+                <TextBlock Text="Perfil: 'Padrão'" Style="{ThemeResource TitleTextBlockStyle}"/>
+
+                <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <TextBlock Text="breach" VerticalAlignment="Center" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                    <!-- Os itens deste ComboBox agora são controlados pelo C# -->
+                    <ComboBox x:Name="ProjetoComboBox" MinWidth="200" SelectionChanged="ProjetoComboBox_SelectionChanged"/>
+                </StackPanel>
+
+                <!-- Barra para exibir mensagens de erro/validação -->
+                <InfoBar x:Name="ValidationInfoBar" IsOpen="False" Severity="Error" Margin="0,0,8,0"/>
+
+
+                <!-- CARD 1: patronizações) -->
+
+                <Border Style="{StaticResource FullWidthCardStyle}">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="Opções de Compilação" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                        <ToggleSwitch x:Name="BaixarBinarioToggle" Header="Baixar binário atualizado" IsOn="True"/>
+                        <ToggleSwitch x:Name="CompilarEspecificosToggle" Header="Compilar Produto" IsOn="True"/>
+                        <ToggleSwitch x:Name="GitPull" Header="Atualizar breach" IsOn="False" />
+                        <TextBox x:Name="breachEspesifica"  Header="Breach" Visibility="Collapsed"/>
+
+
+                    </StackPanel>
+                </Border>
+
+                <!-- CARD 3: Terminal de Processamento (Agora fora do ItemsControl e com estilo próprio) -->
+                <Border Style="{StaticResource FullWidthCardStyle}">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="Terminal de Processamento" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                        <Border Background="{ThemeResource TextControlBackgroundFocused}" MinHeight="150" CornerRadius="4" Padding="12">
+                            <TextBlock Text="Aguardando execução..." 
+                                       FontFamily="Consolas" 
+                                       TextWrapping="Wrap"
+                                       VerticalAlignment="Top"/>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <!-- BOTÃO DE AÇÃO PRINCIPAL -->
+                <Button x:Name="ProcessarButton" 
+                        Content="PROCESSAR"
+                        HorizontalAlignment="Right"
+                        Margin="0,12,8,0"
+                        Style="{ThemeResource AccentButtonStyle}"
+                        Click="ProcessarButton_Click"/>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>

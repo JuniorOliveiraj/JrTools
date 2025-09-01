@@ -22,9 +22,9 @@
                         SelectionChanged="NavView_SelectionChanged">
 
             <NavigationView.MenuItems>
-                <NavigationViewItem Icon="Home" Content="Início" Tag="home"/>
-                <NavigationViewItem Icon="Library" Content="Biblioteca" Tag="library"/>
-                <NavigationViewItem Icon="Download" Content="Downloads" Tag="downloads"/>
+                <NavigationViewItem Icon="Home" Content="Home" Tag="Home"/>
+                <NavigationViewItem Icon="Play" Content="Rh prod" Tag="Rhprod"/>
+                <NavigationViewItem Icon="People" Content="Espesificos" Tag="Espesificos"/>
             </NavigationView.MenuItems>
 
             <Frame x:Name="ContentFrame"/>
