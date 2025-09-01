@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "JrTools (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "JrTools (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
