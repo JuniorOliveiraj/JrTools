@@ -1,4 +1,6 @@
-﻿using Microsoft.UI.Xaml;
+﻿using JrTools.Dto;
+using JrTools.Negocios;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Data;
@@ -46,19 +48,38 @@ namespace JrTools.Pages
 
         private async void ProcessarButton_Click(object sender, RoutedEventArgs e)
         {
-            ValidationInfoBar.IsOpen = false;  
+            ValidationInfoBar.IsOpen = false;
 
-             if (ProjetoComboBox.SelectedItem?.ToString() == "Outro")
+            var dto = new PageProdutoDataObject
             {
-                if (string.IsNullOrWhiteSpace(breachEspesifica.Text))
-                {
-                    ValidationInfoBar.Message = "Informe um valor para o campo 'Breach'.";
-                    ValidationInfoBar.IsOpen = true;
-                    return;  
-                }
+                Breach = BreachSelecionada.Text,
+                AtualizarBinarios = BaixarBinarioToggle.IsOn,
+                BuildarProjeto = CompilarEspecificosToggle.IsOn,
+                AtualizarBreach = GitPull.IsOn,
+                BreachEspesificaDeTrabalho = ProjetoComboBox.SelectedItem?.ToString() == "Outro" ? breachEspesifica.Text : null
+            };
+
+            if (ProjetoComboBox.SelectedItem?.ToString() == "Outro" && string.IsNullOrWhiteSpace(breachEspesifica.Text))
+            {
+                ValidationInfoBar.Message = "Informe um valor para o campo 'Breach'.";
+                ValidationInfoBar.IsOpen = true;
+                return;
             }
 
-         }
+            TerminalOutput.Text = "[INFO] Iniciando processamento...\n";
+
+            var flow = new RhProdFlow();
+            var (success, logs, errorMessage) = await flow.ExecutarAsync(dto);
+
+            TerminalOutput.Text += logs;
+
+            if (!success)
+            {
+                ValidationInfoBar.Message = errorMessage;
+                ValidationInfoBar.IsOpen = true;
+            }
+        }
+
 
         private void ProjetoComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {

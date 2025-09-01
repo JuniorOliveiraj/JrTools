@@ -40,7 +40,7 @@
                 <TextBlock Text="Perfil: 'Padrão'" Style="{ThemeResource TitleTextBlockStyle}"/>
 
                 <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                    <TextBlock Text="breach" VerticalAlignment="Center" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                    <TextBlock x:Name="BreachSelecionada"  Text="breach" VerticalAlignment="Center" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
                     <!-- Os itens deste ComboBox agora são controlados pelo C# -->
                     <ComboBox x:Name="ProjetoComboBox" MinWidth="200" SelectionChanged="ProjetoComboBox_SelectionChanged"/>
                 </StackPanel>
@@ -68,7 +68,8 @@
                     <StackPanel Spacing="12">
                         <TextBlock Text="Terminal de Processamento" Style="{ThemeResource SubtitleTextBlockStyle}"/>
                         <Border Background="{ThemeResource TextControlBackgroundFocused}" MinHeight="150" CornerRadius="4" Padding="12">
-                            <TextBlock Text="Aguardando execução..." 
+                            <TextBlock x:Name="TerminalOutput"
+                                       Text="Aguardando execução..." 
                                        FontFamily="Consolas" 
                                        TextWrapping="Wrap"
                                        VerticalAlignment="Top"/>
