@@ -16,8 +16,8 @@
     <Grid>
         <NavigationView x:Name="NavView" 
                         PaneTitle="Menu"
-                        IsSettingsVisible="True"
-                        IsPaneOpen="True"
+                        IsSettingsVisible="False"
+                        IsPaneOpen="False"
                         PaneDisplayMode="Left"
                         SelectionChanged="NavView_SelectionChanged">
 

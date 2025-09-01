@@ -52,7 +52,7 @@ namespace JrTools.Pages
 
         public HomePage()
         {
-            this.InitializeComponent();
+            InitializeComponent();
             CarregarProjetos();
         }
 
@@ -121,14 +121,14 @@ namespace JrTools.Pages
             };
 
             // Exemplo de uso do objeto: exibe um diálogo de sucesso
-            var dialog = new ContentDialog
-            {
-                Title = "Sucesso",
-                Content = $"Objeto de configuração criado para o projeto: {config.Projeto}. Agora você pode usar este objeto para o processamento.",
-                CloseButtonText = "Ok"
-            };
+            /*  var dialog = new ContentDialog
+              {
+                  Title = "Sucesso",
+                  Content = $"Objeto de configuração criado para o projeto: {config.Projeto}. Agora você pode usar este objeto para o processamento.",
+                  CloseButtonText = "Ok"
+              };
 
-            await dialog.ShowAsync();
+              await dialog.ShowAsync();*/
         }
     }
 }

@@ -5,8 +5,7 @@
     xmlns:local="using:JrTools.Pages"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    mc:Ignorable="d" >
 
     <Page.Resources>
         <!-- Estilo para os cards que se ajustam em grade -->
@@ -31,7 +30,13 @@
     <Grid>
         <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16">
             <StackPanel Spacing="16">
-
+ 
+                <!-- BOTÃO DE AÇÃO PRINCIPAL -->
+                <Button x:Name="ProcessarButton2" 
+                        Content="PROCESSAR"
+                        HorizontalAlignment="Right" 
+                        Style="{ThemeResource AccentButtonStyle}"
+                        Click="ProcessarButton_Click"/>
                 <!-- CABEÇALHO -->
                 <TextBlock Text="Perfil: 'Padrão'" Style="{ThemeResource TitleTextBlockStyle}"/>
 
