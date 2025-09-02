@@ -1,52 +1,62 @@
 ﻿using JrTools.Dto;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Text.Json;
 using System.Threading.Tasks;
-using Windows.Storage;
 
-namespace JrTools.Services
+public static class ConfigHelper
 {
-    public static class ConfigHelper
+    private static string GetConfigPath()
     {
-        private const string FileName = "config.json";
+        string folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "JrTools");
+        if (!Directory.Exists(folder))
+            Directory.CreateDirectory(folder);
+        return Path.Combine(folder, "config.json");
+    }
 
-        public static async Task<ConfiguracoesdataObject> LerConfiguracoesAsync()
+    public static async Task<ConfiguracoesdataObject> LerConfiguracoesAsync()
+    {
+        string path = GetConfigPath();
+
+        if (!File.Exists(path))
         {
-            StorageFile file = null;
-
-            try
-            {
-                file = await ApplicationData.Current.LocalFolder.GetFileAsync("config.json");
-            }
-            catch (FileNotFoundException)
-            {
-                // Copia do Assets se não existir no LocalFolder
-                var assetsFolder = await Windows.ApplicationModel.Package.Current.InstalledLocation.GetFolderAsync("Assets");
-                var assetFile = await assetsFolder.GetFileAsync("config.json");
-
-                var json = await FileIO.ReadTextAsync(assetFile);
-
-                file = await ApplicationData.Current.LocalFolder.CreateFileAsync("config.json", CreationCollisionOption.ReplaceExisting);
-                await FileIO.WriteTextAsync(file, json);
-            }
-
-            var fileContent = await FileIO.ReadTextAsync(file);
-            return JsonSerializer.Deserialize<ConfiguracoesdataObject>(fileContent);
+            // Copiar do Assets
+            string assetsPath = Path.Combine(AppContext.BaseDirectory, "Assets", "config.json");
+            if (File.Exists(assetsPath))
+                File.Copy(assetsPath, path);
+            else
+                return CriarConfigPadrao();
         }
 
-
-
-        public static async Task SalvarConfiguracoesAsync(ConfiguracoesdataObject config)
+        try
         {
-            var file = await ApplicationData.Current.LocalFolder.CreateFileAsync(FileName, CreationCollisionOption.ReplaceExisting);
-            var json = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
-            await FileIO.WriteTextAsync(file, json);
-        }
+            string json = await File.ReadAllTextAsync(path);
+            if (string.IsNullOrWhiteSpace(json))
+                return CriarConfigPadrao();
 
-       
+            var config = System.Text.Json.JsonSerializer.Deserialize<ConfiguracoesdataObject>(json);
+            return config ?? CriarConfigPadrao();
+        }
+        catch
+        {
+            return CriarConfigPadrao();
+        }
+    }
+
+    public static async Task SalvarConfiguracoesAsync(ConfiguracoesdataObject config)
+    {
+        string path = GetConfigPath();
+        string json = System.Text.Json.JsonSerializer.Serialize(config, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+        await File.WriteAllTextAsync(path, json);
+    }
+
+    private static ConfiguracoesdataObject CriarConfigPadrao()
+    {
+        return new ConfiguracoesdataObject
+        {
+            ProjetoSelecionado = "Default",
+            DiretorioBinarios = "",
+            DiretorioProducao = "",
+            DiretorioEspecificos = ""
+        };
     }
 }

@@ -40,7 +40,7 @@ namespace JrTools.Negocios
               
 
 
-                var checkoutHandler = new GitRhProdHandler(_gitService, branch);
+              /*  var checkoutHandler = new GitRhProdHandler(_gitService, branch);
                 await checkoutHandler.ExecutarCheckOutAsync(progresso, config.DiretorioProducao);
 
                 if (dto.AtualizarBreach)
@@ -48,7 +48,7 @@ namespace JrTools.Negocios
                     var pullHandler = new GitRhProdHandler(_gitService, branch);
                     await pullHandler.ExecutarPullAsync(progresso, config.DiretorioProducao);
                 }
-
+              */
 
                 if (dto.AtualizarBinarios)
                 {

@@ -30,14 +30,35 @@
         <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16">
             <StackPanel Spacing="16">
 
-                <!-- BOTÃO DE AÇÃO PRINCIPAL -->
-                <Button x:Name="ProcessarButton2" 
-                        Content="PROCESSAR"
-                        HorizontalAlignment="Right" 
-                        Style="{ThemeResource AccentButtonStyle}"
-                        Click="ProcessarButton_Click"/>
-                <!-- CABEÇALHO -->
-                <TextBlock Text="Perfil: 'Padrão'" Style="{ThemeResource TitleTextBlockStyle}"/>
+                <!-- Contêiner para título e botões -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <!-- Título ocupa todo espaço à esquerda -->
+                        <ColumnDefinition Width="Auto" />
+                        <!-- Botões e loading à direita -->
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Título -->
+                    <TextBlock Text="Subir ambiente Prod" 
+                       Style="{ThemeResource TitleTextBlockStyle}" 
+                       VerticalAlignment="Center"
+                       Grid.Column="0"/>
+
+                    <!-- Botões e ProgressRing -->
+                    <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" Grid.Column="1">
+                        <Button x:Name="ProcessarButton2" 
+                            Content="PROCESSAR"
+                            Style="{ThemeResource AccentButtonStyle}"
+                            Click="ProcessarButton_Click"/>
+                        <ProgressRing x:Name="LoadingRing"
+                            IsActive="False"
+                            Width="24"
+                            Height="24"
+                            VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Grid>
+
 
                 <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
                     <TextBlock x:Name="BreachSelecionada"  Text="breach" VerticalAlignment="Center" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
@@ -63,27 +84,27 @@
                     </StackPanel>
                 </Border>
 
-                <!-- CARD 3: Terminal de Processamento (Agora fora do ItemsControl e com estilo próprio) -->
+                <!-- CARD 3: Terminal de Processamento -->
                 <Border Style="{StaticResource FullWidthCardStyle}">
                     <StackPanel Spacing="12">
                         <TextBlock Text="Terminal de Processamento" Style="{ThemeResource SubtitleTextBlockStyle}"/>
-                        <Border Background="{ThemeResource TextControlBackgroundFocused}" MinHeight="150" CornerRadius="4" Padding="12">
-                            <TextBlock x:Name="TerminalOutput"
-                                       Text="Aguardando execução..." 
-                                       FontFamily="Consolas" 
-                                       TextWrapping="Wrap"
-                                       VerticalAlignment="Top"/>
+
+                        <!-- Terminal com fundo escuro e rolagem -->
+                        <Border Background="Black" CornerRadius="4" Padding="8">
+                            <ScrollViewer x:Name="TerminalScrollViewer" Height="200" VerticalScrollBarVisibility="Auto">
+                                <TextBlock x:Name="TerminalOutput"
+                           Text="Aguardando execução..." 
+                           FontFamily="Consolas" 
+                           Foreground="White" 
+                           TextWrapping="Wrap"
+                           VerticalAlignment="Top"/>
+                            </ScrollViewer>
                         </Border>
                     </StackPanel>
                 </Border>
 
-                <!-- BOTÃO DE AÇÃO PRINCIPAL -->
-                <Button x:Name="ProcessarButton" 
-                        Content="PROCESSAR"
-                        HorizontalAlignment="Right"
-                        Margin="0,12,8,0"
-                        Style="{ThemeResource AccentButtonStyle}"
-                        Click="ProcessarButton_Click"/>
+
+ 
             </StackPanel>
         </ScrollViewer>
     </Grid>

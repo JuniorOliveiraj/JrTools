@@ -1,4 +1,5 @@
 ﻿using JrTools.Dto;
+using JrTools.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -13,7 +14,6 @@ namespace JrTools.Services
         private readonly string _binPath = @"\\bnu-rhslave001\public";
         private readonly string _pastaTemporaria = Path.Combine(Path.GetTempPath(), "BinariosTemp");
 
-
         public async Task<BinarioInfoDataObject?> ObterBinarioAsync(string versao)
         {
             return await Task.Run(() =>
@@ -23,15 +23,12 @@ namespace JrTools.Services
                 foreach (var arquivo in arquivos)
                 {
                     var nome = Path.GetFileNameWithoutExtension(arquivo);
-                    // Exemplo: Bin_producao_08.05 ou Bin_dev-08.05.13
-
                     var match = Regex.Match(nome, @"^Bin_(.+)$");
 
                     if (match.Success)
                     {
                         var branchExtraida = match.Groups[1].Value;
 
-                        // Comparação exata com a versão informada
                         if (branchExtraida.Equals(versao, StringComparison.OrdinalIgnoreCase))
                         {
                             return new BinarioInfoDataObject
@@ -44,13 +41,13 @@ namespace JrTools.Services
                     }
                 }
 
-                return null; // não encontrou
+                return null;
             });
         }
 
-
         /// <summary>
         /// Copia o zip do binário para a pasta temporária e extrai para a pasta de destino, sem travar a UI.
+        /// Cria barra de progresso na cópia.
         /// Limpa a pasta de destino antes da extração.
         /// </summary>
         public async Task ExtrairBinarioAsync(BinarioInfoDataObject binarioInfo, IProgress<string>? progresso = null)
@@ -64,6 +61,7 @@ namespace JrTools.Services
 
                 if (!Directory.Exists(binarioInfo.destino))
                     Directory.CreateDirectory(binarioInfo.destino);
+
                 string pastaAplicacaoWes = ObterPastaAplicacaoWes(binarioInfo.Branch);
                 string pastaDestino = Path.Combine(binarioInfo.destino, "Delphi");
                 string pastaDestinoWes = Path.Combine(binarioInfo.destino, pastaAplicacaoWes);
@@ -71,27 +69,52 @@ namespace JrTools.Services
                 Directory.CreateDirectory(pastaDestino);
                 Directory.CreateDirectory(pastaDestinoWes);
 
-
-
-                progresso?.Report("[INFO] Limpando pasta de destino...");
-                LimparPastaDestino(pastaDestino);
-                LimparPastaDestino(pastaDestinoWes);
-                progresso?.Report("[INFO] Pasta de destino limpa.");
+   
 
                 string caminhoTemporario = Path.Combine(_pastaTemporaria, binarioInfo.NomeOriginal + ".zip");
 
+                // Cópia com barra de progresso
                 progresso?.Report($"[INFO] Copiando {binarioInfo.Caminho} para {caminhoTemporario}...");
+
+                long tamanhoTotal = new FileInfo(binarioInfo.Caminho).Length;
+                long totalCopiado = 0;
+                int blocoTamanho = 81920; // 80 KB por vez
+
                 using (var origem = new FileStream(binarioInfo.Caminho, FileMode.Open, FileAccess.Read))
                 using (var destino = new FileStream(caminhoTemporario, FileMode.Create, FileAccess.Write))
                 {
-                    await origem.CopyToAsync(destino);
+                    byte[] buffer = new byte[blocoTamanho];
+                    int bytesLidos;
+                    while ((bytesLidos = await origem.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                    {
+                        await destino.WriteAsync(buffer, 0, bytesLidos);
+                        totalCopiado += bytesLidos;
+
+                        int percentual = (int)((totalCopiado * 100) / tamanhoTotal);
+                        int totalBarras = 30;
+                        int barrasPreenchidas = (percentual * totalBarras) / 100;
+                        string barra = new string('#', barrasPreenchidas) + new string('-', totalBarras - barrasPreenchidas);
+
+                        progresso?.Report($"[{barra}] {percentual}%");
+                    }
                 }
+
+
+
+
+
+
                 progresso?.Report("[INFO] Arquivo copiado com sucesso.");
 
 
-
-
-
+                progresso?.Report($"[INFO] Limpando pasta de destino... {pastaDestino}");
+                await LimparPastaDestinoAsync(pastaDestino, progresso);
+                progresso?.Report($"[INFO] Limpando pasta de destino... {pastaDestinoWes}");
+                await LimparPastaDestinoAsync(pastaDestinoWes, progresso);
+                progresso?.Report("[INFO] Pasta de destino limpa.");
+            
+                progresso?.Report("[INFO] Pasta de destino Concluido.");
+                // Extração assíncrona
                 progresso?.Report($"[INFO] Extraindo {pastaDestino}...");
                 await Task.Run(() =>
                 {
@@ -113,28 +136,68 @@ namespace JrTools.Services
             }
         }
 
-
-        /// <summary>
-        /// Limpa todos os arquivos e pastas dentro de um diretório.
-        /// </summary>
-        private void LimparPastaDestino(string caminho)
+        private async Task LimparPastaDestinoAsync(string caminho, IProgress<string>? progresso = null)
         {
             if (!Directory.Exists(caminho))
+            {
+                Directory.CreateDirectory(caminho);
+                progresso?.Report($"[INFO] Criada pasta {caminho}");
                 return;
-
-            // Remove todos os arquivos
-            foreach (var arquivo in Directory.GetFiles(caminho))
-            {
-                File.SetAttributes(arquivo, FileAttributes.Normal); // garante que seja deletável
-                File.Delete(arquivo);
             }
 
-            // Remove todas as subpastas
-            foreach (var dir in Directory.GetDirectories(caminho))
+            var arquivos = Directory.GetFiles(caminho, "*", SearchOption.AllDirectories);
+            var pastas = Directory.GetDirectories(caminho, "*", SearchOption.AllDirectories);
+
+            int total = arquivos.Length + pastas.Length;
+            int cont = 0;
+
+            // Deletar arquivos
+            foreach (var arquivo in arquivos)
             {
-                Directory.Delete(dir, true);
+                try
+                {
+                    File.SetAttributes(arquivo, FileAttributes.Normal);
+                    File.Delete(arquivo);
+                }
+                catch (Exception ex)
+                {
+                    throw new FluxoException($"Não foi possível deletar o arquivo {arquivo}: {ex.Message}");
+                }
+
+                cont++;
+                if (cont % 50 == 0)
+                {
+                    int percentual = (int)((cont * 100) / total);
+                    progresso?.Report($"[INFO] Limpando... {percentual}%");
+                    await Task.Yield(); // libera a UI
+                }
             }
+
+            // Deletar pastas
+            foreach (var dir in pastas)
+            {
+                try
+                {
+                    var dirInfo = new DirectoryInfo(dir) { Attributes = FileAttributes.Normal };
+                    dirInfo.Delete(true);
+                }
+                catch (Exception ex)
+                {
+                    throw new FluxoException($"Não foi possível deletar a pasta {dir}: {ex.Message}");
+                }
+
+                cont++;
+                if (cont % 10 == 0)
+                {
+                    int percentual = (int)((cont * 100) / total);
+                    progresso?.Report($"[INFO] Limpando... {percentual}%");
+                    await Task.Yield();
+                }
+            }
+
+            progresso?.Report("[INFO] Limpeza da pasta concluída.");
         }
+
 
 
         private string ObterPastaAplicacaoWes(string branch)
@@ -145,10 +208,7 @@ namespace JrTools.Services
                 throw new InvalidOperationException($"Não foi possível identificar a versão para WES no branch '{branch}'.");
 
             string versaoCurta = match.Groups[1].Value;
-
             return $"RH_LOCAL_DESENV_{versaoCurta}";
         }
-
-
     }
 }

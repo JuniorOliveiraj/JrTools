@@ -2,35 +2,24 @@
 using JrTools.Negocios;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
-
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
 
 namespace JrTools.Pages
 {
-    /// <summary>
-    /// An empty page that can be used on its own or navigated to within a Frame.
-    /// </summary>
     public sealed partial class RhProdPage : Page
     {
         public List<string> ListaDeProjetos { get; set; }
+
+        // Limite máximo de caracteres no terminal
+        private const int MAX_TERMINAL_LENGTH = 15000; // grande, mas mantém performance
+
         public RhProdPage()
         {
             InitializeComponent();
             CarregarProjetos();
         }
+
         private void CarregarProjetos()
         {
             ListaDeProjetos = new List<string>
@@ -54,11 +43,13 @@ namespace JrTools.Pages
         {
             try
             {
-                // Limpa logs anteriores e esconde mensagens de validação
+                // Bloqueia botões e ativa loading
+                ProcessarButton2.IsEnabled = false;
+                LoadingRing.IsActive = true;
+
                 TerminalOutput.Text = "[INFO] Iniciando processamento...\n";
                 ValidationInfoBar.IsOpen = false;
 
-                // Monta o DTO com os parâmetros da UI
                 var dto = new PageProdutoDataObject
                 {
                     Breach = ProjetoComboBox.SelectedItem?.ToString(),
@@ -70,7 +61,6 @@ namespace JrTools.Pages
                                                 : null
                 };
 
-                // Validação se "Outro" foi selecionado
                 if (ProjetoComboBox.SelectedItem?.ToString() == "Outro" && string.IsNullOrWhiteSpace(breachEspesifica.Text))
                 {
                     ValidationInfoBar.Message = "Informe um valor para o campo 'Breach'.";
@@ -78,21 +68,14 @@ namespace JrTools.Pages
                     return;
                 }
 
-                // Cria o objeto de progresso para receber logs em tempo real
-                var progresso = new Progress<string>(log =>
-                {
-                    TerminalOutput.Text += log + "\n";
-                    ;// TerminalOutput.ScrollToEnd(); // Faz a rolagem automática
-                });
+                // Progress para atualizar terminal sem travar UI
+                var progresso = new Progress<string>(log => AppendTerminalLog(log));
 
-                // Executa o fluxo principal
                 var flow = new RhProdFlow();
                 var (success, logs, errorMessage) = await flow.ExecutarAsync(dto, progresso);
 
-                // Exibe logs finais
-                TerminalOutput.Text += logs;
+                AppendTerminalLog(logs);
 
-                // Exibe mensagem de erro, se houver
                 if (!success)
                 {
                     ValidationInfoBar.Message = errorMessage;
@@ -100,19 +83,35 @@ namespace JrTools.Pages
                 }
                 else
                 {
-                    TerminalOutput.Text += "[INFO] Processamento concluído com sucesso!\n";
+                    AppendTerminalLog("[INFO] Processamento concluído com sucesso!");
                 }
             }
             catch (Exception ex)
             {
-                // Captura exceções inesperadas
                 ValidationInfoBar.Message = $"Ocorreu um erro inesperado: {ex.Message}";
                 ValidationInfoBar.IsOpen = true;
-                TerminalOutput.Text += $"[ERRO] {ex}\n";
+                AppendTerminalLog($"[ERRO] {ex}");
+            }
+            finally
+            {
+                // Reativa botões e desativa loading
+                ProcessarButton2.IsEnabled = true;
+                LoadingRing.IsActive = false;
             }
         }
 
+        // Adiciona logs no terminal com limite e rolagem automática
+        private void AppendTerminalLog(string mensagem)
+        {
+            TerminalOutput.Text += mensagem + "\n";
 
+            if (TerminalOutput.Text.Length > MAX_TERMINAL_LENGTH)
+            {
+                TerminalOutput.Text = TerminalOutput.Text.Substring(TerminalOutput.Text.Length - MAX_TERMINAL_LENGTH);
+            }
+
+            TerminalScrollViewer.ChangeView(null, TerminalScrollViewer.ScrollableHeight, null);
+        }
 
         private void ProjetoComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -123,7 +122,7 @@ namespace JrTools.Pages
             else
             {
                 breachEspesifica.Visibility = Visibility.Collapsed;
-                breachEspesifica.Text = string.Empty;  
+                breachEspesifica.Text = string.Empty;
             }
         }
     }

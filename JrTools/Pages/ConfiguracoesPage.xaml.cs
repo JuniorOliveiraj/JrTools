@@ -2,27 +2,10 @@ using JrTools.Dto;
 using JrTools.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
-
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
 
 namespace JrTools.Pages
 {
-    /// <summary>
-    /// An empty page that can be used on its own or navigated to within a Frame.
-    /// </summary>
     public sealed partial class ConfiguracoesPage : Page
     {
         private ConfiguracoesdataObject _config;
@@ -30,17 +13,43 @@ namespace JrTools.Pages
         public ConfiguracoesPage()
         {
             this.InitializeComponent();
-            CarregarConfiguracoes();
+            // Executa após a página carregar
+            this.Loaded += ConfiguracoesPage_Loaded;
         }
 
-        private async void CarregarConfiguracoes()
+        private async void ConfiguracoesPage_Loaded(object sender, RoutedEventArgs e)
         {
-            _config = await ConfigHelper.LerConfiguracoesAsync();
+            await CarregarConfiguracoes();
+        }
 
-            ProjetoComboBox.SelectedItem = _config.ProjetoSelecionado;
-            DiretorioBinarios.Text = _config.DiretorioBinarios;
-            DiretorioProducao.Text = _config.DiretorioProducao;
-            DiretorioEspesificos.Text = _config.DiretorioEspecificos;
+        private async System.Threading.Tasks.Task CarregarConfiguracoes()
+        {
+            try
+            {
+                _config = await ConfigHelper.LerConfiguracoesAsync();
+
+                if (_config == null)
+                    _config = new ConfiguracoesdataObject();
+
+                // Seta os controles com segurança
+                ProjetoComboBox.SelectedItem = _config.ProjetoSelecionado ?? "Default";
+                DiretorioBinarios.Text = _config.DiretorioBinarios ?? string.Empty;
+                DiretorioProducao.Text = _config.DiretorioProducao ?? string.Empty;
+                DiretorioEspesificos.Text = _config.DiretorioEspecificos ?? string.Empty;
+            }
+            catch (Exception ex)
+            {
+                ContentDialog erroDialog = new ContentDialog
+                {
+                    Title = "Erro ao carregar configurações",
+                    Content = ex.Message,
+                    CloseButtonText = "OK",
+                    XamlRoot = this.XamlRoot
+                };
+                _ = erroDialog.ShowAsync();
+
+                _config = new ConfiguracoesdataObject(); // fallback seguro
+            }
         }
 
         // Chamado quando o ComboBox muda
@@ -52,7 +61,7 @@ namespace JrTools.Pages
             await ConfigHelper.SalvarConfiguracoesAsync(_config);
         }
 
-        // Chamado quando um TextBox muda
+        // Chamado quando os TextBox mudam
         private async void DiretorioBinarios_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (_config == null) return;
@@ -76,9 +85,5 @@ namespace JrTools.Pages
             _config.DiretorioEspecificos = DiretorioEspesificos.Text;
             await ConfigHelper.SalvarConfiguracoesAsync(_config);
         }
-
-
-
-
     }
 }
