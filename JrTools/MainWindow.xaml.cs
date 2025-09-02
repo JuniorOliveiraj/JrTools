@@ -43,6 +43,9 @@ namespace JrTools
                     case "Rhprod":
                         ContentFrame.Navigate(typeof(Pages.RhProdPage));
                         break;
+                    case "config":
+                        ContentFrame.Navigate(typeof(Pages.ConfiguracoesPage));
+                        break;
 
                 }
             }

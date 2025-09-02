@@ -25,6 +25,14 @@
                 <NavigationViewItem Icon="Home" Content="Home" Tag="Home"/>
                 <NavigationViewItem Icon="Play" Content="Rh prod" Tag="Rhprod"/>
                 <NavigationViewItem Icon="People" Content="Espesificos" Tag="Espesificos"/>
+                
+                
+                <NavigationViewItem Content="Configurações" Tag="config">
+                    <NavigationViewItem.Icon>
+                        <SymbolIcon Symbol="Setting"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+
             </NavigationView.MenuItems>
 
             <Frame x:Name="ContentFrame"/>

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="JrTools.Pages.ConfiguracoesPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:JrTools.Pages"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+    <Page.Resources>
+        <!-- Estilo para os cards que se ajustam em grade -->
+        <Style x:Key="ResponsiveCardStyle" TargetType="Border">
+            <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}"/>
+            <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="16"/>
+            <Setter Property="Margin" Value="8"/>
+            <Setter Property="MinWidth" Value="320"/>
+            <Setter Property="MaxWidth" Value="500"/>
+        </Style>
+
+        <!-- Novo estilo para o card de terminal, que ocupa a largura total -->
+        <Style x:Key="FullWidthCardStyle" TargetType="Border" BasedOn="{StaticResource ResponsiveCardStyle}">
+            <Setter Property="MaxWidth" Value="9999"/>
+            <!-- Remove a limitação de largura máxima -->
+        </Style>
+    </Page.Resources>
+ 
+
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16">
+        <StackPanel Spacing="16">
+
+            <!-- CABEÇALHO -->
+            <TextBlock Text="Configurções" Style="{ThemeResource TitleTextBlockStyle}"/>
+
+            <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <TextBlock x:Name="BreachSelecionada"  Text="breach" VerticalAlignment="Center" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                <!-- Os itens deste ComboBox agora são controlados pelo C# -->
+                <ComboBox x:Name="ProjetoComboBox" MinWidth="200" SelectionChanged="ProjetoComboBox_SelectionChanged"/>
+            </StackPanel>
+
+            <!-- Barra para exibir mensagens de erro/validação -->
+            <InfoBar x:Name="ValidationInfoBar" IsOpen="False" Severity="Error" Margin="0,0,8,0"/>
+            <Border Style="{StaticResource FullWidthCardStyle}">
+                <StackPanel Spacing="20">
+                    <TextBlock Text="Parametrizações" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                    <TextBox x:Name="DiretorioBinarios" Header="Diretorio binarios Delphi" Text="D:\Benner\bin\Delphi" TextChanged="DiretorioBinarios_TextChanged"/>
+                    <TextBox x:Name="DiretorioProducao" Header="Diretorio de producao" Text="D:\Benner\fontes\rh\prod" TextChanged="DiretorioProducao_TextChanged"/>
+                    <TextBox x:Name="DiretorioEspesificos" Header="Diretorio específicos" Text="D:\Benner\fontes\rh" TextChanged="DiretorioEspesificos_TextChanged"/>
+
+
+                </StackPanel>
+            </Border>
+            
+            
+        </StackPanel>
+    </ScrollViewer>
+</Page>

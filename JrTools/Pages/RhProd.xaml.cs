@@ -36,9 +36,13 @@ namespace JrTools.Pages
             ListaDeProjetos = new List<string>
             {
                 "producao_09.00",
-                "producao_08.05",
                 "producao_08.06",
+                "producao_08.05",
+                "producao_08.04",
                 "dev-09.00.00",
+                "dev-08.06.00",
+                "dev-08.05.00",
+                "dev-08.04.00",
                 "Outro"
             };
 
@@ -48,37 +52,66 @@ namespace JrTools.Pages
 
         private async void ProcessarButton_Click(object sender, RoutedEventArgs e)
         {
-            ValidationInfoBar.IsOpen = false;
-
-            var dto = new PageProdutoDataObject
+            try
             {
-                Breach = BreachSelecionada.Text,
-                AtualizarBinarios = BaixarBinarioToggle.IsOn,
-                BuildarProjeto = CompilarEspecificosToggle.IsOn,
-                AtualizarBreach = GitPull.IsOn,
-                BreachEspesificaDeTrabalho = ProjetoComboBox.SelectedItem?.ToString() == "Outro" ? breachEspesifica.Text : null
-            };
+                // Limpa logs anteriores e esconde mensagens de validação
+                TerminalOutput.Text = "[INFO] Iniciando processamento...\n";
+                ValidationInfoBar.IsOpen = false;
 
-            if (ProjetoComboBox.SelectedItem?.ToString() == "Outro" && string.IsNullOrWhiteSpace(breachEspesifica.Text))
-            {
-                ValidationInfoBar.Message = "Informe um valor para o campo 'Breach'.";
-                ValidationInfoBar.IsOpen = true;
-                return;
+                // Monta o DTO com os parâmetros da UI
+                var dto = new PageProdutoDataObject
+                {
+                    Breach = ProjetoComboBox.SelectedItem?.ToString(),
+                    AtualizarBinarios = BaixarBinarioToggle.IsOn,
+                    BuildarProjeto = CompilarEspecificosToggle.IsOn,
+                    AtualizarBreach = GitPull.IsOn,
+                    BreachEspesificaDeTrabalho = ProjetoComboBox.SelectedItem?.ToString() == "Outro"
+                                                ? breachEspesifica.Text
+                                                : null
+                };
+
+                // Validação se "Outro" foi selecionado
+                if (ProjetoComboBox.SelectedItem?.ToString() == "Outro" && string.IsNullOrWhiteSpace(breachEspesifica.Text))
+                {
+                    ValidationInfoBar.Message = "Informe um valor para o campo 'Breach'.";
+                    ValidationInfoBar.IsOpen = true;
+                    return;
+                }
+
+                // Cria o objeto de progresso para receber logs em tempo real
+                var progresso = new Progress<string>(log =>
+                {
+                    TerminalOutput.Text += log + "\n";
+                    ;// TerminalOutput.ScrollToEnd(); // Faz a rolagem automática
+                });
+
+                // Executa o fluxo principal
+                var flow = new RhProdFlow();
+                var (success, logs, errorMessage) = await flow.ExecutarAsync(dto, progresso);
+
+                // Exibe logs finais
+                TerminalOutput.Text += logs;
+
+                // Exibe mensagem de erro, se houver
+                if (!success)
+                {
+                    ValidationInfoBar.Message = errorMessage;
+                    ValidationInfoBar.IsOpen = true;
+                }
+                else
+                {
+                    TerminalOutput.Text += "[INFO] Processamento concluído com sucesso!\n";
+                }
             }
-
-            TerminalOutput.Text = "[INFO] Iniciando processamento...\n";
-
-            var flow = new RhProdFlow();
-            var (success, logs, errorMessage) = await flow.ExecutarAsync(dto);
-
-            TerminalOutput.Text += logs;
-
-            if (!success)
+            catch (Exception ex)
             {
-                ValidationInfoBar.Message = errorMessage;
+                // Captura exceções inesperadas
+                ValidationInfoBar.Message = $"Ocorreu um erro inesperado: {ex.Message}";
                 ValidationInfoBar.IsOpen = true;
+                TerminalOutput.Text += $"[ERRO] {ex}\n";
             }
         }
+
 
 
         private void ProjetoComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
