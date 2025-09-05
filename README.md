@@ -32,19 +32,19 @@ Este é um aplicativo interno. As instruções detalhadas para instalação e co
 #### 🔒 Aviso de Uso
 Este aplicativo é de uso exclusivo para os colaboradores sendo nao ira funcionar em ambiente externo.
 
-
-
-
  
 ## Stack utilizada
 
 **Frameworks:** .NET 6 ou superior, WinUI 3
 
 **Sistema Operacional** Windows 10/11
- 
 
 
+## Screenshots
 
+![App Screenshot](https://github.com/JuniorOliveiraj/JrTools/blob/master/JrTools/Assets/Dashboard.png)
+
+![App Screenshot](https://raw.githubusercontent.com/JuniorOliveiraj/JrTools/refs/heads/master/JrTools/Assets/Ambiente%20espesifico.png?token=GHSAT0AAAAAADFOLITGGTUV5NYCID4KGARA2FXDSTA)
 
 
 
