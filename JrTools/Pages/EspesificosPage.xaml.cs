@@ -1,4 +1,5 @@
 using JrTools.Dto;
+using JrTools.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -26,25 +27,51 @@ namespace JrTools.Pages
     /// </summary>
     public sealed partial class EspesificosPage : Page
     {
-        public List<string> ListaDeProjetos { get; set; }
+        private ConfiguracoesdataObject _config;
+        public List<PastaInformacoesDto> ListaDeProjetos { get; set; }
+        private const int MAX_TERMINAL_LENGTH = 15000;
 
         public EspesificosPage()
         {
             InitializeComponent();
-            CarregarProjetos();
+  
+            this.Loaded += ConfiguracoesPage_Loaded;
         }
 
 
         private void CarregarProjetos()
         {
-            ListaDeProjetos = new List<string>
-            {
-                "caj",
-                "rh" 
-            };
+            var direto = _config?.DiretorioEspecificos;
+            ListaDeProjetos = Folders.ListarPastas(direto); 
+
 
             ProjetoComboBox.ItemsSource = ListaDeProjetos;
-            ProjetoComboBox.SelectedIndex = 0;
+            ProjetoComboBox.DisplayMemberPath = "Nome";
+        }
+
+        private async void ConfiguracoesPage_Loaded(object sender, RoutedEventArgs e)
+        {
+            await CarregarConfiguracoes();
+            CarregarProjetos();
+        }
+
+        private async System.Threading.Tasks.Task CarregarConfiguracoes()
+        {
+            try
+            {
+                _config = await ConfigHelper.LerConfiguracoesAsync();
+            }
+            catch (Exception ex)
+            {
+                await new ContentDialog
+                {
+                    Title = "Erro ao carregar configurações",
+                    Content = ex.Message,
+                    CloseButtonText = "OK",
+                    XamlRoot = this.XamlRoot
+                }.ShowAsync();
+                _config = new ConfiguracoesdataObject();
+            }
         }
 
 

@@ -69,52 +69,50 @@ namespace JrTools.Services
                 Directory.CreateDirectory(pastaDestino);
                 Directory.CreateDirectory(pastaDestinoWes);
 
-   
-
                 string caminhoTemporario = Path.Combine(_pastaTemporaria, binarioInfo.NomeOriginal + ".zip");
 
-                // Cópia com barra de progresso
-                progresso?.Report($"[INFO] Copiando {binarioInfo.Caminho} para {caminhoTemporario}...");
-
-                long tamanhoTotal = new FileInfo(binarioInfo.Caminho).Length;
-                long totalCopiado = 0;
-                int blocoTamanho = 81920; // 80 KB por vez
-
-                using (var origem = new FileStream(binarioInfo.Caminho, FileMode.Open, FileAccess.Read))
-                using (var destino = new FileStream(caminhoTemporario, FileMode.Create, FileAccess.Write))
+                // Verifica se o arquivo já existe na pasta temporária
+                if (!File.Exists(caminhoTemporario))
                 {
-                    byte[] buffer = new byte[blocoTamanho];
-                    int bytesLidos;
-                    while ((bytesLidos = await origem.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                    progresso?.Report($"[INFO] Copiando {binarioInfo.Caminho} para {caminhoTemporario}...");
+
+                    long tamanhoTotal = new FileInfo(binarioInfo.Caminho).Length;
+                    long totalCopiado = 0;
+                    int blocoTamanho = 81920;
+
+                    using (var origem = new FileStream(binarioInfo.Caminho, FileMode.Open, FileAccess.Read))
+                    using (var destino = new FileStream(caminhoTemporario, FileMode.Create, FileAccess.Write))
                     {
-                        await destino.WriteAsync(buffer, 0, bytesLidos);
-                        totalCopiado += bytesLidos;
+                        byte[] buffer = new byte[blocoTamanho];
+                        int bytesLidos;
+                        while ((bytesLidos = await origem.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                        {
+                            await destino.WriteAsync(buffer, 0, bytesLidos);
+                            totalCopiado += bytesLidos;
 
-                        int percentual = (int)((totalCopiado * 100) / tamanhoTotal);
-                        int totalBarras = 30;
-                        int barrasPreenchidas = (percentual * totalBarras) / 100;
-                        string barra = new string('#', barrasPreenchidas) + new string('-', totalBarras - barrasPreenchidas);
+                            int percentual = (int)((totalCopiado * 100) / tamanhoTotal);
+                            int totalBarras = 30;
+                            int barrasPreenchidas = (percentual * totalBarras) / 100;
+                            string barra = new string('#', barrasPreenchidas) + new string('-', totalBarras - barrasPreenchidas);
 
-                        progresso?.Report($"[{barra}] {percentual}%");
+                            progresso?.Report($"[{barra}] {percentual}%");
+                        }
                     }
+
+                    progresso?.Report("[INFO] Arquivo copiado com sucesso.");
                 }
-
-
-
-
-
-
-                progresso?.Report("[INFO] Arquivo copiado com sucesso.");
-
+                else
+                {
+                    progresso?.Report("[INFO] Arquivo já existe na pasta temporária. Usando arquivo existente.");
+                }
 
                 progresso?.Report($"[INFO] Limpando pasta de destino... {pastaDestino}");
                 await LimparPastaDestinoAsync(pastaDestino, progresso);
                 progresso?.Report($"[INFO] Limpando pasta de destino... {pastaDestinoWes}");
                 await LimparPastaDestinoAsync(pastaDestinoWes, progresso);
                 progresso?.Report("[INFO] Pasta de destino limpa.");
-            
-                progresso?.Report("[INFO] Pasta de destino Concluido.");
-                // Extração assíncrona
+
+                progresso?.Report("[INFO] Pasta de destino Concluída.");
                 progresso?.Report($"[INFO] Extraindo {pastaDestino}...");
                 await Task.Run(() =>
                 {
@@ -135,6 +133,7 @@ namespace JrTools.Services
                 throw;
             }
         }
+
 
         private async Task LimparPastaDestinoAsync(string caminho, IProgress<string>? progresso = null)
         {
@@ -169,7 +168,7 @@ namespace JrTools.Services
                 {
                     int percentual = (int)((cont * 100) / total);
                     progresso?.Report($"[INFO] Limpando... {percentual}%");
-                    await Task.Yield(); // libera a UI
+                    await Task.Yield(); 
                 }
             }
 

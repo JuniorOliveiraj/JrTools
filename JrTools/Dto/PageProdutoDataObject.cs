@@ -31,6 +31,19 @@ namespace JrTools.Dto
         /// </summary>
         public string? BreachEspesificaDeTrabalho { get; set; }
 
+        /// <summary>
+        ///  matar rpocesso runner.exe antes de iniciar o build
+        /// </summary>
+        public bool RunnerFechado { get; set; }
+        /// <summary>
+        ///  Matar processo builder.exe antes de iniciar o build
+        /// </summary>
+        public bool BuilderFechado { get; set; }
+
+        /// <summary>
+        /// Matar processo privider.exe antes de iniciar o build
+        /// </summary>
+        public bool PrividerFechado { get; set; }
 
 
     }

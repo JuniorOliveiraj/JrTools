@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="JrTools.Pages.BuildarProjeto"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:JrTools.Pages"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Page.Resources>
+        <!-- Estilo para os cards que se ajustam em grade -->
+        <Style x:Key="ResponsiveCardStyle" TargetType="Border">
+            <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}"/>
+            <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="16"/>
+            <Setter Property="Margin" Value="8"/>
+            <Setter Property="MinWidth" Value="320"/>
+            <Setter Property="MaxWidth" Value="500"/>
+        </Style>
+
+        <!-- Novo estilo para o card de terminal, que ocupa a largura total -->
+        <Style x:Key="FullWidthCardStyle" TargetType="Border" BasedOn="{StaticResource ResponsiveCardStyle}">
+            <Setter Property="MaxWidth" Value="9999"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        </Style>
+
+        <!-- Novo estilo para Expander que ocupa largura total -->
+        <Style x:Key="FullWidthExpanderStyle" TargetType="Expander">
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Padding" Value="0"/>
+        </Style>
+    </Page.Resources>
+
+    <Grid>
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16">
+            <StackPanel Spacing="16">
+
+                <!-- Contêiner para título e botões -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Título -->
+                    <TextBlock Text="Buildar Projetos" 
+                               Style="{ThemeResource TitleTextBlockStyle}" 
+                               VerticalAlignment="Center"
+                               Grid.Column="0"/>
+
+
+                </Grid>
+
+                <InfoBar x:Name="ValidationInfoBar" IsOpen="False" Severity="Error" Margin="0,0,8,0"/>
+
+                <!-- EXPANDER BUILDAR DOTNET -->
+                <Expander  x:Name="ExpanderDotNet"  Style="{StaticResource FullWidthExpanderStyle}" IsExpanded="True">
+                    <Expander.Header>
+                        <TextBlock Text="Buildar .Net" VerticalAlignment="Center"/>
+                    </Expander.Header>
+                    <Expander.Content>
+                        <StackPanel Spacing="12" HorizontalAlignment="Stretch">
+                            <Border Style="{StaticResource FullWidthCardStyle}">
+                                <StackPanel Spacing="12">
+                                    <!-- ComboBox projeto e texto -->
+                                    <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                                        <TextBlock x:Name="ProjetoDotnetselecionado"  
+                                           Text="Projeto" 
+                                           VerticalAlignment="Center" 
+                                           Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                                        <ComboBox x:Name="ProjetoDotnetselecionadoComboBox" MinWidth="200" SelectionChanged="ProjetoDotnetComboBox_SelectionChanged"/>
+                                    </StackPanel>
+
+                                    <!-- ComboBox solução e texto -->
+                                    <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                                        <TextBlock x:Name="SolucaoDotnetSelecionado"  
+                                           Text="Solução" 
+                                           VerticalAlignment="Center" 
+                                           Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+
+                                        <ComboBox x:Name="SolucaoDotnetSelecionadoComboBox" MinWidth="200"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                            <!-- CARD 3: Terminal de Processamento -->
+                            <Border Style="{StaticResource FullWidthCardStyle}">
+                                <StackPanel Spacing="12">
+                                    <TextBlock Text="Terminal de Processamento" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                                    <Border Background="Black" CornerRadius="4" Padding="8">
+                                        <ScrollViewer x:Name="TerminalScrollViewer" Height="200" VerticalScrollBarVisibility="Auto">
+                                            <TextBlock x:Name="TerminalOutput"
+                                               Text="Aguardando execução..." 
+                                               FontFamily="Consolas" 
+                                               Foreground="White" 
+                                               TextWrapping="Wrap"
+                                               VerticalAlignment="Top"/>
+                                        </ScrollViewer>
+                                    </Border>
+
+                                    <!-- Botão Processar Full Width com ProgressRing -->
+                                    <Grid HorizontalAlignment="Stretch">
+                                        <Button x:Name="BuildarDotnetButton" 
+                                            Content="Buildar Dotnet" 
+                                            Style="{ThemeResource AccentButtonStyle}" 
+                                            HorizontalAlignment="Stretch"
+                                            Click="ProcessarDotnetButton_Click"/>
+
+                                        <ProgressRing x:Name="LoadingRing" 
+                                              IsActive="False" 
+                                              Width="24" Height="24" 
+                                              VerticalAlignment="Center" 
+                                              HorizontalAlignment="Right" 
+                                              Margin="0,0,8,0"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Expander.Content>
+
+                </Expander>
+
+
+
+
+
+                <!-- EXPANDER BUILDAR DELPHI -->
+                <Expander  x:Name="ExpanderDelphi"  Style="{StaticResource FullWidthExpanderStyle}" IsExpanded="False">
+                    <Expander.Header>
+                        <TextBlock Text="Buildar Delphi" VerticalAlignment="Center"/>
+                    </Expander.Header>
+                    <Expander.Content>
+                        <StackPanel Spacing="12" HorizontalAlignment="Stretch">
+                            <Border Style="{StaticResource FullWidthCardStyle}">
+                                <StackPanel Spacing="12">
+                                    <!-- ComboBox projeto e texto -->
+                                    <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                                        <TextBlock x:Name="ProjetoDelphilecionado"  
+                                           Text="Projeto" 
+                                           VerticalAlignment="Center" 
+                                           Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                                        <ComboBox x:Name="ProjetoDelphiselecionadoComboBox" MinWidth="200" SelectionChanged="ProjetoDelphiComboBox_SelectionChanged"/>
+                                    </StackPanel>
+
+                                    <!-- ComboBox solução e texto -->
+                                    <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                                        <TextBlock x:Name="SolucaDelphiSelecionado"  
+                                           Text="Solução" 
+                                           VerticalAlignment="Center" 
+                                           Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+
+                                        <ComboBox x:Name="SolucaoDelphiSelecionadoComboBox" MinWidth="200"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                            <!-- CARD 3: Terminal de Processamento -->
+                            <Border Style="{StaticResource FullWidthCardStyle}">
+                                <StackPanel Spacing="12">
+                                    <TextBlock Text="Terminal de Processamento" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                                    <Border Background="Black" CornerRadius="4" Padding="8">
+                                        <ScrollViewer x:Name="TerminalScrollViewerDelphi" Height="200" VerticalScrollBarVisibility="Auto">
+                                            <TextBlock x:Name="TerminalDelphiOutput"
+                                               Text="Aguardando execução..." 
+                                               FontFamily="Consolas" 
+                                               Foreground="White" 
+                                               TextWrapping="Wrap"
+                                               VerticalAlignment="Top"/>
+                                        </ScrollViewer>
+                                    </Border>
+
+                                    <!-- Botão Processar Full Width com ProgressRing -->
+                                    <Grid HorizontalAlignment="Stretch">
+                                        <Button x:Name="BuildarDelphiButton" 
+                                            Content="Buildar Delphi" 
+                                            Style="{ThemeResource AccentButtonStyle}" 
+                                            HorizontalAlignment="Stretch"
+                                            Click="ProcessarDelphiButton_Click"/>
+
+                                        <ProgressRing x:Name="LoadingDelphiRing" 
+                                              IsActive="False" 
+                                              Width="24" Height="24" 
+                                              VerticalAlignment="Center" 
+                                              HorizontalAlignment="Right" 
+                                              Margin="0,0,8,0"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Expander.Content>
+
+                </Expander>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>

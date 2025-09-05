@@ -26,6 +26,7 @@
             <!-- Remove a limitação de largura máxima -->
         </Style>
     </Page.Resources>
+
     <Grid>
         <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16">
             <StackPanel Spacing="16">
@@ -34,77 +35,87 @@
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
-                        <!-- Título ocupa todo espaço à esquerda -->
                         <ColumnDefinition Width="Auto" />
-                        <!-- Botões e loading à direita -->
                     </Grid.ColumnDefinitions>
 
                     <!-- Título -->
                     <TextBlock Text="Subir ambiente Prod" 
-                       Style="{ThemeResource TitleTextBlockStyle}" 
-                       VerticalAlignment="Center"
-                       Grid.Column="0"/>
+                               Style="{ThemeResource TitleTextBlockStyle}" 
+                               VerticalAlignment="Center"
+                               Grid.Column="0"/>
 
                     <!-- Botões e ProgressRing -->
                     <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" Grid.Column="1">
                         <Button x:Name="ProcessarButton2" 
-                            Content="PROCESSAR"
-                            Style="{ThemeResource AccentButtonStyle}"
-                            Click="ProcessarButton_Click"/>
+                                Content="PROCESSAR"
+                                Style="{ThemeResource AccentButtonStyle}"
+                                Click="ProcessarButton_Click"/>
                         <ProgressRing x:Name="LoadingRing"
-                            IsActive="False"
-                            Width="24"
-                            Height="24"
-                            VerticalAlignment="Center"/>
+                                      IsActive="False"
+                                      Width="24"
+                                      Height="24"
+                                      VerticalAlignment="Center"/>
                     </StackPanel>
                 </Grid>
 
-
+                <!-- ComboBox e texto -->
                 <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                    <TextBlock x:Name="BreachSelecionada"  Text="breach" VerticalAlignment="Center" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
-                    <!-- Os itens deste ComboBox agora são controlados pelo C# -->
+                    <TextBlock x:Name="BreachSelecionada"  
+                               Text="breach" 
+                               VerticalAlignment="Center" 
+                               Style="{ThemeResource BodyStrongTextBlockStyle}"/>
                     <ComboBox x:Name="ProjetoComboBox" MinWidth="200" SelectionChanged="ProjetoComboBox_SelectionChanged"/>
                 </StackPanel>
 
                 <!-- Barra para exibir mensagens de erro/validação -->
                 <InfoBar x:Name="ValidationInfoBar" IsOpen="False" Severity="Error" Margin="0,0,8,0"/>
 
+                <!-- CONTAINER DOS DOIS CARDS LADO A LADO -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
 
-                <!-- CARD 1: patronizações) -->
+                    <!-- CARD 1 -->
+                    <Border Style="{StaticResource ResponsiveCardStyle}" Grid.Column="0">
+                        <StackPanel Spacing="12">
+                            <TextBlock Text="Opções de Compilação" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                            <ToggleSwitch x:Name="BaixarBinarioToggle" Header="Baixar binário atualizado" IsOn="True"/>
+                            <ToggleSwitch x:Name="CompilarEspecificosToggle" Header="Compilar Produto" IsOn="True"/>
+                            <ToggleSwitch x:Name="GitPull" Header="Atualizar breach" IsOn="False"/>
+                            <TextBox x:Name="breachEspesifica" Header="Breach" Visibility="Collapsed"/>
+                        </StackPanel>
+                    </Border>
 
-                <Border Style="{StaticResource FullWidthCardStyle}">
-                    <StackPanel Spacing="12">
-                        <TextBlock Text="Opções de Compilação" Style="{ThemeResource SubtitleTextBlockStyle}"/>
-                        <ToggleSwitch x:Name="BaixarBinarioToggle" Header="Baixar binário atualizado" IsOn="True"/>
-                        <ToggleSwitch x:Name="CompilarEspecificosToggle" Header="Compilar Produto" IsOn="True"/>
-                        <ToggleSwitch x:Name="GitPull" Header="Atualizar breach" IsOn="False" />
-                        <TextBox x:Name="breachEspesifica"  Header="Breach" Visibility="Collapsed"/>
-
-
-                    </StackPanel>
-                </Border>
+                    <!-- CARD 2 -->
+                    <Border Style="{StaticResource ResponsiveCardStyle}" Grid.Column="1">
+                        <StackPanel Spacing="12">
+                            <TextBlock Text="fechar processos" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                            <ToggleSwitch x:Name="PrviderFechado" Header="Manter Providers fechados" IsOn="True"/>
+                            <ToggleSwitch x:Name="BuilderFechado" Header="Manter Builder fechados" IsOn="True"/>
+                            <ToggleSwitch x:Name="RunnerFechado" Header="Manter Runner fechados" IsOn="True"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
 
                 <!-- CARD 3: Terminal de Processamento -->
                 <Border Style="{StaticResource FullWidthCardStyle}">
                     <StackPanel Spacing="12">
                         <TextBlock Text="Terminal de Processamento" Style="{ThemeResource SubtitleTextBlockStyle}"/>
-
-                        <!-- Terminal com fundo escuro e rolagem -->
                         <Border Background="Black" CornerRadius="4" Padding="8">
                             <ScrollViewer x:Name="TerminalScrollViewer" Height="200" VerticalScrollBarVisibility="Auto">
                                 <TextBlock x:Name="TerminalOutput"
-                           Text="Aguardando execução..." 
-                           FontFamily="Consolas" 
-                           Foreground="White" 
-                           TextWrapping="Wrap"
-                           VerticalAlignment="Top"/>
+                                           Text="Aguardando execução..." 
+                                           FontFamily="Consolas" 
+                                           Foreground="White" 
+                                           TextWrapping="Wrap"
+                                           VerticalAlignment="Top"/>
                             </ScrollViewer>
                         </Border>
                     </StackPanel>
                 </Border>
 
-
- 
             </StackPanel>
         </ScrollViewer>
     </Grid>

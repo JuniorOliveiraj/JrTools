@@ -8,7 +8,7 @@ namespace JrTools.Dto
 {
     public class ConfiguracoesdataObject
     {
-        public string ProjetoSelecionado { get; set; }
+        public string? ProjetoSelecionado { get; set; }
         public string DiretorioBinarios { get; set; }
         public string DiretorioProducao { get; set; }
         public string DiretorioEspecificos { get; set; }

@@ -11,7 +11,7 @@ namespace JrTools.Flows
 {
     public class BinldarProjetoSrv
     {
-        public async Task BuildarProjetoAsync(string caminhoSln, IProgress<string>? progresso = null)
+        public async Task BuildarProjetoAsync(string caminhoSln, IProgress<string>? progresso = null, string? args = null)
         {
             await Task.Run(async () =>
             {
@@ -22,7 +22,8 @@ namespace JrTools.Flows
                     if (!File.Exists(msbuildExe))
                         throw new FileNotFoundException("MSBuild.exe não encontrado.", msbuildExe);
 
-                    string args = $"\"{caminhoSln}\" /t:Build /p:Configuration=Release";
+                    if (args == null || string.IsNullOrEmpty(args))
+                        args = $"\"{caminhoSln}\" /t:Build /p:Configuration=Release";
 
                     var psi = new ProcessStartInfo
                     {

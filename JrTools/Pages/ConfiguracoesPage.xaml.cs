@@ -1,5 +1,6 @@
 using JrTools.Dto;
 using JrTools.Services;
+using JrTools.Services.Db;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
@@ -9,63 +10,49 @@ namespace JrTools.Pages
     public sealed partial class ConfiguracoesPage : Page
     {
         private ConfiguracoesdataObject _config;
+        private DadosPessoaisDataObject _dadosPessoais;
 
         public ConfiguracoesPage()
         {
             this.InitializeComponent();
-            // Executa após a página carregar
             this.Loaded += ConfiguracoesPage_Loaded;
         }
 
         private async void ConfiguracoesPage_Loaded(object sender, RoutedEventArgs e)
         {
             await CarregarConfiguracoes();
+            await CarregarDadosPessoais();
         }
+
+        #region Parametrizações
 
         private async System.Threading.Tasks.Task CarregarConfiguracoes()
         {
             try
             {
-                _config = await ConfigHelper.LerConfiguracoesAsync();
+                _config = await ConfigHelper.LerConfiguracoesAsync() ?? new ConfiguracoesdataObject();
 
-                if (_config == null)
-                    _config = new ConfiguracoesdataObject();
-
-                // Seta os controles com segurança
-                ProjetoComboBox.SelectedItem = _config.ProjetoSelecionado ?? "Default";
+                 
                 DiretorioBinarios.Text = _config.DiretorioBinarios ?? string.Empty;
                 DiretorioProducao.Text = _config.DiretorioProducao ?? string.Empty;
                 DiretorioEspesificos.Text = _config.DiretorioEspecificos ?? string.Empty;
             }
             catch (Exception ex)
             {
-                ContentDialog erroDialog = new ContentDialog
+                await new ContentDialog
                 {
                     Title = "Erro ao carregar configurações",
                     Content = ex.Message,
                     CloseButtonText = "OK",
                     XamlRoot = this.XamlRoot
-                };
-                _ = erroDialog.ShowAsync();
-
-                _config = new ConfiguracoesdataObject(); // fallback seguro
+                }.ShowAsync();
+                _config = new ConfiguracoesdataObject();
             }
         }
 
-        // Chamado quando o ComboBox muda
-        private async void ProjetoComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (_config == null) return;
-
-            _config.ProjetoSelecionado = ProjetoComboBox.SelectedItem?.ToString();
-            await ConfigHelper.SalvarConfiguracoesAsync(_config);
-        }
-
-        // Chamado quando os TextBox mudam
         private async void DiretorioBinarios_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (_config == null) return;
-
             _config.DiretorioBinarios = DiretorioBinarios.Text;
             await ConfigHelper.SalvarConfiguracoesAsync(_config);
         }
@@ -73,7 +60,6 @@ namespace JrTools.Pages
         private async void DiretorioProducao_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (_config == null) return;
-
             _config.DiretorioProducao = DiretorioProducao.Text;
             await ConfigHelper.SalvarConfiguracoesAsync(_config);
         }
@@ -81,9 +67,51 @@ namespace JrTools.Pages
         private async void DiretorioEspesificos_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (_config == null) return;
-
             _config.DiretorioEspecificos = DiretorioEspesificos.Text;
             await ConfigHelper.SalvarConfiguracoesAsync(_config);
         }
+
+        #endregion
+
+        #region Informações pessoais
+
+        private async System.Threading.Tasks.Task CarregarDadosPessoais()
+        {
+            try
+            {
+                _dadosPessoais = await PerfilPessoalHelper.LerConfiguracoesAsync() ?? new DadosPessoaisDataObject();
+
+                LoginSiteJR.Text = _dadosPessoais.LoginDevSite ?? string.Empty;
+                SenhaSiteJR.Text = _dadosPessoais.SenhaDevSite ?? string.Empty;
+                LoginRhWeb.Text = _dadosPessoais.LoginRhWeb ?? string.Empty;
+                SenhaRhWeb.Text = _dadosPessoais.SenhaRhWeb ?? string.Empty;
+            }
+            catch (Exception ex)
+            {
+                await new ContentDialog
+                {
+                    Title = "Erro ao carregar dados pessoais",
+                    Content = ex.Message,
+                    CloseButtonText = "OK",
+                    XamlRoot = this.XamlRoot
+                }.ShowAsync();
+
+                _dadosPessoais = new DadosPessoaisDataObject();
+            }
+        }
+
+        private async void DadosPessoais_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_dadosPessoais == null) return;
+
+            _dadosPessoais.LoginDevSite = LoginSiteJR.Text;
+            _dadosPessoais.SenhaDevSite = SenhaSiteJR.Text;
+            _dadosPessoais.LoginRhWeb = LoginRhWeb.Text;
+            _dadosPessoais.SenhaRhWeb = SenhaRhWeb.Text;
+
+            await PerfilPessoalHelper.SalvarConfiguracoesAsync(_dadosPessoais);
+        }
+
+        #endregion
     }
 }

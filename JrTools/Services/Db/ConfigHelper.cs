@@ -52,11 +52,11 @@ public static class ConfigHelper
     private static ConfiguracoesdataObject CriarConfigPadrao()
     {
         return new ConfiguracoesdataObject
-        {
-            ProjetoSelecionado = "Default",
+        { 
             DiretorioBinarios = "",
             DiretorioProducao = "",
             DiretorioEspecificos = ""
         };
     }
+
 }
