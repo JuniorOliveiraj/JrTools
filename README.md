@@ -35,7 +35,7 @@ Este aplicativo é de uso exclusivo para os colaboradores sendo nao ira funciona
  
 ## Stack utilizada
 
-**Frameworks:** .NET 6 ou superior, WinUI 3
+**Frameworks:** .NET 8 ou superior, WinUI 3
 
 **Sistema Operacional** Windows 10/11
 
