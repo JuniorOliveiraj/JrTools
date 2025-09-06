@@ -1,17 +1,11 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
+using Microsoft.UI;
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
+using System;
+using WinRT.Interop;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -35,6 +29,25 @@ namespace JrTools
             InitializeComponent();
             ContentFrame.NavigateToType(_homePage.GetType(), null, new FrameNavigationOptions() { IsNavigationStackEnabled = false });
             ContentFrame.Content = _homePage; // força usar a instância criada
+
+
+            // Obtenha o HWND da janela
+            IntPtr hWnd = WindowNative.GetWindowHandle(this);
+
+            // Obtenha o WindowId a partir do HWND
+            var windowId = Win32Interop.GetWindowIdFromWindow(hWnd);
+
+            // Agora pegue o AppWindow de forma correta
+            AppWindow appWindow = AppWindow.GetFromWindowId(windowId);
+
+            // Personalize a barra de título
+            var titleBar = appWindow.TitleBar;
+            titleBar.ExtendsContentIntoTitleBar = true;
+            titleBar.ButtonBackgroundColor = Colors.Transparent;
+            titleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
+
+            // Defina o CustomTitleBar (deve estar no XAML)
+            this.SetTitleBar(CustomTitleBar);
         }
 
         private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)

@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <Window
     x:Class="JrTools.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -14,38 +13,60 @@
     </Window.SystemBackdrop>
 
     <Grid>
-        <NavigationView x:Name="NavView" 
+        <!-- Custom Title Bar --> 
+        <Grid x:Name="CustomTitleBar"
+              Height="32"
+              Background="{ThemeResource SystemChromeAltMediumHighColor}"
+              VerticalAlignment="Top">
+
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <!-- Ícone do app -->
+                <Image Source="Assets/Square44x44Logo.scale-200.png"
+                       Height="20"
+                       Width="20"
+                       Margin="8,0,8,0" />
+
+                <!-- Nome do app -->
+                <TextBlock Text="JrTools"
+                   VerticalAlignment="Center"
+                   Foreground="White"
+                   FontWeight="Bold"
+                   FontSize="14"/>
+            </StackPanel>
+        </Grid>
+
+
+        <!-- Conteúdo Principal -->
+        <Grid Margin="0,32,0,0">
+            <NavigationView x:Name="NavView"
                         PaneTitle="Menu"
                         IsSettingsVisible="False"
                         IsPaneOpen="False"
                         PaneDisplayMode="Left"
-                         OpenPaneLength="250" 
+                        OpenPaneLength="250"
                         CompactPaneLength="60"
                         SelectionChanged="NavView_SelectionChanged">
 
-            <NavigationView.MenuItems>
-                <NavigationViewItem Icon="Home" Content="Home" Tag="Home"/>
-                <NavigationViewItem Icon="Play" Content="Rh prod" Tag="Rhprod"/>
-                
-                <NavigationViewItem Content="Buildar Projetos" Tag="BuildarProjeto">
-                    <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xEC7A;" />
-                    </NavigationViewItem.Icon>
-                </NavigationViewItem>
+                <NavigationView.MenuItems>
+                    <NavigationViewItem Icon="Home" Content="Home" Tag="Home"/>
+                    <NavigationViewItem Icon="Play" Content="Rh prod" Tag="Rhprod"/>
+                    <NavigationViewItem Content="Buildar Projetos" Tag="BuildarProjeto">
+                        <NavigationViewItem.Icon>
+                            <FontIcon Glyph="&#xEC7A;" />
+                        </NavigationViewItem.Icon>
+                    </NavigationViewItem>
+                    <NavigationViewItem Icon="People" Content="Espesificos" Tag="Espesificos"/>
+                    <NavigationViewItem Icon="ClosePane" Content="Fechar Processos" Tag="FecharProcessos"/>
+                    <NavigationViewItem Content="Configurações" Tag="config">
+                        <NavigationViewItem.Icon>
+                            <SymbolIcon Symbol="Setting"/>
+                        </NavigationViewItem.Icon>
+                    </NavigationViewItem>
+                </NavigationView.MenuItems>
 
-                <NavigationViewItem Icon="People" Content="Espesificos" Tag="Espesificos"/>
-                <NavigationViewItem Icon="ClosePane" Content="Fechar Processos" Tag="FecharProcessos"/>
-                
-                
-                <NavigationViewItem Content="Configurações" Tag="config">
-                    <NavigationViewItem.Icon>
-                        <SymbolIcon Symbol="Setting"/>
-                    </NavigationViewItem.Icon>
-                </NavigationViewItem>
-
-            </NavigationView.MenuItems>
-
-            <Frame x:Name="ContentFrame"/>
-        </NavigationView>
+                <Frame x:Name="ContentFrame"/>
+            </NavigationView>
+        </Grid>
     </Grid>
+
 </Window>
