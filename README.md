@@ -44,7 +44,7 @@ Este aplicativo é de uso exclusivo para os colaboradores sendo nao ira funciona
 
 ![App Screenshot](JrTools/Assets/Dashboard.png)
 
-![App Screenshot](https://github.com/JuniorOliveiraj/JrTools/blob/master/JrTools/Assets/Dashboard.png)
+![App Screenshot](JrTools/Assets/Ambiente espesifico.png)
 
 
 
