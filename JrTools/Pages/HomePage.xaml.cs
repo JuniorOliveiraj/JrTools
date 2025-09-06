@@ -23,9 +23,12 @@ namespace JrTools.Pages
     /// </summary>
     public sealed partial class HomePage : Page
     {
+  
         public HomePage()
         {
-            InitializeComponent();
+            this.InitializeComponent();
+            this.NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Required;
+            this.Loaded += RenderizarPages_Loaded;
 
 
             // Define horários padrão para facilitar o teste
@@ -34,7 +37,12 @@ namespace JrTools.Pages
             Entrada2TimePicker.Time = new TimeSpan(13, 0, 0);
             Saida2TimePicker.Time = new TimeSpan(17, 0, 0);
         }
+        private void RenderizarPages_Loaded(object sender, RoutedEventArgs e)
+        {
+            InnerFrame.Navigate(typeof(JrTools.Pages.FecharProcessos));
 
+           
+        }
         private void CalcularHorasButton_Click(object sender, RoutedEventArgs e)
         {
             CalculadoraInfoBar.IsOpen = false;

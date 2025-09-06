@@ -1,21 +1,14 @@
 using JrTools.Dto;
 using JrTools.Flows;
-using JrTools.Negocios;
 using JrTools.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
+using System.Threading;
+using System.Threading.Tasks;
+
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -34,7 +27,8 @@ namespace JrTools.Pages
         private const int MAX_TERMINAL_LENGTH = 15000;
         public BuildarProjeto()
         {
-            InitializeComponent();
+            this.InitializeComponent();
+            this.NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Required;
             ExpanderDotNet.RegisterPropertyChangedCallback(Expander.IsExpandedProperty, Expander_IsExpandedChanged);
             ExpanderDelphi.RegisterPropertyChangedCallback(Expander.IsExpandedProperty, Expander_IsExpandedChanged);
             this.Loaded += ConfiguracoesPage_Loaded;
@@ -51,7 +45,7 @@ namespace JrTools.Pages
         {
             try
             {
-                _config = await ConfigHelper.LerConfiguracoesAsync(); 
+                _config = await ConfigHelper.LerConfiguracoesAsync();
             }
             catch (Exception ex)
             {
@@ -66,8 +60,8 @@ namespace JrTools.Pages
             }
         }
         private void CarregarProjetos()
-        { 
-            var direto = _config?.DiretorioEspecificos ;
+        {
+            var direto = _config?.DiretorioEspecificos;
             ListaDeProjetos = Folders.ListarPastas(direto);
             ProjetoDotnetselecionadoComboBox.ItemsSource = ListaDeProjetos;
             ProjetoDotnetselecionadoComboBox.DisplayMemberPath = "Nome";
@@ -81,12 +75,12 @@ namespace JrTools.Pages
             }
             else
             {
-                ProjetoDotnetselecionadoComboBox.SelectedIndex = 0; 
+                ProjetoDotnetselecionadoComboBox.SelectedIndex = 0;
             }
         }
 
 
-     
+
         private void ProjetoDotnetComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (ProjetoDotnetselecionadoComboBox.SelectedItem is PastaInformacoesDto projetoSelecionado)
@@ -113,6 +107,8 @@ namespace JrTools.Pages
             }
         }
 
+
+
         private async void ProcessarDotnetButton_Click(object sender, RoutedEventArgs e)
         {
             if (SolucaoDotnetSelecionadoComboBox.SelectedItem is not SolucaoInformacoesDto solucaoSelecionada)
@@ -121,36 +117,92 @@ namespace JrTools.Pages
                 return;
             }
 
-            // Desabilita botão e ativa ProgressRing
             BuildarDotnetButton.IsEnabled = false;
             LoadingRing.IsActive = true;
 
+            string[] processos = { "BPrv230", "CS1" };
+            using var cts = new CancellationTokenSource();
+            var progresso = (IProgress<string>)new Progress<string>(msg => AppendTerminalLog(msg));
+
+            // Loop de manter processos fechados em background
+            var manterFechadoTask = Task.Run(async () =>
+            {
+                while (!cts.Token.IsCancellationRequested)
+                {
+                    foreach (var nomeProcesso in processos)
+                    {
+                        try
+                        {
+                            await ProcessKiller.KillByNameAsync(nomeProcesso, progresso);
+                            int qtd = await ProcessKiller.QuantidadeDeProcessos(nomeProcesso, progresso);
+                            progresso.Report($"{nomeProcesso} restante: {qtd}");
+                        }
+                        catch (Exception ex)
+                        {
+                            // Não quebra o app
+                            progresso.Report($"[WARN] Não foi possível matar {nomeProcesso}: {ex.Message}");
+                        }
+                    }
+                    try { await Task.Delay(3000, cts.Token); }
+                    catch (TaskCanceledException) { break; }
+                }
+            });
+
             try
             {
-                string caminhoSln = solucaoSelecionada.Caminho;
-                var buildHandler = new BinldarProjetoSrv();
-
-                var progresso = new Progress<string>(msg =>
-                {
-                    AppendTerminalLog(msg);
-                });
+                // Antes do build, garante que todos os processos estão fechados
+                await GarantirProcessosFechados(processos, progresso);
 
                 AppendTerminalLog($"Iniciando build da solução: {solucaoSelecionada.Nome}");
-                await buildHandler.BuildarProjetoAsync(caminhoSln, progresso);
-                AppendTerminalLog("Build concluído com sucesso!");
+
+                // Roda o build em Task separada para não travar UI
+                await Task.Run(async () =>
+                {
+                    try
+                    {
+                        var buildHandler = new BinldarProjetoSrv();
+                        await buildHandler.BuildarProjetoAsync(solucaoSelecionada.Caminho, progresso);
+                        AppendTerminalLog("Build concluído com sucesso!");
+
+                        try
+                        {
+                            var psi = new System.Diagnostics.ProcessStartInfo
+                            {
+                                FileName = "http://localhost/prod",
+                                UseShellExecute = true
+                            };
+                            System.Diagnostics.Process.Start(psi);
+                        }
+                        catch (Exception ex)
+                        {
+                            progresso.Report($"[WARN] Não foi possível abrir o navegador: {ex.Message}");
+                        }
+
+
+                    }
+                    catch (Exception ex)
+                    {
+                        // Só loga, não quebra app
+                        progresso.Report($"[ERRO] Build falhou: {ex.Message}");
+                    }
+                });
             }
             catch (Exception ex)
             {
-                // Mostra mensagem de erro no InfoBar
-                ShowValidationError($"Erro no build: {ex.Message}");
-                AppendTerminalLog($"Erro no build: {ex.Message}");
+                progresso.Report($"[ERRO] Falha inesperada: {ex.Message}");
             }
             finally
             {
+                cts.Cancel();               // Cancela loop de matar processos
+                await manterFechadoTask;     // Aguarda término seguro
+
                 BuildarDotnetButton.IsEnabled = true;
                 LoadingRing.IsActive = false;
             }
         }
+
+
+
 
 
 
@@ -177,6 +229,26 @@ namespace JrTools.Pages
                     ExpanderDotNet.IsExpanded = false;
             }
         }
+
+        private async Task GarantirProcessosFechados(string[] processos, IProgress<string> progresso)
+        {
+            foreach (var nomeProcesso in processos)
+            {
+                int tentativas = 0;
+                while (await ProcessKiller.QuantidadeDeProcessos(nomeProcesso, progresso) > 0)
+                {
+                    progresso.Report($"Processo {nomeProcesso} ainda ativo, tentando fechar...");
+                    await ProcessKiller.KillByNameAsync(nomeProcesso, progresso);
+                    tentativas++;
+                    if (tentativas > 10) // evita loop infinito
+                        throw new Exception($"Não foi possível encerrar o processo {nomeProcesso} antes do build.");
+                    await Task.Delay(1000); // espera 1 segundo antes da próxima tentativa
+                }
+            }
+        }
+
+
+
         private void ShowValidationError(string mensagem)
         {
             ValidationInfoBar.Message = mensagem;
@@ -184,14 +256,18 @@ namespace JrTools.Pages
         }
         private void AppendTerminalLog(string mensagem)
         {
-            TerminalOutput.Text += mensagem + "\n";
-
-            if (TerminalOutput.Text.Length > MAX_TERMINAL_LENGTH)
+            DispatcherQueue.TryEnqueue(() =>
             {
-                TerminalOutput.Text = TerminalOutput.Text.Substring(TerminalOutput.Text.Length - MAX_TERMINAL_LENGTH);
-            }
+                TerminalOutput.Text += mensagem + "\n";
 
-            TerminalScrollViewer.ChangeView(null, TerminalScrollViewer.ScrollableHeight, null);
+                if (TerminalOutput.Text.Length > MAX_TERMINAL_LENGTH)
+                {
+                    TerminalOutput.Text = TerminalOutput.Text.Substring(TerminalOutput.Text.Length - MAX_TERMINAL_LENGTH);
+                }
+
+                TerminalScrollViewer.ChangeView(null, TerminalScrollViewer.ScrollableHeight, null);
+            });
         }
+
     }
 }

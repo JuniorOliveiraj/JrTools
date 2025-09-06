@@ -34,6 +34,7 @@
                 </NavigationViewItem>
 
                 <NavigationViewItem Icon="People" Content="Espesificos" Tag="Espesificos"/>
+                <NavigationViewItem Icon="ClosePane" Content="Fechar Processos" Tag="FecharProcessos"/>
                 
                 
                 <NavigationViewItem Content="Configurações" Tag="config">

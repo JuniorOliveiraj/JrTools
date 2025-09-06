@@ -101,16 +101,15 @@
                 </ItemsControl>
 
                 <!-- CARD 4: Terminal de Processamento (Agora fora do ItemsControl e com estilo próprio) -->
-                <Border Style="{StaticResource FullWidthCardStyle}">
-                    <StackPanel Spacing="12">
-                        <TextBlock Text="Terminal de Processamento" Style="{ThemeResource SubtitleTextBlockStyle}"/>
-                        <Border Background="{ThemeResource TextControlBackgroundFocused}" MinHeight="150" CornerRadius="4" Padding="12">
-                            <TextBlock Text="Aguardando execução..." 
-                                       FontFamily="Consolas" 
-                                       TextWrapping="Wrap"
-                                       VerticalAlignment="Top"/>
-                        </Border>
-                    </StackPanel>
+                <Border Background="Black" CornerRadius="4" Padding="8">
+                    <ScrollViewer x:Name="TerminalScrollViewer" Height="200" VerticalScrollBarVisibility="Auto">
+                        <TextBlock x:Name="TerminalOutput"
+                                        Text="Aguardando execução..." 
+                                        FontFamily="Consolas" 
+                                        Foreground="White" 
+                                        TextWrapping="Wrap"
+                                        VerticalAlignment="Top"/>
+                    </ScrollViewer>
                 </Border>
 
                 <!-- BOTÃO DE AÇÃO PRINCIPAL -->

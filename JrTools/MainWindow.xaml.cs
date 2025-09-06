@@ -23,11 +23,20 @@ namespace JrTools
     /// </summary>
     public sealed partial class MainWindow : Window
     {
+        private Pages.HomePage _homePage = new Pages.HomePage();
+        private Pages.EspesificosPage _espesificosPage = new Pages.EspesificosPage();
+        private Pages.RhProdPage _rhProdPage = new Pages.RhProdPage();
+        private Pages.BuildarProjeto _buildarProjeto = new Pages.BuildarProjeto();
+        private Pages.FecharProcessos _fecharProcessos = new Pages.FecharProcessos();
+        private Pages.ConfiguracoesPage _configuracoesPage = new Pages.ConfiguracoesPage();
+
         public MainWindow()
         {
             InitializeComponent();
-            ContentFrame.Navigate(typeof(Pages.HomePage));
+            ContentFrame.NavigateToType(_homePage.GetType(), null, new FrameNavigationOptions() { IsNavigationStackEnabled = false });
+            ContentFrame.Content = _homePage; // força usar a instância criada
         }
+
         private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
         {
             if (args.SelectedItem is NavigationViewItem item)
@@ -35,25 +44,25 @@ namespace JrTools
                 switch (item.Tag)
                 {
                     case "Home":
-                        ContentFrame.Navigate(typeof(Pages.HomePage));
+                        ContentFrame.Content = _homePage;
                         break;
                     case "Espesificos":
-                        ContentFrame.Navigate(typeof(Pages.EspesificosPage));
+                        ContentFrame.Content = _espesificosPage;
                         break;
                     case "Rhprod":
-                        ContentFrame.Navigate(typeof(Pages.RhProdPage));
+                        ContentFrame.Content = _rhProdPage;
                         break;
                     case "BuildarProjeto":
-                        ContentFrame.Navigate(typeof(Pages.BuildarProjeto));
+                        ContentFrame.Content = _buildarProjeto;
+                        break;
+                    case "FecharProcessos":
+                        ContentFrame.Content = _fecharProcessos;
                         break;
                     case "config":
-                        ContentFrame.Navigate(typeof(Pages.ConfiguracoesPage));
+                        ContentFrame.Content = _configuracoesPage;
                         break;
-
                 }
             }
         }
-
-
     }
 }

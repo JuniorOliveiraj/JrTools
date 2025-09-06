@@ -1,9 +1,12 @@
 ﻿using JrTools.Dto;
 using JrTools.Negocios;
+using JrTools.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace JrTools.Pages
 {
@@ -11,8 +14,7 @@ namespace JrTools.Pages
     {
         public List<string> ListaDeProjetos { get; set; }
 
-        // Limite máximo de caracteres no terminal
-        private const int MAX_TERMINAL_LENGTH = 15000; // grande, mas mantém performance
+        private const int MAX_TERMINAL_LENGTH = 15000;
 
         public RhProdPage()
         {
@@ -43,13 +45,13 @@ namespace JrTools.Pages
         {
             try
             {
-                // Bloqueia botões e ativa loading
                 ProcessarButton2.IsEnabled = false;
                 LoadingRing.IsActive = true;
 
                 TerminalOutput.Text = "[INFO] Iniciando processamento...\n";
                 ValidationInfoBar.IsOpen = false;
 
+                // Cria DTO
                 var dto = new PageProdutoDataObject
                 {
                     Breach = ProjetoComboBox.SelectedItem?.ToString(),
@@ -68,23 +70,38 @@ namespace JrTools.Pages
                     return;
                 }
 
-                // Progress para atualizar terminal sem travar UI
-                var progresso = new Progress<string>(log => AppendTerminalLog(log));
+                string[] processos = { "BPrv230", "CS1", "Builder" };
 
+                // Executa o fluxo mantendo os processos fechados
                 var flow = new RhProdFlow();
-                var (success, logs, errorMessage) = await flow.ExecutarAsync(dto, progresso);
-
-                AppendTerminalLog(logs);
-
-                if (!success)
+                await ExecutarComProcessosFechadosAsync(processos, async progresso =>
                 {
-                    ValidationInfoBar.Message = errorMessage;
-                    ValidationInfoBar.IsOpen = true;
-                }
-                else
-                {
-                    AppendTerminalLog("[INFO] Processamento concluído com sucesso!");
-                }
+                    var (success, logs, errorMessage) = await flow.ExecutarAsync(dto, progresso);
+                    AppendTerminalLog(logs);
+
+                    if (!success)
+                    {
+                        ValidationInfoBar.Message = errorMessage;
+                        ValidationInfoBar.IsOpen = true;
+                    }
+                    else
+                    {
+                        AppendTerminalLog("[INFO] Processamento concluído com sucesso!");
+                        try
+                        {
+                            var psi = new System.Diagnostics.ProcessStartInfo
+                            {
+                                FileName = "http://localhost/prod",
+                                UseShellExecute = true
+                            };
+                            System.Diagnostics.Process.Start(psi);
+                        }
+                        catch (Exception ex)
+                        {
+                            AppendTerminalLog($"[WARN] Não foi possível abrir o navegador: {ex.Message}");
+                        }
+                    }
+                });
             }
             catch (Exception ex)
             {
@@ -94,23 +111,85 @@ namespace JrTools.Pages
             }
             finally
             {
-                // Reativa botões e desativa loading
                 ProcessarButton2.IsEnabled = true;
                 LoadingRing.IsActive = false;
             }
         }
 
-        // Adiciona logs no terminal com limite e rolagem automática
+        /// <summary>
+        /// Executa uma ação enquanto mantém os processos fechados.
+        /// </summary>
+        private async Task ExecutarComProcessosFechadosAsync(string[] processos, Func<IProgress<string>, Task> acao)
+        {
+            using var cts = new CancellationTokenSource();
+            var progresso = new Progress<string>(msg => AppendTerminalLog(msg));
+            var manterFechadoTask = ManterProcessosFechadosAsync(processos, progresso, cts.Token);
+
+            try
+            {
+                await acao(progresso);
+            }
+            finally
+            {
+                cts.Cancel();
+                await manterFechadoTask;
+            }
+        }
+
+        /// <summary>
+        /// Mantém os processos fechados em loop até que o token seja cancelado.
+        /// Só tenta matar processos que estejam rodando.
+        /// </summary>
+        private async Task ManterProcessosFechadosAsync(string[] processos, IProgress<string> progresso, CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                foreach (var nomeProcesso in processos)
+                {
+                    try
+                    {
+                        int qtd = await ProcessKiller.QuantidadeDeProcessos(nomeProcesso, progresso);
+
+                        if (qtd > 0) // Só tenta matar se houver processo rodando
+                        {
+                            await ProcessKiller.KillByNameAsync(nomeProcesso, progresso);
+                            progresso.Report($"{nomeProcesso} restante após tentativa de kill: {qtd}");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // Só loga, não quebra o app
+                        progresso.Report($"[WARN] Não foi possível matar {nomeProcesso}: {ex.Message}");
+                    }
+                }
+
+                try
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(3), token);
+                }
+                catch (TaskCanceledException)
+                {
+                    break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Adiciona logs no terminal com limite e rolagem automática
+        /// </summary>
         private void AppendTerminalLog(string mensagem)
         {
-            TerminalOutput.Text += mensagem + "\n";
-
-            if (TerminalOutput.Text.Length > MAX_TERMINAL_LENGTH)
+            DispatcherQueue.TryEnqueue(() =>
             {
-                TerminalOutput.Text = TerminalOutput.Text.Substring(TerminalOutput.Text.Length - MAX_TERMINAL_LENGTH);
-            }
+                TerminalOutput.Text += mensagem + "\n";
 
-            TerminalScrollViewer.ChangeView(null, TerminalScrollViewer.ScrollableHeight, null);
+                if (TerminalOutput.Text.Length > MAX_TERMINAL_LENGTH)
+                {
+                    TerminalOutput.Text = TerminalOutput.Text.Substring(TerminalOutput.Text.Length - MAX_TERMINAL_LENGTH);
+                }
+
+                TerminalScrollViewer.ChangeView(null, TerminalScrollViewer.ScrollableHeight, null);
+            });
         }
 
         private void ProjetoComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)

@@ -33,8 +33,9 @@ namespace JrTools.Pages
 
         public EspesificosPage()
         {
-            InitializeComponent();
-  
+            this.InitializeComponent();
+            this.NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Required;
+
             this.Loaded += ConfiguracoesPage_Loaded;
         }
 
@@ -122,7 +123,13 @@ namespace JrTools.Pages
                 NumeroProvedores = NumeroProvedoresTextBox.Text,
                 NomeSistemaBenner = NomeSistemaBennerTextBox.Text
             };
+            var progresso = new Progress<string>(msg =>
+            {
+                AppendTerminalLog(msg);
+            });
 
+
+            await ProcessKiller.ListProcessAsync(progresso);
             // Exemplo de uso do objeto: exibe um diálogo de sucesso
             /*  var dialog = new ContentDialog
               {
@@ -132,6 +139,19 @@ namespace JrTools.Pages
               };
 
               await dialog.ShowAsync();*/
+        }
+
+
+        private void AppendTerminalLog(string mensagem)
+        {
+            TerminalOutput.Text += mensagem + "\n";
+
+            if (TerminalOutput.Text.Length > MAX_TERMINAL_LENGTH)
+            {
+                TerminalOutput.Text = TerminalOutput.Text.Substring(TerminalOutput.Text.Length - MAX_TERMINAL_LENGTH);
+            }
+
+            TerminalScrollViewer.ChangeView(null, TerminalScrollViewer.ScrollableHeight, null);
         }
     }
 }

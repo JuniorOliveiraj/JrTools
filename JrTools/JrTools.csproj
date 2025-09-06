@@ -18,6 +18,7 @@
 	<ItemGroup>
 		<None Remove="Pages\BuildarProjeto.xaml" />
 		<None Remove="Pages\ConfiguracoesPage.xaml" />
+		<None Remove="Pages\FecharProcessos.xaml" />
 	</ItemGroup>
 	<ItemGroup>
 		<Page Remove="HomePage.xaml" />
@@ -77,6 +78,11 @@
 	</ItemGroup>
 	<ItemGroup>
 	  <Folder Include="Flows\Home\" />
+	</ItemGroup>
+	<ItemGroup>
+	  <Page Update="Pages\FecharProcessos.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </Page>
 	</ItemGroup>
 	<ItemGroup>
 	  <Page Update="Pages\BuildarProjeto.xaml">

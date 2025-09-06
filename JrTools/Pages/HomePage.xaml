@@ -23,6 +23,22 @@
         <Style x:Key="DashboardTileStyle" TargetType="Border" BasedOn="{StaticResource CardStyle}">
             <Setter Property="MinWidth" Value="200"/>
         </Style>
+
+
+
+
+        <!-- Novo estilo para o card de terminal, que ocupa a largura total -->
+        <Style x:Key="FullWidthCardStyle" TargetType="Border" BasedOn="{StaticResource ResponsiveCardStyle}">
+            <Setter Property="MaxWidth" Value="9999"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        </Style>
+
+        <!-- Novo estilo para Expander que ocupa largura total -->
+        <Style x:Key="FullWidthExpanderStyle" TargetType="Expander">
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Padding" Value="0"/>
+        </Style>
     </Page.Resources>
     
     
@@ -67,57 +83,68 @@
                     </Border>
                 </Grid>
 
-                <!-- Cards de Ferramentas -->
-                <StackPanel Spacing="16" Margin="0,16,0,0">
 
-                    <!-- Card: Calculadora de Horas -->
-                    <Border Style="{StaticResource CardStyle}">
-                        <StackPanel Spacing="12">
-                            <TextBlock Text="Calculadora de Horas" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                <!-- EXPANDER BUILDAR DOTNET -->
+                <Expander  x:Name="ExpanderCalculadoraHoras"  Style="{StaticResource FullWidthExpanderStyle}" IsExpanded="True">
+                    <Expander.Header>
+                        <TextBlock Text="Calculadora de Horas" VerticalAlignment="Center"/>
+                    </Expander.Header>
+                    <Expander.Content>
+                        <StackPanel Spacing="16" Margin="0,16,0,0">
 
-                            <Grid ColumnSpacing="24" RowSpacing="12" MaxWidth="500">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
+                            <!-- Card: Calculadora de Horas -->
+                            <Border Style="{StaticResource CardStyle}">
+                                <StackPanel Spacing="12"> 
 
-                                <TimePicker x:Name="Entrada1TimePicker" Header="Entrada 1" Grid.Row="0" Grid.Column="0" ClockIdentifier="24HourClock"/>
-                                <TimePicker x:Name="Saida1TimePicker" Header="Saída 1" Grid.Row="0" Grid.Column="1" ClockIdentifier="24HourClock"/>
-                                <TimePicker x:Name="Entrada2TimePicker" Header="Entrada 2" Grid.Row="1" Grid.Column="0" ClockIdentifier="24HourClock"/>
-                                <TimePicker x:Name="Saida2TimePicker" Header="Saída 2" Grid.Row="1" Grid.Column="1" ClockIdentifier="24HourClock"/>
+                                    <Grid ColumnSpacing="24" RowSpacing="12" MaxWidth="500">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
 
-                                <Button x:Name="CalcularHorasButton" Content="Calcular" Grid.Row="2" Grid.Column="0" Click="CalcularHorasButton_Click"/>
+                                        <TimePicker x:Name="Entrada1TimePicker" Header="Entrada 1" Grid.Row="0" Grid.Column="0" ClockIdentifier="24HourClock"/>
+                                        <TimePicker x:Name="Saida1TimePicker" Header="Saída 1" Grid.Row="0" Grid.Column="1" ClockIdentifier="24HourClock"/>
+                                        <TimePicker x:Name="Entrada2TimePicker" Header="Entrada 2" Grid.Row="1" Grid.Column="0" ClockIdentifier="24HourClock"/>
+                                        <TimePicker x:Name="Saida2TimePicker" Header="Saída 2" Grid.Row="1" Grid.Column="1" ClockIdentifier="24HourClock"/>
 
-                                <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                    <TextBlock Text="Total:" VerticalAlignment="Center" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
-                                    <TextBlock x:Name="TotalHorasTextBlock" Text="00:00" VerticalAlignment="Center" Style="{ThemeResource BodyStrongTextBlockStyle}" FontSize="18"/>
+                                        <Button x:Name="CalcularHorasButton" Content="Calcular" Grid.Row="2" Grid.Column="0" Click="CalcularHorasButton_Click"/>
+
+                                        <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                            <TextBlock Text="Total:" VerticalAlignment="Center" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                                            <TextBlock x:Name="TotalHorasTextBlock" Text="00:00" VerticalAlignment="Center" Style="{ThemeResource BodyStrongTextBlockStyle}" FontSize="18"/>
+                                        </StackPanel>
+
+                                        <InfoBar x:Name="CalculadoraInfoBar" Grid.Row="3" Grid.ColumnSpan="2" IsOpen="False" Severity="Error" Margin="0,12,0,0"/>
+
+                                    </Grid>
                                 </StackPanel>
-
-                                <InfoBar x:Name="CalculadoraInfoBar" Grid.Row="3" Grid.ColumnSpan="2" IsOpen="False" Severity="Error" Margin="0,12,0,0"/>
-
-                            </Grid>
+                            </Border>
                         </StackPanel>
-                    </Border>
+                    </Expander.Content>
+                </Expander>  
+                <!-- EXPANDER BUILDAR DOTNET -->
+                <Expander  x:Name="ExpanderManterFechado"  Style="{StaticResource FullWidthExpanderStyle}" IsExpanded="False">
+                    <Expander.Header>
+                        <TextBlock Text="Manter processos fechados" VerticalAlignment="Center"/>
+                    </Expander.Header>
+                    <Expander.Content>
+                        <StackPanel Spacing="12" HorizontalAlignment="Stretch">
+                            <!-- Dentro do seu HomePage.xaml -->
+                            <Border Style="{StaticResource CardStyle}">
+                                <StackPanel>
+                                    <Frame x:Name="InnerFrame"  />
+                                </StackPanel>
+                            </Border>
 
-                    <!-- Card: Menus Rápidos -->
-                    <Border Style="{StaticResource CardStyle}">
-                        <StackPanel Spacing="12">
-                            <TextBlock Text="Menus Rápidos" Style="{ThemeResource SubtitleTextBlockStyle}"/>
-                            <StackPanel Orientation="Horizontal" Spacing="12">
-                                <!-- TODO: Adicionar navegação para as páginas correspondentes -->
-                                <Button Content="Página de Processamento"/>
-                                <Button Content="Configurações"/>
-                            </StackPanel>
                         </StackPanel>
-                    </Border>
-
-                </StackPanel>
+                    </Expander.Content>
+                </Expander>
 
             </StackPanel>
         </ScrollViewer>
