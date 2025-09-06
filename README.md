@@ -44,7 +44,7 @@ Este aplicativo é de uso exclusivo para os colaboradores sendo nao ira funciona
 
 ![App Screenshot](https://github.com/JuniorOliveiraj/JrTools/blob/master/JrTools/Assets/Dashboard.png)
 
-![App Screenshot](https://raw.githubusercontent.com/JuniorOliveiraj/JrTools/refs/heads/master/JrTools/Assets/Ambiente%20espesifico.png?token=GHSAT0AAAAAADFOLITGGTUV5NYCID4KGARA2FXDSTA)
+![App Screenshot](https://github.com/JuniorOliveiraj/JrTools/blob/master/JrTools/Assets/Ambiente%20espesifico.png)
 
 
 
