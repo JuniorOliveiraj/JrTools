@@ -19,13 +19,15 @@ namespace JrTools.Flows
 
         public async Task ExecutarBuscarBinarios(IProgress<string> progresso, string destino )
         {
-            var branch = string.IsNullOrWhiteSpace(_param.BreachEspesificaDeTrabalho)
+            var branch = string.IsNullOrWhiteSpace(_param.BreachEspecificaDeTrabalho)
                 ? _param.Breach
-                : _param.BreachEspesificaDeTrabalho;
+                : _param.BreachEspecificaDeTrabalho;
 
             var binarios = new BinarioService();
             var branchInfo = BuscarBranchDeTrabalho(branch);
 
+            progresso.Report($"[INFO] Buscando binário para {branchInfo}...");
+            progresso.Report($"[INFO] Buscando binário para {branchInfo}...");
             progresso.Report($"[INFO] Buscando binário para {branchInfo}...");
 
             BinarioInfoDataObject devBin = await binarios.ObterBinarioAsync(branchInfo);

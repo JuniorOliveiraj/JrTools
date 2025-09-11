@@ -29,7 +29,7 @@ namespace JrTools.Dto
         /// <summary>
         /// Quando selecionado o campo Outros no select deve ser preenchida a breanch para se posicionar
         /// </summary>
-        public string? BreachEspesificaDeTrabalho { get; set; }
+        public string? BreachEspecificaDeTrabalho { get; set; }
 
         /// <summary>
         ///  matar rpocesso runner.exe antes de iniciar o build
@@ -44,6 +44,10 @@ namespace JrTools.Dto
         /// Matar processo privider.exe antes de iniciar o build
         /// </summary>
         public bool PrividerFechado { get; set; }
+        /// <summary>
+        /// Quando selecionado o campo Outros no select deve ser preenchida a a tag do git para se posicionar
+        /// </summary>
+        public string? TagEspecificaDeTrabalho { get; set; }
 
 
     }

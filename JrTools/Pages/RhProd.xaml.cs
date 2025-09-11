@@ -52,18 +52,24 @@ namespace JrTools.Pages
                 ValidationInfoBar.IsOpen = false;
 
                 // Cria DTO
+                var selectedProjeto = ProjetoComboBox.SelectedItem?.ToString();
+
                 var dto = new PageProdutoDataObject
                 {
-                    Breach = ProjetoComboBox.SelectedItem?.ToString(),
+                    Breach = selectedProjeto,
                     AtualizarBinarios = BaixarBinarioToggle.IsOn,
                     BuildarProjeto = CompilarEspecificosToggle.IsOn,
                     AtualizarBreach = GitPull.IsOn,
-                    BreachEspesificaDeTrabalho = ProjetoComboBox.SelectedItem?.ToString() == "Outro"
-                                                ? breachEspesifica.Text
-                                                : null
+                    BreachEspecificaDeTrabalho = selectedProjeto == "Outro"
+                                                    ? breachEspecifica.Text
+                                                    : string.Empty,
+                    TagEspecificaDeTrabalho = selectedProjeto == "Outro"
+                                                    ? (tagEspecifica.Text == "Nenhum" ? string.Empty : tagEspecifica.Text)
+                                                    : string.Empty
                 };
 
-                if (ProjetoComboBox.SelectedItem?.ToString() == "Outro" && string.IsNullOrWhiteSpace(breachEspesifica.Text))
+
+                if (ProjetoComboBox.SelectedItem?.ToString() == "Outro" && string.IsNullOrWhiteSpace(breachEspecifica.Text))
                 {
                     ValidationInfoBar.Message = "Informe um valor para o campo 'Breach'.";
                     ValidationInfoBar.IsOpen = true;
@@ -196,12 +202,17 @@ namespace JrTools.Pages
         {
             if (ProjetoComboBox.SelectedItem?.ToString() == "Outro")
             {
-                breachEspesifica.Visibility = Visibility.Visible;
+                breachEspecifica.Visibility = Visibility.Visible;
+                tagEspecifica.Visibility = Visibility.Visible;
+                tagEspecifica.Text = "Nenhum";
             }
             else
             {
-                breachEspesifica.Visibility = Visibility.Collapsed;
-                breachEspesifica.Text = string.Empty;
+                breachEspecifica.Visibility = Visibility.Collapsed;
+                breachEspecifica.Text = string.Empty;
+
+                tagEspecifica.Visibility = Visibility.Collapsed;
+                tagEspecifica.Text = string.Empty;
             }
         }
     }

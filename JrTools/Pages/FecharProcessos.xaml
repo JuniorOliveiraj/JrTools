@@ -47,7 +47,7 @@
                     </Grid.ColumnDefinitions>
 
                     <!-- Título -->
-                    <TextBlock Text="Buildar Projetos" 
+                    <TextBlock Text="Processos" 
                         Style="{ThemeResource TitleTextBlockStyle}" 
                         VerticalAlignment="Center"
                         Grid.Column="0"/>
@@ -63,51 +63,34 @@
                         <TextBlock Text="Fechar Processos" VerticalAlignment="Center"/>
                     </Expander.Header>
                     <Expander.Content>
-                        <StackPanel Spacing="12" HorizontalAlignment="Stretch">
+                        <StackPanel Spacing="5" HorizontalAlignment="Stretch">
                             <Border Style="{StaticResource FullWidthCardStyle}">
-                                <StackPanel Spacing="12">
-                                    <ItemsControl>
+                                <StackPanel Spacing="5">
+                                    <ItemsControl x:Name="ProcessosItemsControl">
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate>
                                                 <ItemsWrapGrid MaximumRowsOrColumns="5" Orientation="Horizontal"/>
                                             </ItemsPanelTemplate>
                                         </ItemsControl.ItemsPanel>
 
-                                        <ToggleButton x:Name="ManterTudoFechadoToggleButton"
-                                          Content="Manter Tudo Fechado"
-                                          Click="ManterTudoFechadoToggleButton_Click"
-                                          FontSize="16"
-                                          Margin="10"
-                                          Width="200" Height="200"
-                                          HorizontalContentAlignment="Center" 
-                                          VerticalContentAlignment="Center"/>
-                                        
-                                        
-                                        <ToggleButton x:Name="BPrv230ToggleButton"
-                                          Content="BPrv230"
-                                          FontSize="16"
-                                          Margin="10"
-                                          Width="200" Height="200"
-                                          IsChecked="True"
-                                          HorizontalContentAlignment="Center" 
-                                          VerticalContentAlignment="Center"/>
-                                        <ToggleButton x:Name="CS1ToggleButton"
-                                          Content="CS1"
-                                          FontSize="16"
-                                          Margin="10"
-                                          Width="200" Height="200"
-                                          IsChecked="True"/>
-                                        <ToggleButton x:Name="BuilderToggleButton"
-                                          Content="Builder"
-                                          FontSize="16"
-                                          Margin="10"
-                                          Width="200" Height="200"
-                                          HorizontalContentAlignment="Center" 
-                                          VerticalContentAlignment="Center"/>
- 
+                                        <!-- Mantém apenas o botão "Manter Tudo Fechado" fixo -->
+                                        <ToggleButton x:Name="ManterTudoFechadoToggleButton"                                              
+                                              Click="ManterTudoFechadoToggleButton_Click"
+                                              FontSize="16"
+                                              Margin="10"
+                                              Width="150" Height="150"
+                                              HorizontalContentAlignment="Center" 
+                                              VerticalContentAlignment="Center">
+                                            <TextBlock 
+                                                Text="Manter Tudo Fechado"
+                                                TextAlignment="Center"
+                                                VerticalAlignment="Center"
+                                                TextWrapping="Wrap"/>
+                                        </ToggleButton>
                                     </ItemsControl>
                                 </StackPanel>
                             </Border>
+
 
                             <!-- CARD 3: Terminal de Processamento -->
                             <Border Style="{StaticResource FullWidthCardStyle}">

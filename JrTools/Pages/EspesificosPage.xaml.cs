@@ -37,6 +37,7 @@ namespace JrTools.Pages
             this.NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Required;
 
             this.Loaded += ConfiguracoesPage_Loaded;
+
         }
 
 

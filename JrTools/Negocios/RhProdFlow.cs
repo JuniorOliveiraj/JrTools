@@ -1,10 +1,13 @@
 ﻿using JrTools.Dto;
 using JrTools.Flows;
 using JrTools.Services;
+using JrTools.Utils;
 using System;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Windows.System.Profile;
 
 namespace JrTools.Negocios
 {
@@ -31,9 +34,10 @@ namespace JrTools.Negocios
 
             try
             {
-                var branch = string.IsNullOrWhiteSpace(dto.BreachEspesificaDeTrabalho)
+
+                var branch = string.IsNullOrWhiteSpace(dto.BreachEspecificaDeTrabalho)
                     ? dto.Breach
-                    : dto.BreachEspesificaDeTrabalho;
+                    : dto.BreachEspecificaDeTrabalho;
 
                 Log($"[INFO] Iniciando fluxo com branch: {branch}");
 
@@ -42,11 +46,28 @@ namespace JrTools.Negocios
                 var cts = new CancellationTokenSource();
                 Task? guardianTask = null;
 
+                Log("[INFO] buscando tag");
 
+                ValidarTagBranch comitTagdto = new ValidarTagBranch();
+
+                if (!string.IsNullOrWhiteSpace(dto.TagEspecificaDeTrabalho))
+                    comitTagdto = await VerificarSeBranchContemTagAsync(progresso, dto.TagEspecificaDeTrabalho, branch);
+
+                if (!string.IsNullOrWhiteSpace(dto.TagEspecificaDeTrabalho) && !comitTagdto.status)
+                    throw new FluxoException(comitTagdto.mensagem);
 
 
                 var checkoutHandler = new GitRhProdHandler(_gitService, branch);
-                await checkoutHandler.ExecutarCheckOutAsync(progresso, config.DiretorioProducao);
+                if (!string.IsNullOrEmpty(dto.TagEspecificaDeTrabalho) && comitTagdto.status && !string.IsNullOrEmpty(comitTagdto.commit))
+                {
+                    progresso.Report($"[INFO] commit encontrado = {comitTagdto.commit}");
+                    await checkoutHandler.ExecutarResetHardAsync(progresso, config.DiretorioProducao, comitTagdto.commit);
+                }
+                else
+                {
+                    progresso.Report($"[INFO] dando checkout em: {branch}");
+                    await checkoutHandler.ExecutarCheckOutAsync(progresso, config.DiretorioProducao);
+                }
 
                 if (dto.AtualizarBreach)
                 {
@@ -77,6 +98,7 @@ namespace JrTools.Negocios
                     var buildHandler = new BinldarProjetoSrv();
                     await buildHandler.BuildarProjetoAsync(caminhoSln, progresso);
                 }
+
 
                 Log("[INFO] Fluxo concluído com sucesso!");
                 return (true, logs.ToString(), string.Empty);
@@ -109,5 +131,64 @@ namespace JrTools.Negocios
             }
             progresso?.Report("[INFO] Guardião BPrv230 finalizado.");
         }
+
+        private async Task<ValidarTagBranch> VerificarSeBranchContemTagAsync(
+            IProgress<string> progresso,
+            string tag,
+            string branchParaVerificar)
+        {
+            var config = await ConfigHelper.LerConfiguracoesAsync();
+            progresso?.Report($"🔍 iniciando... {tag} {config.DiretorioProducao} ");
+
+            var checkoutHandler = new GitRhProdHandler(_gitService, "");
+            var branches = await checkoutHandler.ExecutarCheckOutPorTagAsync(progresso, config.DiretorioProducao, tag);
+            ValidarTagBranch retorno = new ValidarTagBranch();
+
+            bool contem = branches.Any(b =>
+                b.Replace("*", "").Trim()
+                 .Equals($"origin/{branchParaVerificar}", StringComparison.OrdinalIgnoreCase));
+
+            if (!contem)
+            {
+                retorno.status = false;
+                retorno.mensagem = $"⚠️  A tag {tag} NÃO está presente na branch origin/{branchParaVerificar}";
+                progresso?.Report($"⚠️  A tag {tag} NÃO está presente na branch origin/{branchParaVerificar}");
+            }
+
+            // >>> NOVO: Obtém commits da tag e da branch para comparação
+            var commitTag = await checkoutHandler.ObterCommitDeTagAsync(progresso, config.DiretorioProducao, tag);
+            var commitBranch = await checkoutHandler.ObterCommitDeBranchAsync(progresso, config.DiretorioProducao, $"origin/{branchParaVerificar}");
+
+
+            progresso?.Report($"🔍 Commit da TAG {tag}: {commitTag}");
+            progresso?.Report($"🔍 Commit da BRANCH origin/{branchParaVerificar}: {commitBranch}");
+
+            if (commitTag == commitBranch)
+            {
+                retorno.status = true;
+                retorno.commit = commitBranch;
+                progresso?.Report($"✅ Tag e branch apontam para o mesmo commit. {commitBranch}");
+            }
+            else
+            {
+                retorno.status = false;
+                retorno.mensagem = $"⚠️ Tag e branch apontam para commits diferentes.";
+                progresso?.Report($"⚠️ Tag e branch apontam para commits diferentes.");
+            }
+
+            return retorno;
+
+
+        }
+
+        private class ValidarTagBranch
+        {
+            public string? mensagem { get; set; }
+            public bool status { get; set; }
+            public string? commit { get; set; }
+        }
+
+
+
     }
 }

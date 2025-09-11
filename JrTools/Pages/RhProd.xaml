@@ -17,7 +17,6 @@
             <Setter Property="Padding" Value="16"/>
             <Setter Property="Margin" Value="8"/>
             <Setter Property="MinWidth" Value="320"/>
-            <Setter Property="MaxWidth" Value="500"/>
         </Style>
 
         <!-- Novo estilo para o card de terminal, que ocupa a largura total -->
@@ -84,7 +83,8 @@
                             <ToggleSwitch x:Name="BaixarBinarioToggle" Header="Baixar binário atualizado" IsOn="True"/>
                             <ToggleSwitch x:Name="CompilarEspecificosToggle" Header="Compilar Produto" IsOn="True"/>
                             <ToggleSwitch x:Name="GitPull" Header="Atualizar breach" IsOn="False"/>
-                            <TextBox x:Name="breachEspesifica" Header="Breach" Visibility="Collapsed"/>
+                            <TextBox x:Name="breachEspecifica" Header="Breach" Visibility="Collapsed"/>
+                            <TextBox x:Name="tagEspecifica" Header="Build" Visibility="Collapsed"  Text="Nenhum"/>
                         </StackPanel>
                     </Border>
 
@@ -110,7 +110,8 @@
                                            FontFamily="Consolas" 
                                            Foreground="White" 
                                            TextWrapping="Wrap"
-                                           VerticalAlignment="Top"/>
+                                           VerticalAlignment="Top"
+                                           IsTextSelectionEnabled="True"/>
                             </ScrollViewer>
                         </Border>
                     </StackPanel>

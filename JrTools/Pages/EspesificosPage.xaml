@@ -16,8 +16,8 @@
             <Setter Property="CornerRadius" Value="8"/>
             <Setter Property="Padding" Value="16"/>
             <Setter Property="Margin" Value="8"/>
-            <Setter Property="MinWidth" Value="320"/>
-            <Setter Property="MaxWidth" Value="480"/>
+            <Setter Property="MinWidth" Value="320"/> 
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
         </Style>
 
         <!-- Novo estilo para o card de terminal, que ocupa a largura total -->
@@ -30,7 +30,7 @@
     <Grid>
         <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16">
             <StackPanel Spacing="16">
- 
+
                 <!-- BOTÃO DE AÇÃO PRINCIPAL -->
                 <Button x:Name="ProcessarButton2" 
                         Content="PROCESSAR"
@@ -49,56 +49,59 @@
                 <!-- Barra para exibir mensagens de erro/validação -->
                 <InfoBar x:Name="ValidationInfoBar" IsOpen="False" Severity="Error" Margin="0,0,8,0"/>
 
-                <!-- Container para os cards responsivos (exceto o terminal) -->
-                <ItemsControl>
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <ItemsWrapGrid Orientation="Horizontal"/>
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
 
-                    <!-- CARD 1: Opções de Compilação -->
-                    <Border Style="{StaticResource ResponsiveCardStyle}">
-                        <StackPanel Spacing="12">
-                            <TextBlock Text="Opções de Compilação" Style="{ThemeResource SubtitleTextBlockStyle}"/>
-                            <ToggleSwitch x:Name="BaixarBinarioToggle" Header="Baixar binário atualizado"/>
-                            <ToggleSwitch x:Name="CriarAtalhoToggle" Header="Criar atalho para pasta de compilação" IsOn="True"/>
-                            <ToggleSwitch x:Name="CompilarEspecificosToggle" Header="Compilar Específicos"/>
-                            <ToggleSwitch x:Name="CriarAplicacaoIISToggle" Header="Criar aplicação IIS" IsOn="True"/>
-                            <ToggleSwitch x:Name="RestaurarWebAppToggle" Header="Restaurar pasta do WebApp"/>
-                        </StackPanel>
-                    </Border>
+                <Border Style="{StaticResource FullWidthCardStyle}">
+                    <StackPanel Spacing="5">
+                        <ItemsControl x:Name="ProcessosItemsControl">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <ItemsWrapGrid Orientation="Horizontal"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
 
-                    <!-- CARD 2: Configuração da Aplicação Web -->
-                    <Border Style="{StaticResource ResponsiveCardStyle}">
-                        <StackPanel Spacing="12">
-                            <TextBlock Text="Configuração da Aplicação Web" Style="{ThemeResource SubtitleTextBlockStyle}"/>
-                            <TextBox x:Name="EnderecoServidorTextBox" Header="Endereço do Benner Server" Text="BNU-RHVAPI001" />
-                            <TextBox x:Name="UsuarioInternoTextBox" Header="Nome de usuário interno" Text="sysdba" />
-                            <PasswordBox x:Name="SenhaInternoPasswordBox" Header="Senha do usuário interno" Password="******" />
-                            <Button Content="Abrir aplicativo no navegador" HorizontalAlignment="Left" Margin="0,10,0,0"/>
-                        </StackPanel>
-                    </Border>
 
-                    <!-- CARD 3: Outras Informações -->
-                    <Border Style="{StaticResource ResponsiveCardStyle}">
-                        <StackPanel Spacing="12">
-                            <TextBlock Text="Outras Informações" Style="{ThemeResource SubtitleTextBlockStyle}"/>
-                            <Grid ColumnDefinitions="*,*" ColumnSpacing="16" RowSpacing="8">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
-                                <TextBox x:Name="SiteTextBox" Grid.Row="0" Grid.Column="0" Header="Site" Text="Default Web Site"/>
-                                <TextBox x:Name="NomeAplicacaoTextBox" Grid.Row="0" Grid.Column="1" Header="Nome da aplicação" Text="ESPRH_CAJ_DESENV"/>
-                                <TextBox x:Name="PoolTextBox" Grid.Row="1" Grid.Column="0" Header="Pool" Text="RHPool"/>
-                                <TextBox x:Name="NumeroProvedoresTextBox" Grid.Row="1" Grid.Column="1" Header="Nº de Provedores" Text="2"/>
-                                <TextBox x:Name="NomeSistemaBennerTextBox" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Header="Nome do sistema no Benner Server" Text="ESPRH_CAJ_DESENV"/>
-                            </Grid>
-                        </StackPanel>
-                    </Border>
-                </ItemsControl>
+
+                            <!-- CARD 1 -->
+                            <Border Style="{StaticResource ResponsiveCardStyle}"   >
+                                <StackPanel Spacing="12">
+                                    <TextBlock Text="Opções de Compilação" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                                    <ToggleSwitch x:Name="BaixarBinarioToggle" Header="Baixar binário atualizado"/>
+                                    <ToggleSwitch x:Name="CriarAtalhoToggle" Header="Criar atalho para pasta de compilação" IsOn="True"/>
+                                    <ToggleSwitch x:Name="CompilarEspecificosToggle" Header="Compilar Específicos"/>
+                                    <ToggleSwitch x:Name="CriarAplicacaoIISToggle" Header="Criar aplicação IIS" IsOn="True"/>
+                                    <ToggleSwitch x:Name="RestaurarWebAppToggle" Header="Restaurar pasta do WebApp"/>
+                                </StackPanel>
+                            </Border>
+                            <!-- CARD 2 -->
+                            <Border Style="{StaticResource ResponsiveCardStyle}" >
+                                <StackPanel Spacing="12">
+                                    <TextBlock Text="Configuração da Aplicação Web" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                                    <TextBox x:Name="EnderecoServidorTextBox" Header="Endereço do Benner Server" Text="BNU-RHVAPI001" />
+                                    <TextBox x:Name="UsuarioInternoTextBox" Header="Nome de usuário interno" Text="sysdba" />
+                                    <PasswordBox x:Name="SenhaInternoPasswordBox" Header="Senha do usuário interno" Password="******" />
+                                    <Button Content="Abrir aplicativo no navegador" HorizontalAlignment="Left" Margin="0,10,0,0"/>
+                                </StackPanel>
+                            </Border>
+                            <!-- CARD 3 -->
+                            <Border Style="{StaticResource ResponsiveCardStyle}"  >
+                                <StackPanel Spacing="12">
+                                    <TextBlock Text="Outras Informações" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+
+                                    <TextBox x:Name="SiteTextBox"   Header="Site" Text="Default Web Site"/>
+                                    <TextBox x:Name="NomeAplicacaoTextBox"  Header="Nome da aplicação" Text="ESPRH_CAJ_DESENV"/>
+                                    <TextBox x:Name="PoolTextBox"   Header="Pool" Text="RHPool"/>
+                                    <TextBox x:Name="NumeroProvedoresTextBox"  Header="Nº de Provedores" Text="2"/>
+                                    <TextBox x:Name="NomeSistemaBennerTextBox"   Grid.ColumnSpan="2" Header="Nome do sistema no Benner Server" Text="ESPRH_CAJ_DESENV"/>
+
+                                </StackPanel>
+                            </Border>
+
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                   
+                   
 
                 <!-- CARD 4: Terminal de Processamento (Agora fora do ItemsControl e com estilo próprio) -->
                 <Border Background="Black" CornerRadius="4" Padding="8">

@@ -56,12 +56,21 @@
                         </NavigationViewItem.Icon>
                     </NavigationViewItem>
                     <NavigationViewItem Icon="People" Content="Espesificos" Tag="Espesificos"/>
-                    <NavigationViewItem Icon="ClosePane" Content="Fechar Processos" Tag="FecharProcessos"/>
+
+                    <NavigationViewItem   Content="Fechar Processos" Tag="FecharProcessos">
+                        <NavigationViewItem.Icon>
+                            <SymbolIcon Symbol="Cancel"/>
+                        </NavigationViewItem.Icon>
+                    </NavigationViewItem>
+                    
+                    
+                    
                     <NavigationViewItem Content="Configurações" Tag="config">
                         <NavigationViewItem.Icon>
                             <SymbolIcon Symbol="Setting"/>
                         </NavigationViewItem.Icon>
                     </NavigationViewItem>
+                    
                 </NavigationView.MenuItems>
 
                 <Frame x:Name="ContentFrame"/>
