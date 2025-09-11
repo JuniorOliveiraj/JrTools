@@ -35,16 +35,16 @@ Este aplicativo é de uso exclusivo para os colaboradores sendo nao ira funciona
  
 ## Stack utilizada
 
-**Frameworks:** .NET 6 ou superior, WinUI 3
+**Frameworks:** .NET 8 ou superior, WinUI 3
 
 **Sistema Operacional** Windows 10/11
 
 
 ## Screenshots
 
-![App Screenshot](JrTools/Assets/Dashboard.png)
+![App Screenshot](https://github.com/JuniorOliveiraj/JrTools/blob/master/JrTools/Assets/_Dashboard.png)
 
-![App Screenshot](https://github.com/JuniorOliveiraj/JrTools/blob/master/JrTools/Assets/Ambiente%20espesifico.png)
+![App Screenshot](https://github.com/JuniorOliveiraj/JrTools/blob/master/JrTools/Assets/_Ambiente%20espesifico.png)
 
 
 
