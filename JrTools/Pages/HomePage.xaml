@@ -62,7 +62,7 @@
                     <Border Grid.Column="0" Style="{StaticResource DashboardTileStyle}">
                         <StackPanel Spacing="8">
                             <TextBlock Text="Banco de Horas" Style="{ThemeResource CaptionTextBlockStyle}" Opacity="0.8"/>
-                            <TextBlock Text="42h 30m" Style="{ThemeResource HeaderTextBlockStyle}" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                            <TextBlock x:Name="BancoDeHorasText"  Text="42h 30m" Style="{ThemeResource HeaderTextBlockStyle}" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
                         </StackPanel>
                     </Border>
 
@@ -70,7 +70,7 @@
                     <Border Grid.Column="1" Style="{StaticResource DashboardTileStyle}">
                         <StackPanel Spacing="8">
                             <TextBlock Text="Previsão de Saída (Hoje)" Style="{ThemeResource CaptionTextBlockStyle}" Opacity="0.8"/>
-                            <TextBlock Text="17:45" Style="{ThemeResource HeaderTextBlockStyle}"/>
+                            <TextBlock x:Name="HorariosaidaPrevistaText"  Text="17:45" Style="{ThemeResource HeaderTextBlockStyle}"/>
                         </StackPanel>
                     </Border>
 

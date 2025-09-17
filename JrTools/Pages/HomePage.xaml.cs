@@ -1,3 +1,5 @@
+using JrTools.Services;
+using JrTools.Services.Db;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -10,6 +12,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Text.Json;
+using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 
@@ -23,25 +27,147 @@ namespace JrTools.Pages
     /// </summary>
     public sealed partial class HomePage : Page
     {
-  
+
+
         public HomePage()
         {
             this.InitializeComponent();
             this.NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Required;
             this.Loaded += RenderizarPages_Loaded;
+            BuscarBancoDeHorasAsync();
+            
 
-
-            // Define horários padrão para facilitar o teste
-            Entrada1TimePicker.Time = new TimeSpan(7, 0, 0);
-            Saida1TimePicker.Time = new TimeSpan(12, 0, 0);
-            Entrada2TimePicker.Time = new TimeSpan(13, 0, 0);
-            Saida2TimePicker.Time = new TimeSpan(17, 0, 0);
         }
         private void RenderizarPages_Loaded(object sender, RoutedEventArgs e)
         {
+            DefinirHorarioPrevistoAsync();
             InnerFrame.Navigate(typeof(JrTools.Pages.FecharProcessos));
+        }
 
-           
+        private async Task DefinirHorarioPrevistoAsync()
+        {
+            var dados = await PerfilPessoalHelper.LerConfiguracoesAsync();
+
+            var buscarApi = new ApiBennerService(dados);
+
+            string resultadoApiString = await buscarApi.GetAsync("/api/V1/RH/Ponto/Colaborador/PontoMovel");
+            DateTime hoje = DateTime.Today;
+
+            // Horário padrão
+            DateTime entrada1 = hoje.AddHours(8);
+            DateTime saida1 = hoje.AddHours(12);
+            DateTime entrada2 = hoje.AddHours(13);
+            DateTime saida2 = hoje.AddHours(17).AddMinutes(30);
+
+            // Variável para saída prevista
+            DateTime saidaPrevista = hoje.AddHours(17).AddMinutes(30); // default 17:30
+
+            // Parse do JSON
+            using var doc = JsonDocument.Parse(resultadoApiString);
+            var dias = doc.RootElement.GetProperty("Dias");
+
+            JsonElement? diaAtual = null;
+
+            // Encontra o dia de hoje
+            foreach (var dia in dias.EnumerateArray())
+            {
+                var dataApuracao = dia.GetProperty("DataApuracao").GetString();
+                if (DateTime.Parse(dataApuracao).Date == hoje)
+                {
+                    diaAtual = dia;
+                    break;
+                }
+            }
+
+            // Lista de batidas do dia atual
+            List<DateTime> marcacoes = new List<DateTime>();
+            if (diaAtual.HasValue)
+            {
+                foreach (var m in diaAtual.Value.GetProperty("Marcacoes").EnumerateArray())
+                {
+                    var hora = DateTime.Parse(m.GetProperty("HoraMarcacao").GetString());
+                    marcacoes.Add(hora);
+                }
+
+                marcacoes = marcacoes.OrderBy(x => x).ToList();
+
+                if (marcacoes.Count >= 1)
+                {
+                    entrada1 = marcacoes[0];
+
+                    if (marcacoes.Count >= 2)
+                    {
+                        saida1 = marcacoes[1];
+
+                        var horasManha = saida1 - entrada1;
+
+                        // Calcula a saída prevista com base na jornada de 8h30
+                        var jornadaTotal = TimeSpan.FromHours(8.5);
+                        var restante = jornadaTotal - horasManha;
+
+                        // Se já tem entrada da tarde, calcula a saída prevista
+                        if (marcacoes.Count >= 3)
+                        {
+                            entrada2 = marcacoes[2];
+                            saidaPrevista = entrada2 + restante;
+                        }
+                        else
+                        {
+                            entrada2 = saida1.AddHours(1); // almoço mínimo 1h
+                            saidaPrevista = entrada2 + restante;
+                        }
+
+                        // Se a saída final já foi batida, podemos ignorar para a variável prevista
+                        // saida2 = marcacoes.Count >= 4 ? marcacoes[3] : saida2;
+                    }
+                    else
+                    {
+                        // Apenas 1 batida
+                        saida1 = entrada1.AddHours(4);
+                        entrada2 = saida1.AddHours(1);
+                        saidaPrevista = entrada2.AddHours(4.5);
+                    }
+                }
+            }
+
+            // Atualiza os TimePickers (com os valores reais)
+            Entrada1TimePicker.Time = entrada1.TimeOfDay;
+            Saida1TimePicker.Time = saida1.TimeOfDay;
+            Entrada2TimePicker.Time = entrada2.TimeOfDay;
+            Saida2TimePicker.Time = saida2.TimeOfDay;
+            var horasaida = saidaPrevista.TimeOfDay;
+
+            HorariosaidaPrevistaText.Text = $"{horasaida.Hours:D2}:{horasaida.Minutes:D2}";
+
+        }
+
+
+
+
+        private async Task BuscarBancoDeHorasAsync()
+        {
+            var dados = await PerfilPessoalHelper.LerConfiguracoesAsync();
+
+            var buscarApi = new ApiBennerService(dados);
+
+            string resultado = await buscarApi.GetAsync(
+                "/api/v1/RH/Ponto/Colaborador/BancoHoras"
+            );
+
+            // Faz o parse do JSON
+            using var doc = JsonDocument.Parse(resultado);
+
+            // Pega o valor de "SaldoFinal"
+            string saldoFinal = doc.RootElement.GetProperty("SaldoFinal").GetString();
+
+            // Formata como você quer
+            string saldoFormatado = saldoFinal.Insert(2, "h ") + "m";
+            string saldoFormatado2 = saldoFormatado.Replace(":", "");
+
+            BancoDeHorasText.Text = saldoFormatado2;
+            // var obj = JsonSerializer.Deserialize<SeuDto>(resultado);
+
+
         }
         private void CalcularHorasButton_Click(object sender, RoutedEventArgs e)
         {
