@@ -12,7 +12,6 @@ namespace JrTools.Services
 
         public GeminiService(string apiKey, string modelName = "models/gemini-2.0-flash")
         {
-            // Inicializa o cliente com a API Key
             var googleAI = new GoogleAi(apiKey);
             _geminiModel = googleAI.CreateGenerativeModel(modelName);
         }
@@ -25,7 +24,6 @@ namespace JrTools.Services
             try
             {
                 progresso?.Report("\n entrou no try");
-                // Streaming de resposta
                 await foreach (var chunk in _geminiModel.StreamContentAsync(prompt))
                 {
                     respostaFinal += chunk.Text;
@@ -52,14 +50,12 @@ namespace JrTools.Services
                 var request = new GenerateContentRequest();
                 request.AddText(prompt);
 
-                // Adiciona arquivos locais
                 if (arquivosLocais != null)
                 {
                     foreach (var arquivo in arquivosLocais)
                         request.AddInlineFile(arquivo);
                 }
 
-                // Adiciona arquivos remotos
                 if (arquivosRemotos != null)
                 {
                     foreach (var (url, mimeType) in arquivosRemotos)
@@ -75,9 +71,6 @@ namespace JrTools.Services
                 return $"💥 Erro ao processar arquivos: {ex}";
             }
         }
-
-
-
 
     }
 }

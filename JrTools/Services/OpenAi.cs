@@ -41,11 +41,11 @@ namespace JrTools.Services
                 progresso?.Report($"\nDetalhes: {httpEx.Message}");
                 return "[Erro de conexão com a API]";
             }
-            catch (ClientResultException apiEx) // exceção da lib para status de erro HTTP
+            catch (ClientResultException apiEx)
             {
                 if (apiEx.Status == 401 || apiEx.Status == 403)
                 {
-                    progresso?.Report("\n🔑 Erro de autenticação: verifique sua API Key.");
+                    progresso?.Report("\nErro de autenticação: verifique sua API Key.");
                     progresso?.Report("\nSe você está usando uma conta gratuita, pode ser que ela não tenha créditos.");
                     progresso?.Report("\n");
                     progresso?.Report("\n");

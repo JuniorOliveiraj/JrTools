@@ -67,7 +67,7 @@
 
                     <NavigationViewItem Content="Documentador" Tag="Documentador">
                         <NavigationViewItem.Icon>
-                            <SymbolIcon Symbol="Setting"/>
+                            <SymbolIcon Symbol="Page"/>
                         </NavigationViewItem.Icon>
                     </NavigationViewItem>
 
