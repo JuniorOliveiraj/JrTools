@@ -59,6 +59,7 @@
                     <PasswordBox x:Name="SenhaSiteJR" Header="Senha site JR" PasswordChanged="SenhaSiteJR_PasswordChanged"  Password="*********"/>
                     <TextBox x:Name="LoginRhWeb" Header="Login RhWeb" TextChanged="DadosPessoais_TextChanged"/>
                     <PasswordBox x:Name="SenhaRhWeb" Header="Senha RhWeb" PasswordChanged="SenhaSiteJR_PasswordChanged" Password="*********"/>
+                    <PasswordBox x:Name="ApiGeminiPasswordBox" Header="Token api Gemini" PasswordChanged="ApiTokenGemini_PasswordChanged" Password="*****************************"/>
                 </StackPanel>
             </Border>
 

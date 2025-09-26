@@ -18,5 +18,8 @@ namespace JrTools.Dto
         public string? TokenDevSite { get; set; }
         public string? TokenRhWeb { get; set; }
         public DateTime? TokenRhExpiraEm { get; set; }
+
+
+        public string? ApiGemini { get; set; }
     }
 }

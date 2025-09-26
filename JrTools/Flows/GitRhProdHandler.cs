@@ -31,6 +31,25 @@ namespace JrTools.Flows
             await ExecutarGitCommandAsync($"checkout {_branch}", progresso, $"[CHECKOUT {_branch}]", diretorio);
         }
 
+        public async Task<string> ObterAlteracoesDeCommitAsync(
+            IProgress<string> progresso,
+            string diretorio,
+            string commitId)
+        {
+            if (string.IsNullOrWhiteSpace(commitId))
+                throw new ArgumentException("Commit não pode ser vazio.", nameof(commitId));
+
+            var resultado = await ExecutarGitCommandComRetornoAsync(
+                $"show {commitId}",
+                progresso,
+                $"[GIT SHOW {commitId}]",
+                diretorio
+            );
+
+            return resultado;
+        }
+
+
         public async Task ExecutarResetHardAsync(IProgress<string> progresso, string diretorio, string commit)
         {
             if (string.IsNullOrWhiteSpace(commit))
@@ -94,7 +113,11 @@ namespace JrTools.Flows
 
 
 
-        private async Task<string> ExecutarGitCommandComRetornoAsync(string arguments, IProgress<string> progresso, string titulo, string diretorio)
+        private async Task<string> ExecutarGitCommandComRetornoAsync(
+            string arguments,
+            IProgress<string> progresso,
+            string titulo,
+            string diretorio)
         {
             var psi = new ProcessStartInfo
             {
@@ -112,7 +135,6 @@ namespace JrTools.Flows
             var saida = new StringBuilder();
 
             using var processo = new Process { StartInfo = psi, EnableRaisingEvents = true };
-            var tcs = new TaskCompletionSource<bool>();
 
             processo.OutputDataReceived += (s, e) =>
             {
@@ -129,22 +151,21 @@ namespace JrTools.Flows
                     progresso?.Report($"{titulo} [ERRO]: {e.Data}");
             };
 
-            processo.Exited += (s, e) => tcs.SetResult(true);
-
             progresso?.Report($"{titulo} iniciando...");
             processo.Start();
             processo.BeginOutputReadLine();
             processo.BeginErrorReadLine();
 
-            await tcs.Task;
+            await processo.WaitForExitAsync(); // ✅ NÃO bloqueia thread
 
             if (processo.ExitCode != 0)
                 throw new Exception($"{titulo} terminou com erro. Código de saída: {processo.ExitCode}");
 
             progresso?.Report($"{titulo} concluído.");
-
             return saida.ToString();
         }
+
+
 
 
         private async Task ExecutarGitCommandAsync(string arguments, IProgress<string> progresso, string titulo, string diretorio)
@@ -192,5 +213,5 @@ namespace JrTools.Flows
             progresso?.Report($"{titulo} concluído.");
         }
     }
-       
+
 }

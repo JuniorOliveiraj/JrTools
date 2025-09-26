@@ -86,6 +86,7 @@ namespace JrTools.Pages
                 SenhaSiteJR.AccessKey = _dadosPessoais.SenhaDevSite ?? string.Empty;
                 LoginRhWeb.Text = _dadosPessoais.LoginRhWeb ?? string.Empty;
                 SenhaRhWeb.AccessKey = _dadosPessoais.SenhaRhWeb ?? string.Empty;
+                ApiGeminiPasswordBox.AccessKey = _dadosPessoais.ApiGemini ?? string.Empty;
             }
             catch (Exception ex)
             {
@@ -119,6 +120,15 @@ namespace JrTools.Pages
             _dadosPessoais.SenhaRhWeb = SenhaRhWeb.AccessKey;
             await PerfilPessoalHelper.SalvarConfiguracoesAsync(_dadosPessoais);
         }
+
+
+
+        private async void ApiTokenGemini_PasswordChanged(object sender, RoutedEventArgs e)
+        {
+             _dadosPessoais.ApiGemini = ApiGeminiPasswordBox.Password;
+            await PerfilPessoalHelper.SalvarConfiguracoesAsync(_dadosPessoais);
+        }
+
 
         #endregion
     }
