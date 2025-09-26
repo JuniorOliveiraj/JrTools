@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Data;
+using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
@@ -43,12 +44,25 @@ namespace JrTools.Pages
         {
 
         }
+
+        private async void Hyperlink_Click(Hyperlink sender, HyperlinkClickEventArgs args)
+        {
+            var uri = sender.NavigateUri;
+            await Windows.System.Launcher.LaunchUriAsync(uri);
+        }
         private async void ProcessarDotnetButton_Click(object sender, RoutedEventArgs e)
         {
             var progresso = (IProgress<string>)new Progress<string>(msg => AppendTerminalLog(msg));
             //string commitId = "c5cab8a1367225050b4a004b63f2929c3d40aff1";
-          
 
+            var perfil = await PerfilPessoalHelper.LerConfiguracoesAsync();
+
+            if (perfil == null || string.IsNullOrWhiteSpace(perfil.ApiGemini))
+            {
+                ValidationInfoBarUrl.Message = "";
+                ValidationInfoBarUrl.IsOpen = true;
+                return;
+            }
             if (string.IsNullOrEmpty(CommitTextBox.Text))
             {
                 ValidationInfoBar.Message = "O campo commit nao pode ser vazio";
@@ -68,7 +82,6 @@ namespace JrTools.Pages
                  try
                 {
 
-                    var perfil = await PerfilPessoalHelper.LerConfiguracoesAsync();
                     string promptFinal = await PromptBuilder.ConstruirPromptAsync(CommitTextBox.Text, CommandTextBox.Text);
 
                     if (perfil == null || string.IsNullOrWhiteSpace(perfil.ApiGemini))

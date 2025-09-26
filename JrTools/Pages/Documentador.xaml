@@ -35,6 +35,26 @@
         <StackPanel Spacing="20">
             <InfoBar x:Name="ValidationInfoBar" IsOpen="False" Severity="Error" Margin="0,0,8,0"/>
 
+
+
+
+            <InfoBar x:Name="ValidationInfoBarUrl"
+                 IsOpen="false"
+                 Severity="Error"
+                 Title="Api nao Cadastrada"
+                 Margin="0,0,8,0">
+                        <StackPanel>
+                            <TextBlock>
+                    ApiKey não cadastrada. 
+                    <Hyperlink NavigateUri="https://g.co/ai/idxGetGeminiKey"
+                               Click="Hyperlink_Click">
+                        Gere sua ApiKey aqui
+                    </Hyperlink>
+                    e parametrize nas configurações.
+                            </TextBlock>
+                        </StackPanel>
+            </InfoBar>
+
             <!-- Commit -->
             <Border Style="{StaticResource FancyCardStyle}">
                 <StackPanel Spacing="8">
