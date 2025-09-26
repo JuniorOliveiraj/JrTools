@@ -22,6 +22,7 @@ namespace JrTools
         private Pages.RhProdPage _rhProdPage = new Pages.RhProdPage();
         private Pages.BuildarProjeto _buildarProjeto = new Pages.BuildarProjeto();
         private Pages.FecharProcessos _fecharProcessos = new Pages.FecharProcessos();
+        private Pages.Documentador _documentador = new Pages.Documentador();
         private Pages.ConfiguracoesPage _configuracoesPage = new Pages.ConfiguracoesPage();
 
         public MainWindow()
@@ -70,6 +71,9 @@ namespace JrTools
                         break;
                     case "FecharProcessos":
                         ContentFrame.Content = _fecharProcessos;
+                        break;
+                    case "Documentador":
+                        ContentFrame.Content = _documentador;
                         break;
                     case "config":
                         ContentFrame.Content = _configuracoesPage;

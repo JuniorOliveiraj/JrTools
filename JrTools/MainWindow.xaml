@@ -62,15 +62,21 @@
                             <SymbolIcon Symbol="Cancel"/>
                         </NavigationViewItem.Icon>
                     </NavigationViewItem>
-                    
-                    
-                    
+
+
+
+                    <NavigationViewItem Content="Documentador" Tag="Documentador">
+                        <NavigationViewItem.Icon>
+                            <SymbolIcon Symbol="Setting"/>
+                        </NavigationViewItem.Icon>
+                    </NavigationViewItem>
+
                     <NavigationViewItem Content="Configurações" Tag="config">
                         <NavigationViewItem.Icon>
                             <SymbolIcon Symbol="Setting"/>
                         </NavigationViewItem.Icon>
                     </NavigationViewItem>
-                    
+
                 </NavigationView.MenuItems>
 
                 <Frame x:Name="ContentFrame"/>

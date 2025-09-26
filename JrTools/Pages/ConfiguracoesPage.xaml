@@ -56,9 +56,9 @@
                 <StackPanel Spacing="20">
                     <TextBlock Text="Informações pessoais" Style="{ThemeResource SubtitleTextBlockStyle}"/>
                     <TextBox x:Name="LoginSiteJR" Header="Login site JR" TextChanged="DadosPessoais_TextChanged"/>
-                    <TextBox x:Name="SenhaSiteJR" Header="Senha site JR" TextChanged="DadosPessoais_TextChanged"/>
+                    <PasswordBox x:Name="SenhaSiteJR" Header="Senha site JR" PasswordChanged="SenhaSiteJR_PasswordChanged"  Password="*********"/>
                     <TextBox x:Name="LoginRhWeb" Header="Login RhWeb" TextChanged="DadosPessoais_TextChanged"/>
-                    <TextBox x:Name="SenhaRhWeb" Header="Senha RhWeb" TextChanged="DadosPessoais_TextChanged"/>
+                    <PasswordBox x:Name="SenhaRhWeb" Header="Senha RhWeb" PasswordChanged="SenhaSiteJR_PasswordChanged" Password="*********"/>
                 </StackPanel>
             </Border>
 

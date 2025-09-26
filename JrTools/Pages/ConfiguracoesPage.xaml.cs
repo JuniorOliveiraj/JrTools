@@ -83,9 +83,9 @@ namespace JrTools.Pages
                 _dadosPessoais = await PerfilPessoalHelper.LerConfiguracoesAsync() ?? new DadosPessoaisDataObject();
 
                 LoginSiteJR.Text = _dadosPessoais.LoginDevSite ?? string.Empty;
-                SenhaSiteJR.Text = _dadosPessoais.SenhaDevSite ?? string.Empty;
+                SenhaSiteJR.AccessKey = _dadosPessoais.SenhaDevSite ?? string.Empty;
                 LoginRhWeb.Text = _dadosPessoais.LoginRhWeb ?? string.Empty;
-                SenhaRhWeb.Text = _dadosPessoais.SenhaRhWeb ?? string.Empty;
+                SenhaRhWeb.AccessKey = _dadosPessoais.SenhaRhWeb ?? string.Empty;
             }
             catch (Exception ex)
             {
@@ -106,10 +106,17 @@ namespace JrTools.Pages
             if (_dadosPessoais == null) return;
 
             _dadosPessoais.LoginDevSite = LoginSiteJR.Text;
-            _dadosPessoais.SenhaDevSite = SenhaSiteJR.Text;
+             
             _dadosPessoais.LoginRhWeb = LoginRhWeb.Text;
-            _dadosPessoais.SenhaRhWeb = SenhaRhWeb.Text;
+            
 
+            await PerfilPessoalHelper.SalvarConfiguracoesAsync(_dadosPessoais);
+        }
+        private async void SenhaSiteJR_PasswordChanged(object sender, RoutedEventArgs e)
+        {
+            if (_dadosPessoais == null) return;
+            _dadosPessoais.SenhaDevSite = SenhaSiteJR.AccessKey;
+            _dadosPessoais.SenhaRhWeb = SenhaRhWeb.AccessKey;
             await PerfilPessoalHelper.SalvarConfiguracoesAsync(_dadosPessoais);
         }
 
