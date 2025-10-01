@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="JrTools.Pages.Chat"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:JrTools.Pages"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Page.Resources>
+        <!-- Bolha de mensagem do usuário -->
+        <Style x:Key="UserMessageBubble" TargetType="Border">
+            <Setter Property="Background" Value="{ThemeResource AccentFillColorDefaultBrush}"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="12"/>
+            <Setter Property="Margin" Value="4"/>
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+        </Style>
+
+        <!-- Bolha de mensagem da IA -->
+        <Style x:Key="BotMessageBubble" TargetType="Border">
+            <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorSecondaryBrush}"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="12"/>
+            <Setter Property="Margin" Value="4"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+        </Style>
+    </Page.Resources>
+
+    <Grid RowDefinitions="*,Auto">
+        <!-- ÁREA DE MENSAGENS -->
+        <ScrollViewer x:Name="ChatScrollViewer" VerticalScrollBarVisibility="Auto" Padding="16">
+            <ItemsRepeater x:Name="MessagesRepeater">
+                <ItemsRepeater.ItemTemplate>
+                    <DataTemplate x:DataType="local:ChatMessage">
+                        <Border Style="{x:Bind StyleKey}">
+                            <TextBlock Text="{x:Bind Text}" 
+                                       TextWrapping="Wrap"
+                                       FontSize="16"
+                                       Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
+                        </Border>
+                    </DataTemplate>
+                </ItemsRepeater.ItemTemplate>
+            </ItemsRepeater>
+        </ScrollViewer>
+
+        <!-- ÁREA DE INPUT -->
+        <Grid Grid.Row="1" Background="{ThemeResource SolidBackgroundFillColorBaseBrush}" Padding="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <TextBox x:Name="InputBox"
+                     PlaceholderText="Pergunte qualquer coisa..."
+                     AcceptsReturn="True"
+                     BorderThickness="1"
+                     BorderBrush="{ThemeResource ControlStrokeColorSecondaryBrush}"
+                     CornerRadius="8"
+                     Padding="12"
+                     VerticalAlignment="Center"
+                     TextWrapping="Wrap"
+                     MinHeight="40"/>
+
+            <Button x:Name="SendButton"
+                    Grid.Column="1"
+                    Content="➤"
+                    Margin="8,0,0,0"
+                    VerticalAlignment="Center"
+                    Style="{StaticResource AccentButtonStyle}"/>
+        </Grid>
+    </Grid>
+</Page>
