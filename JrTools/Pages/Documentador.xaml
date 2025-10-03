@@ -28,77 +28,87 @@
             <Setter Property="CornerRadius" Value="6"/>
             <Setter Property="Padding" Value="10,6"/>
         </Style>
+
+        <!-- Novo estilo para Expander que ocupa largura total -->
+        <Style x:Key="FullWidthExpanderStyle" TargetType="Expander">
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Padding" Value="0"/>
+        </Style>
     </Page.Resources>
 
     <!-- Scroll da página -->
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="16">
         <StackPanel Spacing="20">
+
             <InfoBar x:Name="ValidationInfoBar" IsOpen="False" Severity="Error" Margin="0,0,8,0"/>
 
-
-
-
             <InfoBar x:Name="ValidationInfoBarUrl"
-                 IsOpen="false"
-                 Severity="Error"
-                 Title="Api nao Cadastrada"
-                 Margin="0,0,8,0">
-                        <StackPanel>
-                            <TextBlock>
-                    ApiKey não cadastrada. 
-                    <Hyperlink NavigateUri="https://g.co/ai/idxGetGeminiKey"
-                               Click="Hyperlink_Click">
-                        Gere sua ApiKey aqui
-                    </Hyperlink>
-                    e parametrize nas configurações.
-                            </TextBlock>
-                        </StackPanel>
+                     IsOpen="false"
+                     Severity="Error"
+                     Title="Api nao Cadastrada"
+                     Margin="0,0,8,0">
+                <StackPanel>
+                    <TextBlock>
+                        ApiKey não cadastrada. 
+                        <Hyperlink NavigateUri="https://g.co/ai/idxGetGeminiKey"
+                                   Click="Hyperlink_Click">
+                            Gere sua ApiKey aqui
+                        </Hyperlink>
+                        e parametrize nas configurações.
+                    </TextBlock>
+                </StackPanel>
             </InfoBar>
 
             <!-- Commit -->
-            <Border Style="{StaticResource FancyCardStyle}">
-                <StackPanel Spacing="8">
-                    <TextBlock Text="Commit" Style="{ThemeResource SubtitleTextBlockStyle}"/>
-                    <TextBox x:Name="CommitTextBox" PlaceholderText="Digite a string do commit..." AcceptsReturn="False"/>
-                </StackPanel>
-            </Border>
+            <Expander x:Name="ExpanderCommit" IsExpanded="True" Grid.Row="1" Style="{StaticResource FullWidthExpanderStyle}">
+                <Expander.Header>
+                    <TextBlock Text="Commit" Style="{ThemeResource SubtitleTextBlockStyle}" FontWeight="Bold" FontSize="16"/>
+                </Expander.Header>
+                <Expander.Content>
+                    <Border Style="{StaticResource FancyCardStyle}" Margin="0">
+                        <TextBox x:Name="CommitTextBox" PlaceholderText="Digite a string do commit..." AcceptsReturn="False"/>
+                    </Border>
+                </Expander.Content>
+            </Expander>
+
 
             <!-- Comando -->
-            <Border Style="{StaticResource FancyCardStyle}">
-                <StackPanel Spacing="8">
+            <Expander x:Name="ExpanderPrompt" IsExpanded="True" Grid.Row="2" Style="{StaticResource FullWidthExpanderStyle}">
+                <Expander.Header>
+                    <TextBlock Text="Prompt adicional" Style="{ThemeResource SubtitleTextBlockStyle}" FontWeight="Bold" FontSize="16"/>
+                </Expander.Header>
+                <Expander.Content>
+                    <Border Style="{StaticResource FancyCardStyle}" Margin="0">
+                        <StackPanel Spacing="8">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Comando" Style="{ThemeResource SubtitleTextBlockStyle}"/>
 
+                                <Button x:Name="AttachFileButton"
+                                    Grid.Column="1"
+                                    Style="{StaticResource FancySecondaryButtonStyle}"
+                                    Click="AttachFileButton_Click"
+                                    VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <FontIcon Glyph="&#xE8E5;" FontSize="16"/>
+                                        <TextBlock Text="Anexar"/>
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
 
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="Comando" Style="{ThemeResource SubtitleTextBlockStyle}"/>
-                        
-                        <Button x:Name="AttachFileButton"
-                            Grid.Column="1"
-                            Style="{StaticResource FancySecondaryButtonStyle}"
-                            Click="AttachFileButton_Click"
-                            VerticalAlignment="Center">
-                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                <FontIcon Glyph="&#xE8E5;" FontSize="16"/>
-                                <TextBlock Text="Anexar"/>
-                            </StackPanel>
-                        </Button>
-                    </Grid>
-                    
-                    
-                    
-                    <TextBox x:Name="CommandTextBox" PlaceholderText="Digite o comando a ser processado..." AcceptsReturn="True" Height="120" TextWrapping="Wrap"/>
-                </StackPanel>
-            </Border>
-
-      
+                            <TextBox x:Name="CommandTextBox" PlaceholderText="Digite o comando a ser processado..." AcceptsReturn="True" Height="120" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+                </Expander.Content>
+            </Expander>
 
             <!-- Markdown Output + Botões -->
             <Border Style="{StaticResource FancyCardStyle}">
                 <StackPanel Spacing="12">
-
                     <!-- Título + Botões -->
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -115,6 +125,14 @@
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
                             <Button x:Name="BuildarDotnetButton" Style="{ThemeResource AccentButtonStyle}" Click="ProcessarDotnetButton_Click">
                                 <TextBlock Text="Gerar Documentação"/>
+                            </Button>
+                            <Button x:Name="CopiarButton"
+                                    Style="{StaticResource FancySecondaryButtonStyle}"
+                                    Click="CopiarTudoButton_Click">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <SymbolIcon Symbol="Copy"/>
+                                    <TextBlock Text="Copiar"/>
+                                </StackPanel>
                             </Button>
 
                             <Button x:Name="ExportPdfButton" Style="{StaticResource FancySecondaryButtonStyle}" Click="ExportPdfButton_Click">

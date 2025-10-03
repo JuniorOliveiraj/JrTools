@@ -116,8 +116,8 @@ namespace JrTools.Pages
         private async void SenhaSiteJR_PasswordChanged(object sender, RoutedEventArgs e)
         {
             if (_dadosPessoais == null) return;
-            _dadosPessoais.SenhaDevSite = SenhaSiteJR.AccessKey;
-            _dadosPessoais.SenhaRhWeb = SenhaRhWeb.AccessKey;
+            _dadosPessoais.SenhaDevSite = SenhaSiteJR.Password;
+            _dadosPessoais.SenhaRhWeb = SenhaRhWeb.Password;
             await PerfilPessoalHelper.SalvarConfiguracoesAsync(_dadosPessoais);
         }
 
