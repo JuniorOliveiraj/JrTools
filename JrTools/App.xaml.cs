@@ -44,9 +44,9 @@ namespace JrTools
         /// <param name="args">Details about the launch request and process.</param>
         protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
         {
-            MainWindow = new MainWindow();
 
             _window = new MainWindow();
+            MainWindow = _window;
             _window.Activate();
         }
     }
