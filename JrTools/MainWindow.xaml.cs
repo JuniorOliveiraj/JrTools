@@ -23,6 +23,7 @@ namespace JrTools
         private Pages.BuildarProjeto _buildarProjeto = new Pages.BuildarProjeto();
         private Pages.FecharProcessos _fecharProcessos = new Pages.FecharProcessos();
         private Pages.Documentador _documentador = new Pages.Documentador();
+        private Pages.LancarHoras _lancarHoras = new Pages.LancarHoras();
         private Pages.ConfiguracoesPage _configuracoesPage = new Pages.ConfiguracoesPage();
 
         public MainWindow()
@@ -48,7 +49,13 @@ namespace JrTools
             titleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
 
             // Defina o CustomTitleBar (deve estar no XAML)
-            this.SetTitleBar(CustomTitleBar);
+            //this.SetTitleBar(CustomTitleBar);
+
+
+            if (AppWindowTitleBar.IsCustomizationSupported() is true)
+            {
+                appWindow.SetIcon(@"Assets\PERFIL.ico");
+            }
         }
 
         private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
@@ -74,6 +81,9 @@ namespace JrTools
                         break;
                     case "Documentador":
                         ContentFrame.Content = _documentador;
+                        break;
+                    case "LancarHoras":
+                        ContentFrame.Content = _lancarHoras;
                         break;
                     case "config":
                         ContentFrame.Content = _configuracoesPage;

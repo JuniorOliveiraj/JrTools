@@ -7,8 +7,9 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
+
     <Page.Resources>
-        <!-- Estilo para os cards que se ajustam em grade -->
+        <!-- Estilo base dos cards -->
         <Style x:Key="ResponsiveCardStyle" TargetType="Border">
             <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}"/>
             <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}"/>
@@ -17,54 +18,82 @@
             <Setter Property="Padding" Value="16"/>
             <Setter Property="Margin" Value="8"/>
             <Setter Property="MinWidth" Value="320"/>
-            <Setter Property="MaxWidth" Value="500"/>
-        </Style>
-
-        <!-- Novo estilo para o card de terminal, que ocupa a largura total -->
-        <Style x:Key="FullWidthCardStyle" TargetType="Border" BasedOn="{StaticResource ResponsiveCardStyle}">
-            <Setter Property="MaxWidth" Value="9999"/>
-            <!-- Remove a limitação de largura máxima -->
         </Style>
     </Page.Resources>
 
-
-
     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16">
         <StackPanel Spacing="16">
-
-            <!-- CABEÇALHO -->
-            <TextBlock Text="Configurções" Style="{ThemeResource TitleTextBlockStyle}"/>
-
-      
-
-            <!-- Barra para exibir mensagens de erro/validação -->
+            <!-- Cabeçalho -->
+            <TextBlock Text="Configurações" Style="{ThemeResource TitleTextBlockStyle}" />
             <InfoBar x:Name="ValidationInfoBar" IsOpen="False" Severity="Error" Margin="0,0,8,0"/>
-            <Border Style="{StaticResource FullWidthCardStyle}">
-                <StackPanel Spacing="20">
-                    <TextBlock Text="Parametrizações" Style="{ThemeResource SubtitleTextBlockStyle}"/>
-                    <TextBox x:Name="DiretorioBinarios" Header="Diretorio binarios Delphi" Text="D:\Benner\bin\Delphi" TextChanged="DiretorioBinarios_TextChanged"/>
-                    <TextBox x:Name="DiretorioProducao" Header="Diretorio de producao" Text="D:\Benner\fontes\rh\prod" TextChanged="DiretorioProducao_TextChanged"/>
-                    <TextBox x:Name="DiretorioEspesificos" Header="Diretorio específicos" Text="D:\Benner\fontes\rh" TextChanged="DiretorioEspesificos_TextChanged"/>
 
+            <!-- GRID RESPONSIVO -->
+            <Grid x:Name="ResponsiveGrid" ColumnSpacing="16" RowSpacing="16">
+                <!-- Layout padrão: dois cards lado a lado -->
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
 
-                </StackPanel>
-            </Border>
+                <!-- Primeiro card -->
+                <Border Style="{StaticResource ResponsiveCardStyle}" Grid.Column="0">
+                    <StackPanel Spacing="20">
+                        <TextBlock Text="Parametrizações" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                        <TextBox x:Name="DiretorioBinarios" Header="Diretório binários Delphi"
+                                 Text="D:\Benner\bin\Delphi" TextChanged="DiretorioBinarios_TextChanged"/>
+                        <TextBox x:Name="DiretorioProducao" Header="Diretório de produção"
+                                 Text="D:\Benner\fontes\rh\prod" TextChanged="DiretorioProducao_TextChanged"/>
+                        <TextBox x:Name="DiretorioEspesificos" Header="Diretórios específicos"
+                                 Text="D:\Benner\fontes\rh" TextChanged="DiretorioEspesificos_TextChanged"/>
+                    </StackPanel>
+                </Border>
 
-
-
-            <Border Style="{StaticResource FullWidthCardStyle}">
-                <StackPanel Spacing="20">
-                    <TextBlock Text="Informações pessoais" Style="{ThemeResource SubtitleTextBlockStyle}"/>
-                    <TextBox x:Name="LoginSiteJR" Header="Login site JR" TextChanged="DadosPessoais_TextChanged"/>
-                    <PasswordBox x:Name="SenhaSiteJR" Header="Senha site JR" PasswordChanged="SenhaSiteJR_PasswordChanged"  Password="*********"/>
-                    <TextBox x:Name="LoginRhWeb" Header="Login RhWeb" TextChanged="DadosPessoais_TextChanged"/>
-                    <PasswordBox x:Name="SenhaRhWeb" Header="Senha RhWeb" PasswordChanged="SenhaSiteJR_PasswordChanged" Password="*********"/>
-                    <PasswordBox x:Name="ApiGeminiPasswordBox" Header="Token api Gemini" PasswordChanged="ApiTokenGemini_PasswordChanged" Password="*****************************"/>
-                </StackPanel>
-            </Border>
-
-
-
+                <!-- Segundo card -->
+                <Border Style="{StaticResource ResponsiveCardStyle}" Grid.Column="1">
+                    <StackPanel Spacing="20">
+                        <TextBox x:Name="LoginRhWeb" Header="Login RhWeb" TextChanged="DadosPessoais_TextChanged"/>
+                        <PasswordBox x:Name="SenhaRhWeb" Header="Senha RhWeb" PasswordChanged="SenhaSiteJR_PasswordChanged" Password="*********"/>
+                        <PasswordBox x:Name="ApiGeminiPasswordBox" Header="Token API Gemini" PasswordChanged="ApiTokenGemini_PasswordChanged" Password="*****************************"/>
+                        <PasswordBox x:Name="ApiTogglPasswordBox" Header="Token API Toggl" PasswordChanged="ApiToggl_PasswordChanged" Password="*****************************"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
         </StackPanel>
     </ScrollViewer>
+
+    <!-- ESTADOS RESPONSIVOS -->
+    <VisualStateManager.VisualStateGroups>
+        <VisualStateGroup x:Name="WindowStates">
+
+            <!-- Modo lado a lado -->
+            <VisualState x:Name="WideState">
+                <VisualState.StateTriggers>
+                    <AdaptiveTrigger MinWindowWidth="700" />
+                </VisualState.StateTriggers>
+                <VisualState.Setters>
+                    <Setter Target="ResponsiveGrid.(Grid.RowDefinitions)" Value="Auto" />
+                    <Setter Target="ResponsiveGrid.(Grid.ColumnDefinitions)" Value="*,*" />
+                    <Setter Target="ResponsiveGrid.Children[0].(Grid.Row)" Value="0" />
+                    <Setter Target="ResponsiveGrid.Children[0].(Grid.Column)" Value="0" />
+                    <Setter Target="ResponsiveGrid.Children[1].(Grid.Row)" Value="0" />
+                    <Setter Target="ResponsiveGrid.Children[1].(Grid.Column)" Value="1" />
+                </VisualState.Setters>
+            </VisualState>
+
+            <!-- Modo empilhado (um abaixo do outro) -->
+            <VisualState x:Name="NarrowState">
+                <VisualState.StateTriggers>
+                    <AdaptiveTrigger MinWindowWidth="0" />
+                </VisualState.StateTriggers>
+                <VisualState.Setters>
+                    <Setter Target="ResponsiveGrid.(Grid.ColumnDefinitions)" Value="*" />
+                    <Setter Target="ResponsiveGrid.Children[0].(Grid.Row)" Value="0" />
+                    <Setter Target="ResponsiveGrid.Children[0].(Grid.Column)" Value="0" />
+                    <Setter Target="ResponsiveGrid.Children[1].(Grid.Row)" Value="1" />
+                    <Setter Target="ResponsiveGrid.Children[1].(Grid.Column)" Value="0" />
+                </VisualState.Setters>
+            </VisualState>
+
+        </VisualStateGroup>
+    </VisualStateManager.VisualStateGroups>
 </Page>

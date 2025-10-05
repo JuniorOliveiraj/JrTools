@@ -1,3 +1,4 @@
+using JrTools.Dto;
 using JrTools.Services;
 using JrTools.Services.Db;
 using Microsoft.UI.Xaml;
@@ -42,6 +43,7 @@ namespace JrTools.Pages
         {
             DefinirHorarioPrevistoAsync();
             InnerFrame.Navigate(typeof(JrTools.Pages.FecharProcessos));
+            CarregarLancamentosDoDiaAsync();
         }
 
         private async Task DefinirHorarioPrevistoAsync()
@@ -210,5 +212,44 @@ namespace JrTools.Pages
                 TotalHorasTextBlock.Text = "Erro";
             }
         }
+
+
+
+        private async Task CarregarLancamentosDoDiaAsync()
+        {
+            try
+            {
+                var perfil = await PerfilPessoalHelper.LerConfiguracoesAsync();
+                string token = perfil.ApiToggl;
+                if (string.IsNullOrWhiteSpace(token)) return;
+
+                var toggl = new TogglClient(token);
+                var entries = await toggl.GetTodayTimeEntriesAsync();
+
+                double totalHoras = 0; // variável para acumular todas as horas
+
+                foreach (var entry in entries.EnumerateArray())
+                {
+                    double durHoras = 0;
+
+                    if (entry.TryGetProperty("duration", out var durProp))
+                    {
+                        var dur = durProp.GetDouble();
+                        if (dur > 0) durHoras = dur / 3600.0; // converter de segundos para horas
+                    }
+
+                    totalHoras += durHoras; 
+                }
+
+                // Atualiza o TextBox com o total formatado
+                string formato = "H ";
+                TotalHorasLancadas.Text = formato +=  totalHoras.ToString("0.##"); // duas casas decimais
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Erro ao carregar lançamentos: {ex.Message}");
+            }
+        }
+
     }
 }

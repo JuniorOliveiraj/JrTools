@@ -29,7 +29,6 @@
                 <!-- Nome do app -->
                 <TextBlock Text="JrTools"
                    VerticalAlignment="Center"
-                   Foreground="White"
                    FontWeight="Bold"
                    FontSize="14"/>
             </StackPanel>
@@ -68,6 +67,14 @@
                     <NavigationViewItem Content="Documentador" Tag="Documentador">
                         <NavigationViewItem.Icon>
                             <SymbolIcon Symbol="Page"/>
+                        </NavigationViewItem.Icon>
+                    </NavigationViewItem>
+
+
+
+                    <NavigationViewItem Content="Lançar horas" Tag="LancarHoras">
+                        <NavigationViewItem.Icon>
+                            <FontIcon Glyph="&#xE823;" />
                         </NavigationViewItem.Icon>
                     </NavigationViewItem>
 

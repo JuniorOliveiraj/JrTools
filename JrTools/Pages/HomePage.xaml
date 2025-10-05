@@ -77,8 +77,8 @@
                     <!-- 3. Economia Mensal -->
                     <Border Grid.Column="2" Style="{StaticResource DashboardTileStyle}">
                         <StackPanel Spacing="8">
-                            <TextBlock Text="Potencial de Economia (Mês)" Style="{ThemeResource CaptionTextBlockStyle}" Opacity="0.8"/>
-                            <TextBlock Text="R$ 600,00" Style="{ThemeResource HeaderTextBlockStyle}"/>
+                            <TextBlock Text="Horas lançadas hoje (toggl)" Style="{ThemeResource CaptionTextBlockStyle}" Opacity="0.8"/>
+                            <TextBlock x:Name="TotalHorasLancadas" Text="0h" Style="{ThemeResource HeaderTextBlockStyle}"/>
                         </StackPanel>
                     </Border>
                 </Grid>

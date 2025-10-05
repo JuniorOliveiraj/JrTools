@@ -32,8 +32,6 @@ namespace JrTools.Pages
             try
             {
                 _config = await ConfigHelper.LerConfiguracoesAsync() ?? new ConfiguracoesdataObject();
-
-                 
                 DiretorioBinarios.Text = _config.DiretorioBinarios ?? string.Empty;
                 DiretorioProducao.Text = _config.DiretorioProducao ?? string.Empty;
                 DiretorioEspesificos.Text = _config.DiretorioEspecificos ?? string.Empty;
@@ -81,9 +79,6 @@ namespace JrTools.Pages
             try
             {
                 _dadosPessoais = await PerfilPessoalHelper.LerConfiguracoesAsync() ?? new DadosPessoaisDataObject();
-
-                LoginSiteJR.Text = _dadosPessoais.LoginDevSite ?? string.Empty;
-                SenhaSiteJR.AccessKey = _dadosPessoais.SenhaDevSite ?? string.Empty;
                 LoginRhWeb.Text = _dadosPessoais.LoginRhWeb ?? string.Empty;
                 SenhaRhWeb.AccessKey = _dadosPessoais.SenhaRhWeb ?? string.Empty;
                 ApiGeminiPasswordBox.AccessKey = _dadosPessoais.ApiGemini ?? string.Empty;
@@ -102,30 +97,29 @@ namespace JrTools.Pages
             }
         }
 
+
         private async void DadosPessoais_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (_dadosPessoais == null) return;
-
-            _dadosPessoais.LoginDevSite = LoginSiteJR.Text;
-             
             _dadosPessoais.LoginRhWeb = LoginRhWeb.Text;
-            
-
             await PerfilPessoalHelper.SalvarConfiguracoesAsync(_dadosPessoais);
         }
         private async void SenhaSiteJR_PasswordChanged(object sender, RoutedEventArgs e)
         {
             if (_dadosPessoais == null) return;
-            _dadosPessoais.SenhaDevSite = SenhaSiteJR.Password;
             _dadosPessoais.SenhaRhWeb = SenhaRhWeb.Password;
             await PerfilPessoalHelper.SalvarConfiguracoesAsync(_dadosPessoais);
         }
 
-
-
         private async void ApiTokenGemini_PasswordChanged(object sender, RoutedEventArgs e)
         {
              _dadosPessoais.ApiGemini = ApiGeminiPasswordBox.Password;
+            await PerfilPessoalHelper.SalvarConfiguracoesAsync(_dadosPessoais);
+        }
+
+        private async void ApiToggl_PasswordChanged(object sender, RoutedEventArgs e)
+        {
+            _dadosPessoais.ApiToggl = ApiTogglPasswordBox.Password;
             await PerfilPessoalHelper.SalvarConfiguracoesAsync(_dadosPessoais);
         }
 

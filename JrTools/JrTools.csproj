@@ -24,6 +24,7 @@
 		<None Remove="Pages\ConfiguracoesPage.xaml" />
 		<None Remove="Pages\Documentador.xaml" />
 		<None Remove="Pages\FecharProcessos.xaml" />
+		<None Remove="Pages\LancarHoras.xaml" />
 	</ItemGroup>
 	<ItemGroup>
 		<Page Remove="HomePage.xaml" />
@@ -88,6 +89,11 @@
 	</ItemGroup>
 	<ItemGroup>
 	  <Folder Include="Flows\Home\" />
+	</ItemGroup>
+	<ItemGroup>
+	  <Page Update="Pages\LancarHoras.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </Page>
 	</ItemGroup>
 	<ItemGroup>
 	  <Page Update="Pages\Chat.xaml">

@@ -21,5 +21,6 @@ namespace JrTools.Dto
 
 
         public string? ApiGemini { get; set; }
+        public string? ApiToggl { get; set; }
     }
 }
