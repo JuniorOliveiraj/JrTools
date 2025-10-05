@@ -12,6 +12,7 @@
 		<EnableMsixTooling>true</EnableMsixTooling>
 		<Nullable>enable</Nullable>
 		<WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+		<ApplicationIcon>Assets\PERFIL.ico</ApplicationIcon>
 	</PropertyGroup>
 	<ItemGroup>
 	  <Content Remove="Assets\StoreLogo.scale-200.png" />

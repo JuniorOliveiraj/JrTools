@@ -30,6 +30,7 @@ namespace JrTools.Pages
         {
             Projetos.Clear();
             Projetos.Add("Nenhum");
+            DiaLancamento.Date = DateTimeOffset.Now;
 
             var projetosSalvos = await ProjetosHelper.LerProjetosAsync();
             foreach (var projeto in projetosSalvos)
@@ -104,7 +105,7 @@ namespace JrTools.Pages
 
                 var novoLancamento = new HoraLancamento
                 {
-                    Data = DateTime.Today,
+                    Data = DiaLancamento.Date.Date,
                     HoraInicio = horaInicio.Value,
                     HoraFim = horaInicio.Value + duracao,
                     TotalHoras = duracao.TotalHours,

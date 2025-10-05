@@ -27,10 +27,23 @@
             <!-- ====== CARD DO FORMULÁRIO ====== -->
             <Border Style="{StaticResource FancyCardStyle}">
                 <StackPanel Spacing="12">
-                    <TextBlock Text="Lançamento de Horas" 
-                               FontSize="20" 
-                               FontWeight="Bold"
-                               Margin="0,0,0,8"/>
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <!-- Texto à esquerda -->
+                            <ColumnDefinition Width="Auto" />
+                            <!-- DatePicker à direita -->
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Text="Lançamento de Horas" 
+                           FontSize="20" 
+                           FontWeight="Bold"
+                           VerticalAlignment="Center"
+                           Grid.Column="0"/>
+
+                           <DatePicker Grid.Column="1"  VerticalAlignment="Center" x:Name="DiaLancamento"/>
+                    </Grid>
+
 
                     <InfoBar x:Name="ValidationInfoBar" IsOpen="False" Severity="Error" Margin="0,0,0,8"/>
 
