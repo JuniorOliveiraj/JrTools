@@ -247,8 +247,6 @@ namespace JrTools.Pages
             }
         }
 
-
-
         private void ShowValidationError(string mensagem)
         {
             ValidationInfoBar.Message = mensagem;

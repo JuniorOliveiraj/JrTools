@@ -41,7 +41,7 @@
                            VerticalAlignment="Center"
                            Grid.Column="0"/>
 
-                           <DatePicker Grid.Column="1"  VerticalAlignment="Center" x:Name="DiaLancamento"/>
+                        <DatePicker Grid.Column="1"  VerticalAlignment="Center" x:Name="DiaLancamento" SelectedDateChanged="DiaLancamento_Changed"/>
                     </Grid>
 
 

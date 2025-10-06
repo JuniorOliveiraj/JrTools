@@ -1,12 +1,11 @@
 ﻿using JrTools.Dto;
-using JrTools.Services;
+using JrTools.Flows;
 using JrTools.Services.Db;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace JrTools.Pages
@@ -15,32 +14,34 @@ namespace JrTools.Pages
     {
         private readonly ObservableCollection<HoraLancamento> Lancamentos = new();
         private readonly ObservableCollection<string> Projetos = new();
+        private HorasToggle? _horasService;
 
         public LancarHoras()
         {
             InitializeComponent();
-
             LancamentosListView.ItemsSource = Lancamentos;
             ProjetoComboBox.ItemsSource = Projetos;
-
             Loaded += LancarHoras_Loaded;
         }
 
         private async void LancarHoras_Loaded(object sender, RoutedEventArgs e)
         {
-            Projetos.Clear();
-            Projetos.Add("Nenhum");
             DiaLancamento.Date = DateTimeOffset.Now;
+            await InicializarAsync();
+        }
 
-            var projetosSalvos = await ProjetosHelper.LerProjetosAsync();
-            foreach (var projeto in projetosSalvos)
-            {
-                if (!Projetos.Contains(projeto))
-                    Projetos.Add(projeto);
-            }
+        private async Task InicializarAsync()
+        {
+            Projetos.Clear();
+            var perfil = await PerfilPessoalHelper.LerConfiguracoesAsync();
+            _horasService = new HorasToggle(perfil.ApiToggl);
+
+            var projetos = await HorasToggle.CarregarProjetosAsync();
+            foreach (var projeto in projetos)
+                Projetos.Add(projeto);
+
             ProjetoComboBox.SelectedItem = "Nenhum";
-
-            await CarregarLancamentosDoDiaAsync();
+            await CarregarLancamentosAsync();
         }
 
         private async void AddProjectButton_Click(object sender, RoutedEventArgs e)
@@ -56,27 +57,19 @@ namespace JrTools.Pages
                 XamlRoot = XamlRoot,
             };
 
-            dialog.PrimaryButtonClick += (s, args) =>
-            {
-                var nomeProjeto = novoProjetoTextBox.Text;
-                if (string.IsNullOrWhiteSpace(nomeProjeto) || !nomeProjeto.StartsWith("@") || nomeProjeto.Contains(' '))
-                {
-                    args.Cancel = true;
-                    novoProjetoTextBox.Text = "";
-                    novoProjetoTextBox.PlaceholderText = "Inválido! Use o formato @ProjetoSemEspaco";
-                }
-            };
-
             var result = await dialog.ShowAsync();
             if (result == ContentDialogResult.Primary)
             {
-                var nomeProjeto = novoProjetoTextBox.Text;
-                if (!Projetos.Contains(nomeProjeto))
+                try
                 {
-                    Projetos.Add(nomeProjeto);
-                    await ProjetosHelper.SalvarProjetosAsync(Projetos.Where(p => p != "Nenhum"));
+                    await HorasToggle.AdicionarProjetoAsync(novoProjetoTextBox.Text, Projetos);
+                    Projetos.Add(novoProjetoTextBox.Text);
+                    ProjetoComboBox.SelectedItem = novoProjetoTextBox.Text;
                 }
-                ProjetoComboBox.SelectedItem = nomeProjeto;
+                catch (Exception ex)
+                {
+                    ShowValidationError(ex.Message);
+                }
             }
         }
 
@@ -84,24 +77,29 @@ namespace JrTools.Pages
         {
             try
             {
+                if (_horasService == null) return;
+
                 if (string.IsNullOrEmpty(DescricaoBox.Text) && ProjetoComboBox.SelectedItem?.ToString() == "Nenhum")
                 {
                     ShowValidationError("A Descrição ou o projeto devem ser preenchidos");
                     return;
                 }
+
                 if (TotalHorasBox.Value <= 0)
                 {
                     ShowValidationError("A duração deve ser maior que zero.");
                     return;
                 }
-                string? projetoSelecionado = ProjetoComboBox.SelectedItem?.ToString() == "Nenhum" ? string.Empty : ProjetoComboBox.SelectedItem?.ToString();
-                string descricaoFinal = GerarDescricaoFinal(DescricaoBox.Text, projetoSelecionado);
 
-                TimeSpan? horaInicio = HoraInicioPicker.SelectedTime;
+                string projetoSelecionado = ProjetoComboBox.SelectedItem?.ToString() == "Nenhum"
+                    ? string.Empty
+                    : ProjetoComboBox.SelectedItem?.ToString();
+
+                string descricaoFinal = _horasService.GerarDescricaoFinal(DescricaoBox.Text, projetoSelecionado);
+
                 TimeSpan duracao = TimeSpan.FromHours(TotalHorasBox.Value);
-
-
-                horaInicio = ObterHoraInicioDisponivel(horaInicio, duracao);
+                TimeSpan? horaInicio = HoraInicioPicker.SelectedTime;
+                horaInicio = _horasService.ObterHoraInicioDisponivel(horaInicio, duracao, Lancamentos);
 
                 var novoLancamento = new HoraLancamento
                 {
@@ -113,91 +111,31 @@ namespace JrTools.Pages
                     Projeto = projetoSelecionado
                 };
 
-                await SalvarToggle(novoLancamento);
-            }
-            catch (InvalidOperationException ex)
-            {
-                ShowValidationError(ex.Message);
+                await _horasService.SalvarLancamentoAsync(novoLancamento);
+                await CarregarLancamentosAsync();
+                ClearForm();
             }
             catch (Exception ex)
             {
-                ShowValidationError($"Erro ao salvar lançamento: {ex.Message}");
+                ShowValidationError(ex.Message);
             }
         }
 
-        private TimeSpan ObterHoraInicioDisponivel(TimeSpan? horaInicio, TimeSpan duracao)
+        private async Task CarregarLancamentosAsync()
         {
-
-            TimeSpan inicioAlmoco = TimeSpan.FromHours(12);
-            TimeSpan fimAlmoco = TimeSpan.FromHours(13);
-
-            TimeSpan inicio = horaInicio ?? (Lancamentos.Any() ? Lancamentos.Max(l => l.HoraFim ?? l.HoraInicio.Value) : TimeSpan.FromHours(8));
-
-            TimeSpan fim = inicio + duracao;
-
-            while (Lancamentos.Any(l => (l.HoraFim ?? l.HoraInicio) > inicio && l.HoraInicio < fim)
-                   || (inicio < fimAlmoco && fim > inicioAlmoco)) // considera o horário de almoço
+            try
             {
-                var conflitos = Lancamentos.Where(l => (l.HoraFim ?? l.HoraInicio) > inicio && l.HoraInicio < fim).ToList();
+                if (_horasService == null) return;
+                var lancamentos = await _horasService.CarregarLancamentosDoDiaAsync(DiaLancamento.Date.Date);
 
-                if (conflitos.Any())
-                {
-                    inicio = conflitos.Max(l => l.HoraFim ?? l.HoraInicio.Value);
-                }
-                else if (inicio < fimAlmoco && fim > inicioAlmoco)
-                {
-                    inicio = fimAlmoco; 
-                }
-
-                fim = inicio + duracao;
+                Lancamentos.Clear();
+                foreach (var l in lancamentos)
+                    Lancamentos.Add(l);
             }
-
-            return inicio;
-        }
-
-
-        private async Task SalvarToggle(HoraLancamento lancamento)
-        {
-            var perfil = await PerfilPessoalHelper.LerConfiguracoesAsync();
-            string token = perfil.ApiToggl;
-            if (string.IsNullOrWhiteSpace(token))
+            catch (Exception ex)
             {
-                ShowValidationError("Token do Toggl não configurado. Vá para Configurações e adicione seu token.");
-                return;
+                ShowValidationError($"Erro ao carregar lançamentos: {ex.Message}");
             }
-
-            var toggl = new TogglClient(token);
-            var me = await toggl.GetMeAsync();
-            long workspaceId = me.GetProperty("default_workspace_id").GetInt64();
-
-            var result = await toggl.CreateTimeEntryAsync(workspaceId, lancamento);
-
-            Console.WriteLine($"🟢 Lançamento criado: {result.GetProperty("id").GetInt64()}");
-
-            await CarregarLancamentosDoDiaAsync();
-            ClearForm();
-        }
-
-        private string GerarDescricaoFinal(string? descricaoInput, string? projeto)
-        {
-            descricaoInput = descricaoInput?.Trim() ?? "";
-
-            if (string.IsNullOrWhiteSpace(descricaoInput) && string.IsNullOrWhiteSpace(projeto))
-                throw new InvalidOperationException("Descrição ou projeto é obrigatória.");
-
-            string descricaoFinal = descricaoInput;
-            var regexSMS = new System.Text.RegularExpressions.Regex(@"^(SMS-(\d+)|(\d+))\s*-?");
-            var match = regexSMS.Match(descricaoInput);
-
-            if (match.Success && match.Groups[3].Success && !match.Groups[1].Value.StartsWith("SMS-"))
-                descricaoFinal = "SMS-" + match.Groups[3].Value + descricaoInput.Substring(match.Length);
-
-            if (!string.IsNullOrEmpty(projeto))
-                descricaoFinal = projeto + " " + descricaoFinal.Trim();
-            else if (!match.Success)
-                throw new InvalidOperationException("Descrição inválida. Deve começar com SMS-XXXXXX ou número da SMS.");
-
-            return descricaoFinal.Trim();
         }
 
         private void HoraPicker_TimeChanged(object sender, TimePickerValueChangedEventArgs e)
@@ -206,11 +144,7 @@ namespace JrTools.Pages
             {
                 var inicio = HoraInicioPicker.SelectedTime.Value;
                 var fim = HoraFimPicker.SelectedTime.Value;
-
-                if (fim >= inicio)
-                    TotalHorasBox.Value = (fim - inicio).TotalHours;
-                else
-                    TotalHorasBox.Value = 0;
+                TotalHorasBox.Value = fim >= inicio ? (fim - inicio).TotalHours : 0;
             }
         }
 
@@ -220,54 +154,11 @@ namespace JrTools.Pages
             ValidationInfoBar.Message = message;
             ValidationInfoBar.IsOpen = true;
         }
-
-        private async Task CarregarLancamentosDoDiaAsync()
+        // Altere a assinatura do método DiaLancamento_Changed para:
+        private async void DiaLancamento_Changed(DatePicker sender, DatePickerSelectedValueChangedEventArgs e)
         {
-            try
-            {
-                var perfil = await PerfilPessoalHelper.LerConfiguracoesAsync();
-                string token = perfil.ApiToggl;
-                if (string.IsNullOrWhiteSpace(token)) return;
-
-                var toggl = new TogglClient(token);
-                var entries = await toggl.GetTodayTimeEntriesAsync();
-
-                Lancamentos.Clear();
-
-                foreach (var entry in entries.EnumerateArray())
-                {
-                    var startUtc = entry.GetProperty("start").GetDateTime();
-                    DateTime localStart = startUtc.ToLocalTime();
-
-                    DateTime? localEnd = null;
-                    if (entry.TryGetProperty("stop", out var stopProp) && stopProp.ValueKind != JsonValueKind.Null)
-                        localEnd = stopProp.GetDateTime().ToLocalTime();
-
-                    double totalHoras = 0;
-                    if (entry.TryGetProperty("duration", out var durProp))
-                    {
-                        var dur = durProp.GetDouble();
-                        if (dur > 0) totalHoras = dur / 3600.0;
-                    }
-
-                    Lancamentos.Add(new HoraLancamento
-                    {
-                        HoraInicio = localStart.TimeOfDay,
-                        HoraFim = localEnd?.TimeOfDay,
-                        TotalHoras = totalHoras,
-                        Descricao = entry.GetProperty("description").GetString(),
-                        Projeto = entry.TryGetProperty("project_id", out var projProp) && !projProp.ValueKind.Equals(JsonValueKind.Null)
-                                    ? projProp.GetInt64().ToString()
-                                    : null
-                    });
-                }
-            }
-            catch (Exception ex)
-            {
-                ShowValidationError($"Erro ao carregar lançamentos: {ex.Message}");
-            }
+            await CarregarLancamentosAsync();
         }
-
         private void ClearForm()
         {
             HoraInicioPicker.SelectedTime = null;

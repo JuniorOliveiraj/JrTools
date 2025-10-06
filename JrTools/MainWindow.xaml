@@ -64,7 +64,7 @@
 
 
 
-                    <NavigationViewItem Content="Documentador" Tag="Documentador">
+                    <NavigationViewItem Content="G-DI" Tag="Documentador">
                         <NavigationViewItem.Icon>
                             <SymbolIcon Symbol="Page"/>
                         </NavigationViewItem.Icon>

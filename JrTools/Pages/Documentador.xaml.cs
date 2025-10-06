@@ -8,14 +8,12 @@ using Microsoft.UI.Xaml.Documents;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
-using Windows.Foundation;
 using Markdig;
-using Windows.ApplicationModel.DataTransfer;
+using DocumentFormat.OpenXml.Packaging;
+using Word = DocumentFormat.OpenXml.Wordprocessing;
 namespace JrTools.Pages
 {
     public sealed partial class Documentador : Page
@@ -45,8 +43,6 @@ namespace JrTools.Pages
                     {
                         _arquivoAnexado = new FileInfo(dialog.FileName);
                         AppendTerminalLog($"📎 Arquivo anexado: {_arquivoAnexado.Name}");
-
-
                         CommandTextBox.Text = "Analize em anexo Agora, gere a documentação completa, conforme as instruções.";
                     }
                     else
@@ -72,17 +68,13 @@ namespace JrTools.Pages
 
             if (!string.IsNullOrEmpty(markdown))
             {
-                // Converte Markdown para HTML
                 string html = Markdown.ToHtml(markdown);
 
-                // Cria DataPackage com HTML
                 var dataPackage = new DataPackage();
                 dataPackage.SetHtmlFormat(HtmlFormatHelper.CreateHtmlFormat(html));
 
-                // Copia para o clipboard
                 Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(dataPackage);
 
-                // Feedback para o usuário
                 ContentDialog dialog = new ContentDialog
                 {
                     Title = "Copiado!",
@@ -95,10 +87,69 @@ namespace JrTools.Pages
             }
         }
 
-        private async void ExportPdfButton_Click(object sender, RoutedEventArgs e)
+
+        private async void ExportDOCXButton_Click(object sender, RoutedEventArgs e)
         {
-            // Implementar exportação PDF se necessário
+            var conteudo = TerminalOutput.Text;
+
+            if (string.IsNullOrWhiteSpace(conteudo))
+            {
+                var dialogEmpty = new ContentDialog
+                {
+                    Title = "Nada para exportar",
+                    Content = "O conteúdo do terminal está vazio.",
+                    CloseButtonText = "OK",
+                    XamlRoot = this.Content.XamlRoot
+                };
+                await dialogEmpty.ShowAsync();
+                return;
+            }
+
+            try
+            {
+                using var saveDialog = new System.Windows.Forms.SaveFileDialog();
+                saveDialog.Filter = "Documento Word (*.docx)|*.docx";
+                saveDialog.FileName = "documentacao.docx";
+
+                if (saveDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                {
+                    string templatePath = Path.Combine(AppContext.BaseDirectory, "Assets", "docPadrao.docx");
+                    string novoArquivo = saveDialog.FileName;
+
+                    File.Copy(templatePath, novoArquivo, true);
+
+                    using (WordprocessingDocument wordDoc = WordprocessingDocument.Open(novoArquivo, true))
+                    {
+                        var body = wordDoc.MainDocumentPart.Document.Body;
+
+                        body.AppendChild(new Word.Paragraph(new Word.Run(new Word.Text(conteudo))));
+
+                        wordDoc.MainDocumentPart.Document.Save();
+                    }
+
+                    var dialogSuccess = new ContentDialog
+                    {
+                        Title = "Exportação concluída",
+                        Content = $"O documento foi salvo em:\n{novoArquivo}",
+                        CloseButtonText = "OK",
+                        XamlRoot = this.Content.XamlRoot
+                    };
+                    await dialogSuccess.ShowAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                var dialogError = new ContentDialog
+                {
+                    Title = "Erro ao exportar",
+                    Content = $"Não foi possível exportar o DOCX: {ex.Message}",
+                    CloseButtonText = "OK",
+                    XamlRoot = this.Content.XamlRoot
+                };
+                await dialogError.ShowAsync();
+            }
         }
+
 
         private async void Hyperlink_Click(Hyperlink sender, HyperlinkClickEventArgs args)
         {
@@ -110,7 +161,11 @@ namespace JrTools.Pages
         {
             var button = BuildarDotnetButton;
             button.IsEnabled = false;           
-            LoadingRing.IsActive = true;       
+            LoadingRing.IsActive = true;
+
+            var config = await ConfigHelper.LerConfiguracoesAsync();
+            string workingDir = config.DiretorioProducao;
+            string caminhoAlteracao = Path.Combine(workingDir, "alteracao.txt");
 
             var progresso = new Progress<string>(msg => AppendTerminalLog(msg));
 
@@ -181,7 +236,11 @@ namespace JrTools.Pages
             finally
             {
                 button.IsEnabled = true;       
-                LoadingRing.IsActive = false;   
+                LoadingRing.IsActive = false;
+                if (File.Exists(caminhoAlteracao))
+                {
+                    File.Delete(caminhoAlteracao);
+                }
             }
         }
 

@@ -224,9 +224,9 @@ namespace JrTools.Pages
                 if (string.IsNullOrWhiteSpace(token)) return;
 
                 var toggl = new TogglClient(token);
-                var entries = await toggl.GetTodayTimeEntriesAsync();
+                var entries = await toggl.GetTodayTimeEntriesAsync(DateTime.Today);
 
-                double totalHoras = 0; // variável para acumular todas as horas
+                double totalHoras = 0; 
 
                 foreach (var entry in entries.EnumerateArray())
                 {
@@ -235,13 +235,12 @@ namespace JrTools.Pages
                     if (entry.TryGetProperty("duration", out var durProp))
                     {
                         var dur = durProp.GetDouble();
-                        if (dur > 0) durHoras = dur / 3600.0; // converter de segundos para horas
+                        if (dur > 0) durHoras = dur / 3600.0; 
                     }
 
                     totalHoras += durHoras; 
                 }
 
-                // Atualiza o TextBox com o total formatado
                 string formato = "H ";
                 TotalHorasLancadas.Text = formato +=  totalHoras.ToString("0.##"); // duas casas decimais
             }

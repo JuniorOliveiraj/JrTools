@@ -92,14 +92,13 @@ namespace JrTools.Services
 
 
 
-        public async Task<JsonElement> GetTodayTimeEntriesAsync()
+        public async Task<JsonElement> GetTodayTimeEntriesAsync(DateTime dataLancamento)
         {
-            // pega data atual
-            var today = DateTime.Today;
+
             var offset = DateTimeOffset.Now.Offset; // timezone local
 
             // define início e fim do dia
-            var start = new DateTimeOffset(today.Year, today.Month, today.Day, 0, 0, 0, offset);
+            var start = new DateTimeOffset(dataLancamento.Year, dataLancamento.Month, dataLancamento.Day, 0, 0, 0, offset);
             var end = start.AddDays(1).AddSeconds(-1);
 
             string startStr = Uri.EscapeDataString(start.ToString("yyyy-MM-ddTHH:mm:sszzz"));

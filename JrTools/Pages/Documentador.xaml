@@ -63,11 +63,11 @@
             <!-- Commit -->
             <Expander x:Name="ExpanderCommit" IsExpanded="True" Grid.Row="1" Style="{StaticResource FullWidthExpanderStyle}">
                 <Expander.Header>
-                    <TextBlock Text="Commit" Style="{ThemeResource SubtitleTextBlockStyle}" FontWeight="Bold" FontSize="16"/>
+                    <TextBlock Text="ID do commit" Style="{ThemeResource SubtitleTextBlockStyle}" FontWeight="Bold" FontSize="16"/>
                 </Expander.Header>
                 <Expander.Content>
                     <Border Style="{StaticResource FancyCardStyle}" Margin="0">
-                        <TextBox x:Name="CommitTextBox" PlaceholderText="Digite a string do commit..." AcceptsReturn="False"/>
+                        <TextBox x:Name="CommitTextBox" PlaceholderText="Digitar o SHA ID do commit..." AcceptsReturn="False"/>
                     </Border>
                 </Expander.Content>
             </Expander>
@@ -135,9 +135,15 @@
                                 </StackPanel>
                             </Button>
 
-                            <Button x:Name="ExportPdfButton" Style="{StaticResource FancySecondaryButtonStyle}" Click="ExportPdfButton_Click">
-                                <TextBlock Text="📄 PDF"/>
+                            <Button x:Name="ExportPdfButton" 
+                                Style="{StaticResource FancySecondaryButtonStyle}" 
+                                Click="ExportDOCXButton_Click">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="8">
+                                    <TextBlock Text="Exportar doc" VerticalAlignment="Center"/>
+                                    <FontIcon Glyph="&#xE8E5;" VerticalAlignment="Center"/>
+                                </StackPanel>
                             </Button>
+
 
                             <ProgressRing x:Name="LoadingRing" IsActive="False" Width="28" Height="28" VerticalAlignment="Center"/>
                         </StackPanel>

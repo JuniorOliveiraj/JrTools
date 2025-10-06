@@ -29,7 +29,6 @@
 
             <!-- GRID RESPONSIVO -->
             <Grid x:Name="ResponsiveGrid" ColumnSpacing="16" RowSpacing="16">
-                <!-- Layout padrão: dois cards lado a lado -->
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
@@ -51,10 +50,49 @@
                 <!-- Segundo card -->
                 <Border Style="{StaticResource ResponsiveCardStyle}" Grid.Column="1">
                     <StackPanel Spacing="20">
-                        <TextBox x:Name="LoginRhWeb" Header="Login RhWeb" TextChanged="DadosPessoais_TextChanged"/>
-                        <PasswordBox x:Name="SenhaRhWeb" Header="Senha RhWeb" PasswordChanged="SenhaSiteJR_PasswordChanged" Password="*********"/>
-                        <PasswordBox x:Name="ApiGeminiPasswordBox" Header="Token API Gemini" PasswordChanged="ApiTokenGemini_PasswordChanged" Password="*****************************"/>
-                        <PasswordBox x:Name="ApiTogglPasswordBox" Header="Token API Toggl" PasswordChanged="ApiToggl_PasswordChanged" Password="*****************************"/>
+
+                        <!-- Login normal -->
+                        <TextBox x:Name="LoginRhWeb" Header="Login MyPlace" TextChanged="DadosPessoais_TextChanged"/>
+
+                        <!-- Senha MyPlace -->
+                        <Grid>
+                            <PasswordBox x:Name="SenhaRhWeb" Header="Senha MyPlace" PasswordChanged="SenhaSiteJR_PasswordChanged"/>
+                            <TextBox x:Name="SenhaRhWebVisible" Visibility="Collapsed" Header="Senha MyPlace" TextChanged="SenhaSiteJR_PasswordChanged"/>
+                            <Button
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Center"
+                                    Width="40"
+                                    Click="ToggleSenhaVisibility_Click">
+                                <FontIcon Glyph="&#xE890;" />
+                            </Button>
+                        </Grid>
+
+                        <!-- Token API Gemini -->
+                        <Grid>
+                            <PasswordBox x:Name="ApiGeminiPasswordBox" Header="Token Api Gemini"  PasswordChanged="ApiTokenGemini_PasswordChanged"/>
+                            <TextBox x:Name="ApiGeminiVisible" Visibility="Collapsed" Header="Token Api Gemini" TextChanged="ApiTokenGemini_PasswordChanged"/>
+                            <Button 
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Center"
+                                    Width="40"
+                                    Click="ToggleApiGeminiVisibility_Click">
+                                <FontIcon Glyph="&#xE890;" />
+                            </Button>
+                        </Grid>
+
+                        <!-- Token API Toggl -->
+                        <Grid>
+                            <PasswordBox x:Name="ApiTogglPasswordBox" Header="Token Api Toggl" PasswordChanged="ApiToggl_PasswordChanged"/>
+                            <TextBox x:Name="ApiTogglVisible" Visibility="Collapsed" Header="Token Api Toggl"  TextChanged="ApiToggl_PasswordChanged"/>
+                            <Button 
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Center"
+                                    Width="40"
+                                    Click="ToggleApiTogglVisibility_Click">
+                                <FontIcon Glyph="&#xE890;" />
+                            </Button>
+                        </Grid>
+
                     </StackPanel>
                 </Border>
             </Grid>
@@ -64,8 +102,6 @@
     <!-- ESTADOS RESPONSIVOS -->
     <VisualStateManager.VisualStateGroups>
         <VisualStateGroup x:Name="WindowStates">
-
-            <!-- Modo lado a lado -->
             <VisualState x:Name="WideState">
                 <VisualState.StateTriggers>
                     <AdaptiveTrigger MinWindowWidth="700" />
@@ -80,7 +116,6 @@
                 </VisualState.Setters>
             </VisualState>
 
-            <!-- Modo empilhado (um abaixo do outro) -->
             <VisualState x:Name="NarrowState">
                 <VisualState.StateTriggers>
                     <AdaptiveTrigger MinWindowWidth="0" />
