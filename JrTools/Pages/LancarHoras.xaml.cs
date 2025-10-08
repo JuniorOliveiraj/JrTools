@@ -91,7 +91,7 @@ namespace JrTools.Pages
                     return;
                 }
 
-                string projetoSelecionado = ProjetoComboBox.SelectedItem?.ToString() == "Nenhum"
+                string? projetoSelecionado = ProjetoComboBox.SelectedItem?.ToString() == "Nenhum"
                     ? string.Empty
                     : ProjetoComboBox.SelectedItem?.ToString();
 
@@ -154,7 +154,6 @@ namespace JrTools.Pages
             ValidationInfoBar.Message = message;
             ValidationInfoBar.IsOpen = true;
         }
-        // Altere a assinatura do método DiaLancamento_Changed para:
         private async void DiaLancamento_Changed(DatePicker sender, DatePickerSelectedValueChangedEventArgs e)
         {
             await CarregarLancamentosAsync();

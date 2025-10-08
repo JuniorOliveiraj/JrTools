@@ -49,12 +49,20 @@
                 <NavigationView.MenuItems>
                     <NavigationViewItem Icon="Home" Content="Home" Tag="Home"/>
                     <NavigationViewItem Icon="Play" Content="Rh prod" Tag="Rhprod"/>
+                    
                     <NavigationViewItem Content="Buildar Projetos" Tag="BuildarProjeto">
                         <NavigationViewItem.Icon>
                             <FontIcon Glyph="&#xEC7A;" />
                         </NavigationViewItem.Icon>
                     </NavigationViewItem>
-                    <NavigationViewItem Icon="People" Content="Espesificos" Tag="Espesificos"/>
+
+                    <NavigationViewItem Content="Copy" Tag="CopyPage">
+                        <NavigationViewItem.Icon>
+                            <FontIcon Glyph="&#xF413;" />
+                        </NavigationViewItem.Icon>
+                    </NavigationViewItem>
+
+                    <NavigationViewItem Icon="People" Content="Específicos" Tag="Especificos"/>
 
                     <NavigationViewItem   Content="Fechar Processos" Tag="FecharProcessos">
                         <NavigationViewItem.Icon>

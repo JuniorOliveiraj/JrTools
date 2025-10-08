@@ -21,6 +21,7 @@ namespace JrTools
         private Pages.EspesificosPage _espesificosPage = new Pages.EspesificosPage();
         private Pages.RhProdPage _rhProdPage = new Pages.RhProdPage();
         private Pages.BuildarProjeto _buildarProjeto = new Pages.BuildarProjeto();
+        private Pages.Copy _CopyPage = new Pages.Copy();
         private Pages.FecharProcessos _fecharProcessos = new Pages.FecharProcessos();
         private Pages.Documentador _documentador = new Pages.Documentador();
         private Pages.LancarHoras _lancarHoras = new Pages.LancarHoras();
@@ -67,7 +68,7 @@ namespace JrTools
                     case "Home":
                         ContentFrame.Content = _homePage;
                         break;
-                    case "Espesificos":
+                    case "Especificos":
                         ContentFrame.Content = _espesificosPage;
                         break;
                     case "Rhprod":
@@ -75,6 +76,9 @@ namespace JrTools
                         break;
                     case "BuildarProjeto":
                         ContentFrame.Content = _buildarProjeto;
+                        break;
+                    case "CopyPage":
+                        ContentFrame.Content = _CopyPage;
                         break;
                     case "FecharProcessos":
                         ContentFrame.Content = _fecharProcessos;
