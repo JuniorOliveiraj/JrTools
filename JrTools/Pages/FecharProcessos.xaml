@@ -6,10 +6,13 @@
     xmlns:local="using:JrTools.Pages"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d">
+    mc:Ignorable="d"
+
+    IsTabStop="True"
+    AllowFocusOnInteraction="True"
+    TabNavigation="Cycle">
 
     <Page.Resources>
-        <!-- Estilo para os cards que se ajustam em grade -->
         <Style x:Key="ResponsiveCardStyle" TargetType="Border">
             <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}"/>
             <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}"/>
@@ -21,13 +24,11 @@
             <Setter Property="MaxWidth" Value="500"/>
         </Style>
 
-        <!-- Novo estilo para o card de terminal, que ocupa a largura total -->
         <Style x:Key="FullWidthCardStyle" TargetType="Border" BasedOn="{StaticResource ResponsiveCardStyle}">
             <Setter Property="MaxWidth" Value="9999"/>
             <Setter Property="HorizontalAlignment" Value="Stretch"/>
         </Style>
 
-        <!-- Novo estilo para Expander que ocupa largura total -->
         <Style x:Key="FullWidthExpanderStyle" TargetType="Expander">
             <Setter Property="HorizontalAlignment" Value="Stretch"/>
             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
@@ -39,30 +40,22 @@
         <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16">
             <StackPanel Spacing="16">
 
-                <!-- Contêiner para título e botões -->
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
-                    <!-- Título -->
                     <TextBlock Text="Processos" 
                         Style="{ThemeResource TitleTextBlockStyle}" 
                         VerticalAlignment="Center"
                         Grid.Column="0"/>
-
-
                 </Grid>
 
                 <InfoBar x:Name="ValidationInfoBar" IsOpen="False" Severity="Error" Margin="0,0,8,0"/>
 
-                <!-- EXPANDER BUILDAR DOTNET -->
-                <Expander  x:Name="ExpanderDotNet"  Style="{StaticResource FullWidthExpanderStyle}" IsExpanded="True">
-                    <Expander.Header>
+ 
                         <TextBlock Text="Fechar Processos" VerticalAlignment="Center"/>
-                    </Expander.Header>
-                    <Expander.Content>
                         <StackPanel Spacing="5" HorizontalAlignment="Stretch">
                             <Border Style="{StaticResource FullWidthCardStyle}">
                                 <StackPanel Spacing="5">
@@ -73,7 +66,6 @@
                                             </ItemsPanelTemplate>
                                         </ItemsControl.ItemsPanel>
 
-                                        <!-- Mantém apenas o botão "Manter Tudo Fechado" fixo -->
                                         <ToggleButton x:Name="ManterTudoFechadoToggleButton"                                              
                                               Click="ManterTudoFechadoToggleButton_Click"
                                               FontSize="16"
@@ -91,13 +83,104 @@
                                 </StackPanel>
                             </Border>
 
+                            <!-- DETALHES DOS PROCESSOS -->
+                            <Expander Header="Detalhes dos Processos BPrv230"
+                                      Style="{StaticResource FullWidthExpanderStyle}"
+                                      IsExpanded="True">
+                                <Border Style="{StaticResource FullWidthCardStyle}">
+                                    <StackPanel Spacing="16">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
 
-                            <!-- CARD 3: Terminal de Processamento -->
+                                            <StackPanel Grid.Column="0" Spacing="4">
+                                                <TextBlock Text="Clique em um processo para ver os logs completos no terminal abaixo" 
+                                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                                           Foreground="{ThemeResource SystemColorGrayTextColor}"/>
+                                                <TextBlock Text="Pressione DELETE ou clique no botão para encerrar o processo selecionado" 
+                                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                                           Foreground="{ThemeResource SystemAccentColor}"
+                                                           FontWeight="SemiBold"/>
+                                            </StackPanel>
+
+                                            <Button Grid.Column="1" 
+                                                    x:Name="MatarProcessoButton"
+                                                    Content="Encerrar Processo"
+                                                    Click="MatarProcessoButton_Click"
+                                                    Background="{ThemeResource SystemFillColorCriticalBrush}"
+                                                    IsEnabled="False"
+                                                    VerticalAlignment="Center"/>
+                                        </Grid>
+
+                                        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                                            <ListView x:Name="ProcessosDataGrid"
+                                                      IsItemClickEnabled="False"
+                                                      SelectionMode="Single"
+                                                      SelectionChanged="ProcessosDataGrid_SelectionChanged"
+                                                      MinHeight="200">
+                                                <ListView.Header>
+                                                    <Grid Padding="8,4">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="120"/>
+                                                            <ColumnDefinition Width="80"/>
+                                                            <ColumnDefinition Width="150"/>
+                                                            <ColumnDefinition Width="120"/>
+                                                            <ColumnDefinition Width="150"/>
+                                                            <ColumnDefinition Width="100"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock Grid.Column="0" Text="Nome" FontWeight="Bold"/>
+                                                        <TextBlock Grid.Column="1" Text="PID" FontWeight="Bold"/>
+                                                        <TextBlock Grid.Column="2" Text="Host" FontWeight="Bold"/>
+                                                        <TextBlock Grid.Column="3" Text="Tempo CPU" FontWeight="Bold"/>
+                                                        <TextBlock Grid.Column="4" Text="Hora Início" FontWeight="Bold"/>
+                                                        <TextBlock Grid.Column="5" Text="Versão" FontWeight="Bold"/>
+                                                        <TextBlock Grid.Column="6" Text="Linha de Comando" FontWeight="Bold"/>
+                                                    </Grid>
+                                                </ListView.Header>
+                                                <ListView.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Grid Padding="8,4">
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="120"/>
+                                                                <ColumnDefinition Width="80"/>
+                                                                <ColumnDefinition Width="150"/>
+                                                                <ColumnDefinition Width="120"/>
+                                                                <ColumnDefinition Width="150"/>
+                                                                <ColumnDefinition Width="100"/>
+                                                                <ColumnDefinition Width="*"/>
+                                                            </Grid.ColumnDefinitions>
+                                                            <TextBlock Grid.Column="0" Text="{Binding NomeProcesso}" VerticalAlignment="Center"/>
+                                                            <TextBlock Grid.Column="1" Text="{Binding PID}" VerticalAlignment="Center"/>
+                                                            <TextBlock Grid.Column="2" Text="{Binding Host}" VerticalAlignment="Center"/>
+                                                            <TextBlock Grid.Column="3" Text="{Binding TempoCPU}" VerticalAlignment="Center"/>
+                                                            <TextBlock Grid.Column="4" Text="{Binding HoraInicio}" VerticalAlignment="Center"/>
+                                                            <TextBlock Grid.Column="5" Text="{Binding VersaoArquivo}" VerticalAlignment="Center"/>
+                                                            <TextBlock Grid.Column="6" Text="{Binding LinhaComando}" 
+                                                                       TextWrapping="NoWrap" 
+                                                                       TextTrimming="CharacterEllipsis"
+                                                                       VerticalAlignment="Center"
+                                                                       ToolTipService.ToolTip="{Binding LinhaComando}"/>
+                                                        </Grid>
+                                                    </DataTemplate>
+                                                </ListView.ItemTemplate>
+                                            </ListView>
+                                        </ScrollViewer>
+                                    </StackPanel>
+                                </Border>
+                            </Expander>
+
+                            <!-- TERMINAL DE PROCESSAMENTO -->
                             <Border Style="{StaticResource FullWidthCardStyle}">
                                 <StackPanel Spacing="12">
                                     <TextBlock Text="Terminal de Processamento" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                                    <TextBlock Text="Selecione um processo acima para ver seus logs detalhados" 
+                                               Style="{ThemeResource CaptionTextBlockStyle}"
+                                               Foreground="{ThemeResource SystemColorGrayTextColor}"/>
                                     <Border Background="Black" CornerRadius="4" Padding="8">
-                                        <ScrollViewer x:Name="TerminalScrollViewer" Height="150" VerticalScrollBarVisibility="Auto">
+                                        <ScrollViewer x:Name="TerminalScrollViewer" Height="300" VerticalScrollBarVisibility="Auto">
                                             <TextBlock x:Name="TerminalOutput"
                                                 Text="Aguardando execução..." 
                                                 FontFamily="Consolas" 
@@ -110,9 +193,7 @@
                                 </StackPanel>
                             </Border>
                         </StackPanel>
-                    </Expander.Content>
-
-                </Expander>
+    
 
             </StackPanel>
         </ScrollViewer>

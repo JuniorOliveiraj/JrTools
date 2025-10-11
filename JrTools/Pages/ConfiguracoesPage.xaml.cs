@@ -113,6 +113,7 @@ namespace JrTools.Pages
         {
             if (_dadosPessoais == null) return;
             _dadosPessoais.LoginRhWeb = LoginRhWeb.Text;
+            _dadosPessoais.UrlRh = UrlRhWeb.Text;
             await PerfilPessoalHelper.SalvarConfiguracoesAsync(_dadosPessoais);
         }
 

@@ -1,10 +1,12 @@
 using JrTools.Dto;
 using JrTools.Flows;
+using JrTools.Flows.Build;
 using JrTools.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -39,6 +41,7 @@ namespace JrTools.Pages
         {
             await CarregarConfiguracoes();
             CarregarProjetos();
+            CarregarProjetosDelphi();
         }
 
         private async System.Threading.Tasks.Task CarregarConfiguracoes()
@@ -76,6 +79,26 @@ namespace JrTools.Pages
             else
             {
                 ProjetoDotnetselecionadoComboBox.SelectedIndex = 0;
+            }
+        }
+        private void CarregarProjetosDelphi()
+        {
+            var diretorio = _config?.DiretorioEspecificos;
+            ListaDeProjetos = Folders.ListarPastas(diretorio);
+            ProjetoDelphiselecionadoComboBox.ItemsSource = ListaDeProjetos;
+            ProjetoDelphiselecionadoComboBox.DisplayMemberPath = "Nome";
+
+            // Seleciona automaticamente a pasta "delphi" se existir
+            var projetoDelphi = ListaDeProjetos.FirstOrDefault(p =>
+                string.Equals(p.Nome, "prod", StringComparison.OrdinalIgnoreCase));
+
+            if (projetoDelphi != null)
+            {
+                ProjetoDelphiselecionadoComboBox.SelectedItem = projetoDelphi;
+            }
+            else if (ListaDeProjetos.Any())
+            {
+                ProjetoDelphiselecionadoComboBox.SelectedIndex = 0;
             }
         }
 
@@ -209,13 +232,53 @@ namespace JrTools.Pages
 
         private void ProjetoDelphiComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (ProjetoDelphiselecionadoComboBox.SelectedItem is PastaInformacoesDto projetoSelecionado)
+            {
+                string caminhoProjeto = Path.Combine(projetoSelecionado.Caminho, "Delphi");
 
+                // Usando o método genérico recursivo com cache
+                ListaSolucoes = Folders.EncontrarProjetosDelphi(caminhoProjeto, usarCache: true);
+
+                SolucaoDelphiSelecionadoComboBox.ItemsSource = ListaSolucoes;
+                SolucaoDelphiSelecionadoComboBox.DisplayMemberPath = "Nome";
+
+                // Seleciona o primeiro item, se existir
+                SolucaoDelphiSelecionadoComboBox.SelectedIndex = ListaSolucoes.Any() ? 0 : -1;
+            }
         }
+
+
 
         private async void ProcessarDelphiButton_Click(object sender, RoutedEventArgs e)
         {
+            if (SolucaoDelphiSelecionadoComboBox.SelectedItem is not SolucaoInformacoesDto solucaoSelecionada)
+            {
+                ShowValidationError("Selecione uma solução Delphi antes de processar.");
+                return;
+            }
 
+            BuildarDelphiButton.IsEnabled = false;
+            LoadingDelphiRing.IsActive = true;
+
+            var progresso = (IProgress<string>)new Progress<string>(msg => AppendTerminalLogDelphi(msg));
+
+            try
+            {
+                var buildHandler = new BuildarDelphiSrv();
+                await buildHandler.BuildarProjetoDelphiAsync(solucaoSelecionada.Caminho, progresso);
+            }
+            catch (Exception ex)
+            {
+                progresso.Report($"[ERRO] Falha inesperada: {ex.Message}");
+            }
+            finally
+            {
+                BuildarDelphiButton.IsEnabled = true;
+                LoadingDelphiRing.IsActive = false;
+            }
         }
+
+
         private void Expander_IsExpandedChanged(DependencyObject sender, DependencyProperty dp)
         {
             var expandedExpander = sender as Expander;
@@ -246,6 +309,25 @@ namespace JrTools.Pages
                 }
             }
         }
+        public static List<SolucaoInformacoesDto> ListarArquivosPorExtensao(string diretorio, string extensao)
+        {
+            var lista = new List<SolucaoInformacoesDto>();
+
+            if (Directory.Exists(diretorio))
+            {
+                var arquivos = Directory.GetFiles(diretorio, $"*{extensao}", SearchOption.AllDirectories);
+                foreach (var arquivo in arquivos)
+                {
+                    lista.Add(new SolucaoInformacoesDto
+                    {
+                        Nome = Path.GetFileName(arquivo),
+                        Caminho = arquivo
+                    });
+                }
+            }
+
+            return lista;
+        }
 
         private void ShowValidationError(string mensagem)
         {
@@ -266,6 +348,23 @@ namespace JrTools.Pages
                 TerminalScrollViewer.ChangeView(null, TerminalScrollViewer.ScrollableHeight, null);
             });
         }
+
+        private void AppendTerminalLogDelphi(string mensagem)
+        {
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                TerminalDelphiOutput.Text += mensagem + "\n";
+
+                if (TerminalDelphiOutput.Text.Length > MAX_TERMINAL_LENGTH)
+                {
+                    TerminalDelphiOutput.Text = TerminalDelphiOutput.Text.Substring(TerminalDelphiOutput.Text.Length - MAX_TERMINAL_LENGTH);
+                }
+
+                TerminalScrollViewerDelphi.ChangeView(null, TerminalScrollViewerDelphi.ScrollableHeight, null);
+            });
+        }
+
+
 
     }
 }

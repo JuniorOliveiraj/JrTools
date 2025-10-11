@@ -39,7 +39,7 @@
                     <StackPanel Spacing="20">
                         <TextBlock Text="Parametrizações" Style="{ThemeResource SubtitleTextBlockStyle}"/>
                         <TextBox x:Name="DiretorioBinarios" Header="Diretório binários Delphi"
-                                 Text="D:\Benner\bin\Delphi" TextChanged="DiretorioBinarios_TextChanged"/>
+                                 Text="D:\Benner\bin" TextChanged="DiretorioBinarios_TextChanged"/>
                         <TextBox x:Name="DiretorioProducao" Header="Diretório de produção"
                                  Text="D:\Benner\fontes\rh\prod" TextChanged="DiretorioProducao_TextChanged"/>
                         <TextBox x:Name="DiretorioEspesificos" Header="Diretórios específicos"
@@ -67,6 +67,7 @@
                             </Button>
                         </Grid>
 
+                        <TextBox x:Name="UrlRhWeb" Header="Url Rhweb " TextChanged="DadosPessoais_TextChanged" Text="https://rh.portalbenner.com.br/RHWEB"/>
                         <!-- Token API Gemini -->
                         <Grid>
                             <PasswordBox x:Name="ApiGeminiPasswordBox" Header="Token Api Gemini"  PasswordChanged="ApiTokenGemini_PasswordChanged"/>

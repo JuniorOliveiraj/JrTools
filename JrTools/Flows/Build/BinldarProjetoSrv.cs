@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace JrTools.Flows
+namespace JrTools.Flows.Build
 {
     public class BinldarProjetoSrv
     {

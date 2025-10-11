@@ -25,7 +25,8 @@ namespace JrTools.Services
 
         public async Task<bool> LoginAsync()
         {
-            var url = $"{urlRh}/app_services/auth.oauth2.svc/token";
+            string urlRhPadrao = string.IsNullOrEmpty(_dados.UrlRh) ? urlRh : _dados.UrlRh;
+            var url = $"{urlRhPadrao}/app_services/auth.oauth2.svc/token";
 
             var content = new StringContent(
                 $"username={_dados.LoginRhWeb}&password={_dados.SenhaRhWeb}&grant_type=password",
@@ -69,8 +70,9 @@ namespace JrTools.Services
                 var loginOk = await LoginAsync();
                 if (!loginOk) throw new Exception("Falha ao fazer login na API.");
             }
+            string urlRhPadrao = string.IsNullOrEmpty(_dados.UrlRh) ? urlRh : _dados.UrlRh;
 
-            var request = new HttpRequestMessage(HttpMethod.Get, (urlRh + url));
+            var request = new HttpRequestMessage(HttpMethod.Get, (urlRhPadrao + url));
             request.Headers.Add("Authorization", $"Bearer {_dados.TokenRhWeb}");
 
             var response = await _httpClient.SendAsync(request);
