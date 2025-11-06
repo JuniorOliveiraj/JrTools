@@ -1,7 +1,9 @@
-﻿using System;
+﻿using JrTools.Dto;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -10,41 +12,51 @@ namespace JrTools.Flows
     /// <summary>
     /// Gerencia o espelhamento bidirecional de diretórios em tempo real
     /// </summary>
-    public class PastaEspelhador : IDisposable
+    public class PastaEspelhador : IDisposable, IAsyncDisposable
     {
         #region Constantes
-        private const int DEBOUNCE_DELAY_MS = 100;
+        private const int DEBOUNCE_DELAY_MS = 500;
         private const int RETRY_DELAY_MS = 500;
         private const int MAX_RETRIES = 3;
+        private const int VERIFICACAO_PERIODICA_MS = 10000;
         #endregion
 
         #region Campos Privados
         private FileSystemWatcher? _watcher;
-        private bool _executando;
+        private volatile bool _executando;
         private readonly object _lock = new();
         private readonly SemaphoreSlim _semaphore = new(1, 1);
+        private CancellationTokenSource? _cancellationTokenSource;
+        private Task? _tarefaMonitoramento;
+        private bool _disposed;
 
-        // Controle de eventos duplicados
         private readonly Dictionary<string, DateTime> _ultimosEventos = new();
+        private readonly Dictionary<string, string> _hashsArquivos = new();
         #endregion
 
         #region Propriedades
         public bool EstaExecutando => _executando;
+        public bool IsDisposed => _disposed;
         #endregion
 
-        #region Métodos Públicos
+
         /// <summary>
         /// Inicia o espelhamento assíncrono entre dois diretórios
         /// </summary>
         public async Task IniciarEspelhamentoAsync(
             string origem,
             string destino,
-            IProgress<string>? progresso = null,
+            IProgress<ProgressoEspelhamento>? progresso = null,
             CancellationToken cancellationToken = default)
         {
+            ThrowIfDisposed();
+
             if (_executando)
             {
-                progresso?.Report("O espelhamento já está em execução.");
+                ReportarProgresso(progresso, new ProgressoEspelhamento
+                {
+                    Mensagem = "O espelhamento já está em execução."
+                });
                 return;
             }
 
@@ -52,54 +64,206 @@ namespace JrTools.Flows
 
             try
             {
+                // Limpar estado anterior se houver
+                await LimparEstadoAnteriorAsync();
+
                 _executando = true;
-                progresso?.Report($"Iniciando espelhamento: {origem} → {destino}");
+                _cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+
+                ReportarProgresso(progresso, new ProgressoEspelhamento
+                {
+                    Fase = FaseEspelhamento.Analise,
+                    Percentual = 0,
+                    Status = "Iniciando espelhamento",
+                    Mensagem = $"Iniciando espelhamento: {origem} → {destino}"
+                });
 
                 // Fase 1: Sincronização inicial
-                await SincronizarDiretoriosAsync(origem, destino, progresso, cancellationToken);
+                await SincronizarDiretoriosAsync(origem, destino, progresso, _cancellationTokenSource.Token);
 
-                // Fase 2: Monitoramento contínuo
+                // Fase 2: Iniciar monitoramento em tempo real
                 IniciarMonitoramento(origem, destino, progresso);
 
-                progresso?.Report("Espelhamento ativo. Monitorando alterações...");
-
-                // Manter a thread ativa enquanto o espelhamento está rodando
-                while (_executando && !cancellationToken.IsCancellationRequested)
+                // Fase 3: Iniciar verificação periódica
+                _tarefaMonitoramento = Task.Run(async () =>
                 {
-                    await Task.Delay(1000, cancellationToken);
+                    try 
+                    {
+                        await MonitoramentoContinuoAsync(origem, destino, progresso, _cancellationTokenSource.Token);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // Esperado quando cancelado
+                    }
+                    catch (Exception ex)
+                    {
+                        ReportarProgresso(progresso, new ProgressoEspelhamento
+                        {
+                            Mensagem = $"❌ Erro fatal no monitoramento: {ex.Message}"
+                        });
+                        throw;
+                    }
+                }, _cancellationTokenSource.Token);
+
+                ReportarProgresso(progresso, new ProgressoEspelhamento
+                {
+                    Fase = FaseEspelhamento.MonitoramentoContinuo,
+                    Percentual = 100,
+                    Status = "Monitoramento ativo",
+                    Mensagem = "✓ Espelhamento ativo. Monitorando alterações em tempo real..."
+                });
+
+                while (_executando && !_cancellationTokenSource.Token.IsCancellationRequested)
+                {
+                    await Task.Delay(1000, _cancellationTokenSource.Token);
                 }
             }
             catch (OperationCanceledException)
             {
-                progresso?.Report("Espelhamento cancelado.");
+                ReportarProgresso(progresso, new ProgressoEspelhamento
+                {
+                    Mensagem = "Espelhamento cancelado."
+                });
                 throw;
             }
             catch (Exception ex)
             {
-                progresso?.Report($"ERRO: {ex.Message}");
+                ReportarProgresso(progresso, new ProgressoEspelhamento
+                {
+                    Mensagem = $"ERRO: {ex.Message}"
+                });
                 throw;
             }
         }
 
-        /// <summary>
-        /// Para o espelhamento
-        /// </summary>
-        public void Parar()
+        public async Task PararAsync(TimeSpan? timeout = null)
         {
             if (!_executando)
                 return;
 
+            var timeoutValue = timeout ?? TimeSpan.FromSeconds(5);
+
             lock (_lock)
             {
-                _executando = false;
+                if (!_executando)
+                    return;
 
+                _executando = false;
+                _cancellationTokenSource?.Cancel();
+            }
+
+            try
+            {
+                if (_tarefaMonitoramento != null)
+                {
+                    // Aguardar a tarefa completar ou timeout
+                    using var timeoutCts = new CancellationTokenSource(timeoutValue);
+                    await Task.WhenAny(_tarefaMonitoramento, Task.Delay(timeoutValue, timeoutCts.Token));
+                }
+            }
+            catch (Exception)
+            {
+                // Ignorar erros ao aguardar finalização
+            }
+            finally
+            {
+                await LimparRecursosAsync();
+            }
+        }
+
+        private async Task LimparEstadoAnteriorAsync()
+        {
+            if (_executando)
+            {
+                await PararAsync();
+            }
+
+            _ultimosEventos.Clear();
+            _hashsArquivos.Clear();
+        }
+
+        private async Task LimparRecursosAsync()
+        {
+            try
+            {
                 if (_watcher != null)
                 {
                     _watcher.EnableRaisingEvents = false;
+                    _watcher.Created -= null;
+                    _watcher.Changed -= null;
+                    _watcher.Deleted -= null;
+                    _watcher.Renamed -= null;
+                    _watcher.Error -= null;
                     _watcher.Dispose();
                     _watcher = null;
                 }
+
+                if (_cancellationTokenSource != null)
+                {
+                    await _cancellationTokenSource.CancelAsync();
+                    _cancellationTokenSource.Dispose();
+                    _cancellationTokenSource = null;
+                }
+
+                _ultimosEventos.Clear();
+                _hashsArquivos.Clear();
             }
+            catch
+            {
+                // Ignora erros na limpeza
+            }
+        }
+
+        private void ThrowIfDisposed()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(PastaEspelhador));
+            }
+        }
+
+        #region IDisposable e IAsyncDisposable
+        public async ValueTask DisposeAsync()
+        {
+            if (_disposed)
+                return;
+
+            await PararAsync();
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        public void Dispose()
+        {
+            if (_disposed)
+                return;
+
+            PararAsync().GetAwaiter().GetResult();
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+
+            if (disposing)
+            {
+                try
+                {
+                    _semaphore?.Dispose();
+                    _cancellationTokenSource?.Dispose();
+                    _watcher?.Dispose();
+                    _tarefaMonitoramento?.Wait(TimeSpan.FromSeconds(2));
+                }
+                catch
+                {
+                    // Ignore disposal errors
+                }
+            }
+
+            _disposed = true;
         }
         #endregion
 
@@ -117,41 +281,207 @@ namespace JrTools.Flows
         }
         #endregion
 
+        #region Helpers de Progresso
+        private void ReportarProgresso(IProgress<ProgressoEspelhamento>? progresso, ProgressoEspelhamento info)
+        {
+            progresso?.Report(info);
+        }
+        #endregion
+
+        #region Monitoramento Contínuo
+        private async Task MonitoramentoContinuoAsync(
+            string origem,
+            string destino,
+            IProgress<ProgressoEspelhamento>? progresso,
+            CancellationToken cancellationToken)
+        {
+            ReportarProgresso(progresso, new ProgressoEspelhamento
+            {
+                Mensagem = "⏱ Verificação periódica iniciada (a cada 10 segundos)"
+            });
+
+            while (!cancellationToken.IsCancellationRequested && _executando)
+            {
+                try
+                {
+                    await Task.Delay(VERIFICACAO_PERIODICA_MS, cancellationToken);
+
+                    if (!_executando) break;
+
+                    ReportarProgresso(progresso, new ProgressoEspelhamento
+                    {
+                        Mensagem = "🔍 Verificando alterações..."
+                    });
+
+                    await VerificarAlteracoesAsync(origem, destino, progresso, cancellationToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    ReportarProgresso(progresso, new ProgressoEspelhamento
+                    {
+                        Mensagem = $"Erro na verificação periódica: {ex.Message}"
+                    });
+                }
+            }
+        }
+
+        private async Task VerificarAlteracoesAsync(
+            string origem,
+            string destino,
+            IProgress<ProgressoEspelhamento>? progresso,
+            CancellationToken cancellationToken)
+        {
+            await _semaphore.WaitAsync(cancellationToken);
+            try
+            {
+                int arquivosVerificados = 0;
+                int arquivosAtualizados = 0;
+
+                var arquivosOrigem = Directory.GetFiles(origem, "*.*", SearchOption.AllDirectories);
+
+                foreach (var arquivoOrigem in arquivosOrigem)
+                {
+                    if (cancellationToken.IsCancellationRequested) break;
+
+                    var caminhoRelativo = Path.GetRelativePath(origem, arquivoOrigem);
+                    var arquivoDestino = Path.Combine(destino, caminhoRelativo);
+
+                    if (await ArquivoPrecisaSerAtualizadoAsync(arquivoOrigem, arquivoDestino))
+                    {
+                        await TentarCopiarArquivoAsync(arquivoOrigem, arquivoDestino, progresso);
+                        arquivosAtualizados++;
+                    }
+
+                    arquivosVerificados++;
+                }
+
+                string mensagem = arquivosAtualizados > 0
+                    ? $"✓ Verificação concluída: {arquivosAtualizados} arquivo(s) atualizado(s) de {arquivosVerificados} verificados"
+                    : $"✓ Verificação concluída: Nenhuma alteração detectada ({arquivosVerificados} arquivos)";
+
+                ReportarProgresso(progresso, new ProgressoEspelhamento
+                {
+                    Mensagem = mensagem
+                });
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
+        }
+
+        private async Task<bool> ArquivoPrecisaSerAtualizadoAsync(string origem, string destino)
+        {
+            if (!File.Exists(destino))
+                return true;
+
+            var infoOrigem = new FileInfo(origem);
+            var infoDestino = new FileInfo(destino);
+
+            if (infoOrigem.Length != infoDestino.Length)
+                return true;
+
+            try
+            {
+                string hashOrigem = await CalcularHashArquivoAsync(origem);
+                string hashDestino = await CalcularHashArquivoAsync(destino);
+
+                if (hashOrigem != hashDestino)
+                {
+                    _hashsArquivos[origem] = hashOrigem;
+                    return true;
+                }
+
+                _hashsArquivos[origem] = hashOrigem;
+                return false;
+            }
+            catch
+            {
+                return infoOrigem.LastWriteTimeUtc != infoDestino.LastWriteTimeUtc;
+            }
+        }
+
+        private async Task<string> CalcularHashArquivoAsync(string caminho)
+        {
+            if (_hashsArquivos.TryGetValue(caminho, out var hashCached))
+            {
+                var info = new FileInfo(caminho);
+                if (info.Length == new FileInfo(caminho).Length)
+                {
+                    return hashCached;
+                }
+            }
+
+            using var md5 = MD5.Create();
+            using var stream = File.OpenRead(caminho);
+            var hash = await md5.ComputeHashAsync(stream);
+            return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+        }
+        #endregion
+
         #region Sincronização Inicial
         private async Task SincronizarDiretoriosAsync(
             string origem,
             string destino,
-            IProgress<string>? progresso,
+            IProgress<ProgressoEspelhamento>? progresso,
             CancellationToken cancellationToken)
         {
-            // Criar diretório de destino se não existir
             if (!Directory.Exists(destino))
             {
                 Directory.CreateDirectory(destino);
-                progresso?.Report($"Diretório de destino criado: {destino}");
+                ReportarProgresso(progresso, new ProgressoEspelhamento
+                {
+                    Mensagem = $"Diretório de destino criado: {destino}"
+                });
             }
 
-            // Etapa 1: Limpar arquivos que não existem mais na origem
+            // Etapa 1: Análise
+            ReportarProgresso(progresso, new ProgressoEspelhamento
+            {
+                Fase = FaseEspelhamento.Analise,
+                Percentual = 5,
+                Status = "Analisando diretórios",
+                Detalhes = "Contando arquivos..."
+            });
+
+            // Etapa 2: Limpar arquivos obsoletos
             await LimparArquivosInexistentesAsync(origem, destino, progresso, cancellationToken);
 
-            // Etapa 2: Copiar/Atualizar arquivos da origem para o destino
+            // Etapa 3: Copiar/Atualizar arquivos
             await CopiarArquivosAtualizadosAsync(origem, destino, progresso, cancellationToken);
 
-            progresso?.Report("Sincronização inicial concluída.");
+            ReportarProgresso(progresso, new ProgressoEspelhamento
+            {
+                Fase = FaseEspelhamento.Copia,
+                Percentual = 100,
+                Status = "Sincronização concluída",
+                Mensagem = "✓ Sincronização inicial concluída."
+            });
         }
 
         private async Task LimparArquivosInexistentesAsync(
             string origem,
             string destino,
-            IProgress<string>? progresso,
+            IProgress<ProgressoEspelhamento>? progresso,
             CancellationToken cancellationToken)
         {
-            progresso?.Report("Limpando arquivos obsoletos no destino...");
+            ReportarProgresso(progresso, new ProgressoEspelhamento
+            {
+                Fase = FaseEspelhamento.Limpeza,
+                Percentual = 10,
+                Status = "Limpando arquivos obsoletos",
+                Mensagem = "🧹 Limpando arquivos obsoletos no destino..."
+            });
 
             await Task.Run(() =>
             {
-                // Limpar arquivos
+                int arquivosRemovidos = 0;
                 var arquivosDestino = Directory.GetFiles(destino, "*.*", SearchOption.AllDirectories);
+
                 foreach (var arquivo in arquivosDestino)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
@@ -162,12 +492,12 @@ namespace JrTools.Flows
                     if (!File.Exists(arquivoOrigem))
                     {
                         TentarDeletarArquivo(arquivo, progresso);
+                        arquivosRemovidos++;
                     }
                 }
 
-                // Limpar diretórios vazios
                 var diretoriosDestino = Directory.GetDirectories(destino, "*", SearchOption.AllDirectories)
-                    .OrderByDescending(d => d.Length); // Do mais profundo para o mais raso
+                    .OrderByDescending(d => d.Length);
 
                 foreach (var dir in diretoriosDestino)
                 {
@@ -181,18 +511,34 @@ namespace JrTools.Flows
                         TentarDeletarDiretorio(dir, progresso);
                     }
                 }
+
+                if (arquivosRemovidos > 0)
+                {
+                    ReportarProgresso(progresso, new ProgressoEspelhamento
+                    {
+                        Fase = FaseEspelhamento.Limpeza,
+                        Percentual = 30,
+                        Mensagem = $"✓ Limpeza concluída: {arquivosRemovidos} arquivo(s) removido(s)"
+                    });
+                }
             }, cancellationToken);
         }
 
         private async Task CopiarArquivosAtualizadosAsync(
             string origem,
             string destino,
-            IProgress<string>? progresso,
+            IProgress<ProgressoEspelhamento>? progresso,
             CancellationToken cancellationToken)
         {
-            progresso?.Report("Copiando arquivos atualizados...");
+            ReportarProgresso(progresso, new ProgressoEspelhamento
+            {
+                Fase = FaseEspelhamento.Copia,
+                Percentual = 35,
+                Status = "Copiando arquivos",
+                Mensagem = "📋 Copiando arquivos atualizados..."
+            });
 
-            await Task.Run(() =>
+            await Task.Run(async () =>
             {
                 // Criar estrutura de diretórios
                 var diretoriosOrigem = Directory.GetDirectories(origem, "*", SearchOption.AllDirectories);
@@ -209,9 +555,10 @@ namespace JrTools.Flows
                     }
                 }
 
-                // Copiar arquivos
+                // Copiar arquivos com progresso
                 var arquivosOrigem = Directory.GetFiles(origem, "*.*", SearchOption.AllDirectories);
                 int contador = 0;
+                int copiados = 0;
                 int total = arquivosOrigem.Length;
 
                 foreach (var arquivoOrigem in arquivosOrigem)
@@ -221,36 +568,44 @@ namespace JrTools.Flows
                     var caminhoRelativo = Path.GetRelativePath(origem, arquivoOrigem);
                     var arquivoDestino = Path.Combine(destino, caminhoRelativo);
 
-                    if (PrecisaCopiar(arquivoOrigem, arquivoDestino))
+                    if (await ArquivoPrecisaSerAtualizadoAsync(arquivoOrigem, arquivoDestino))
                     {
-                        TentarCopiarArquivo(arquivoOrigem, arquivoDestino, progresso);
+                        await TentarCopiarArquivoAsync(arquivoOrigem, arquivoDestino, null);
+                        copiados++;
                     }
 
                     contador++;
-                    if (contador % 100 == 0) // Relatar progresso a cada 100 arquivos
+
+                    // Atualizar progresso a cada 10 arquivos ou no último
+                    if (contador % 10 == 0 || contador == total)
                     {
-                        progresso?.Report($"Progresso: {contador}/{total} arquivos processados");
+                        double percentual = 35 + (contador / (double)total * 65);
+
+                        ReportarProgresso(progresso, new ProgressoEspelhamento
+                        {
+                            Fase = FaseEspelhamento.Copia,
+                            Percentual = percentual,
+                            Status = "Copiando arquivos",
+                            ArquivosProcessados = contador,
+                            TotalArquivos = total,
+                            ArquivosCopiadados = copiados
+                        });
                     }
                 }
+
+                ReportarProgresso(progresso, new ProgressoEspelhamento
+                {
+                    Fase = FaseEspelhamento.Copia,
+                    Percentual = 100,
+                    Status = "Cópia concluída",
+                    Mensagem = $"✓ Cópia concluída: {copiados} arquivo(s) copiado(s) de {total}"
+                });
             }, cancellationToken);
-        }
-
-        private static bool PrecisaCopiar(string origem, string destino)
-        {
-            if (!File.Exists(destino))
-                return true;
-
-            var infoOrigem = new FileInfo(origem);
-            var infoDestino = new FileInfo(destino);
-
-            // Copiar se o tamanho ou data de modificação forem diferentes
-            return infoOrigem.Length != infoDestino.Length ||
-                   infoOrigem.LastWriteTimeUtc != infoDestino.LastWriteTimeUtc;
         }
         #endregion
 
         #region Monitoramento em Tempo Real
-        private void IniciarMonitoramento(string origem, string destino, IProgress<string>? progresso)
+        private void IniciarMonitoramento(string origem, string destino, IProgress<ProgressoEspelhamento>? progresso)
         {
             _watcher = new FileSystemWatcher(origem)
             {
@@ -258,16 +613,23 @@ namespace JrTools.Flows
                 NotifyFilter = NotifyFilters.FileName
                              | NotifyFilters.DirectoryName
                              | NotifyFilters.LastWrite
-                             | NotifyFilters.Size
             };
 
             _watcher.Created += (s, e) => ProcessarEvento("CRIADO", e, origem, destino, progresso);
             _watcher.Changed += (s, e) => ProcessarEvento("MODIFICADO", e, origem, destino, progresso);
             _watcher.Deleted += (s, e) => ProcessarEvento("DELETADO", e, origem, destino, progresso);
             _watcher.Renamed += (s, e) => ProcessarRenomeacao(e, origem, destino, progresso);
-            _watcher.Error += (s, e) => progresso?.Report($"ERRO no monitoramento: {e.GetException()?.Message}");
+            _watcher.Error += (s, e) => ReportarProgresso(progresso, new ProgressoEspelhamento
+            {
+                Mensagem = $"❌ ERRO no monitoramento: {e.GetException()?.Message}"
+            });
 
             _watcher.EnableRaisingEvents = true;
+
+            ReportarProgresso(progresso, new ProgressoEspelhamento
+            {
+                Mensagem = "👁 Monitoramento em tempo real ativado"
+            });
         }
 
         private void ProcessarEvento(
@@ -275,18 +637,16 @@ namespace JrTools.Flows
             FileSystemEventArgs e,
             string origem,
             string destino,
-            IProgress<string>? progresso)
+            IProgress<ProgressoEspelhamento>? progresso)
         {
-            // Debounce: evitar processar o mesmo evento múltiplas vezes
             if (!DeveProcessarEvento(e.FullPath))
                 return;
 
-            Task.Run(async () =>
+            _ = Task.Run(async () =>
             {
                 await _semaphore.WaitAsync();
                 try
                 {
-                    // Pequeno delay para garantir que o arquivo terminou de ser escrito
                     await Task.Delay(DEBOUNCE_DELAY_MS);
 
                     var caminhoRelativo = Path.GetRelativePath(origem, e.FullPath);
@@ -301,14 +661,21 @@ namespace JrTools.Flows
 
                         case "DELETADO":
                             ProcessarDelecao(caminhoDestino, progresso);
+                            _hashsArquivos.Remove(e.FullPath);
                             break;
                     }
 
-                    progresso?.Report($"{tipoEvento}: {e.Name}");
+                    ReportarProgresso(progresso, new ProgressoEspelhamento
+                    {
+                        Mensagem = $"🔄 {tipoEvento}: {e.Name}"
+                    });
                 }
                 catch (Exception ex)
                 {
-                    progresso?.Report($"Erro ao processar {tipoEvento} '{e.Name}': {ex.Message}");
+                    ReportarProgresso(progresso, new ProgressoEspelhamento
+                    {
+                        Mensagem = $"❌ Erro ao processar {tipoEvento} '{e.Name}': {ex.Message}"
+                    });
                 }
                 finally
                 {
@@ -325,16 +692,14 @@ namespace JrTools.Flows
 
                 if (_ultimosEventos.TryGetValue(caminho, out var ultimoEvento))
                 {
-                    // Ignorar eventos duplicados dentro de 200ms
-                    if ((agora - ultimoEvento).TotalMilliseconds < 200)
+                    if ((agora - ultimoEvento).TotalMilliseconds < 1000)
                         return false;
                 }
 
                 _ultimosEventos[caminho] = agora;
 
-                // Limpar eventos antigos (mais de 5 segundos)
                 var eventosAntigos = _ultimosEventos
-                    .Where(kvp => (agora - kvp.Value).TotalSeconds > 5)
+                    .Where(kvp => (agora - kvp.Value).TotalSeconds > 10)
                     .Select(kvp => kvp.Key)
                     .ToList();
 
@@ -350,17 +715,20 @@ namespace JrTools.Flows
         private async Task ProcessarCriacaoOuModificacaoAsync(
             string origem,
             string destino,
-            IProgress<string>? progresso)
+            IProgress<ProgressoEspelhamento>? progresso)
         {
             if (File.Exists(origem))
             {
-                var diretorioDestino = Path.GetDirectoryName(destino);
-                if (!string.IsNullOrEmpty(diretorioDestino))
+                if (await ArquivoPrecisaSerAtualizadoAsync(origem, destino))
                 {
-                    Directory.CreateDirectory(diretorioDestino);
-                }
+                    var diretorioDestino = Path.GetDirectoryName(destino);
+                    if (!string.IsNullOrEmpty(diretorioDestino))
+                    {
+                        Directory.CreateDirectory(diretorioDestino);
+                    }
 
-                await TentarCopiarArquivoAsync(origem, destino, progresso);
+                    await TentarCopiarArquivoAsync(origem, destino, progresso);
+                }
             }
             else if (Directory.Exists(origem))
             {
@@ -368,7 +736,7 @@ namespace JrTools.Flows
             }
         }
 
-        private void ProcessarDelecao(string destino, IProgress<string>? progresso)
+        private void ProcessarDelecao(string destino, IProgress<ProgressoEspelhamento>? progresso)
         {
             if (File.Exists(destino))
             {
@@ -384,9 +752,9 @@ namespace JrTools.Flows
             RenamedEventArgs e,
             string origem,
             string destino,
-            IProgress<string>? progresso)
+            IProgress<ProgressoEspelhamento>? progresso)
         {
-            Task.Run(async () =>
+            _ = Task.Run(async () =>
             {
                 await _semaphore.WaitAsync();
                 try
@@ -406,17 +774,34 @@ namespace JrTools.Flows
                         }
 
                         File.Move(caminhoAntigoDestino, caminhoNovoDestino, true);
-                        progresso?.Report($"RENOMEADO: {e.OldName} → {e.Name}");
+
+                        if (_hashsArquivos.ContainsKey(e.OldFullPath))
+                        {
+                            var hash = _hashsArquivos[e.OldFullPath];
+                            _hashsArquivos.Remove(e.OldFullPath);
+                            _hashsArquivos[e.FullPath] = hash;
+                        }
+
+                        ReportarProgresso(progresso, new ProgressoEspelhamento
+                        {
+                            Mensagem = $"📝 RENOMEADO: {e.OldName} → {e.Name}"
+                        });
                     }
                     else if (Directory.Exists(caminhoAntigoDestino))
                     {
                         Directory.Move(caminhoAntigoDestino, caminhoNovoDestino);
-                        progresso?.Report($"PASTA RENOMEADA: {e.OldName} → {e.Name}");
+                        ReportarProgresso(progresso, new ProgressoEspelhamento
+                        {
+                            Mensagem = $"📁 PASTA RENOMEADA: {e.OldName} → {e.Name}"
+                        });
                     }
                 }
                 catch (Exception ex)
                 {
-                    progresso?.Report($"Erro ao renomear '{e.OldName}': {ex.Message}");
+                    ReportarProgresso(progresso, new ProgressoEspelhamento
+                    {
+                        Mensagem = $"❌ Erro ao renomear '{e.OldName}': {ex.Message}"
+                    });
                 }
                 finally
                 {
@@ -430,70 +815,53 @@ namespace JrTools.Flows
         private async Task TentarCopiarArquivoAsync(
             string origem,
             string destino,
-            IProgress<string>? progresso)
+            IProgress<ProgressoEspelhamento>? progresso)
         {
             for (int tentativa = 1; tentativa <= MAX_RETRIES; tentativa++)
             {
                 try
                 {
-                    // Aguardar o arquivo estar disponível
                     await Task.Delay(tentativa * 50);
 
-                    using var streamOrigem = new FileStream(origem, FileMode.Open, FileAccess.Read, FileShare.Read);
-                    using var streamDestino = new FileStream(destino, FileMode.Create, FileAccess.Write, FileShare.None);
-                    await streamOrigem.CopyToAsync(streamDestino);
-
-                    // Copiar atributos do arquivo
-                    File.SetLastWriteTimeUtc(destino, File.GetLastWriteTimeUtc(origem));
-                    File.SetAttributes(destino, File.GetAttributes(origem));
-
-                    return;
-                }
-                catch (IOException) when (tentativa < MAX_RETRIES)
-                {
-                    // Arquivo pode estar em uso, tentar novamente
-                    await Task.Delay(RETRY_DELAY_MS);
-                }
-                catch (Exception ex)
-                {
-                    progresso?.Report($"Erro ao copiar '{Path.GetFileName(origem)}': {ex.Message}");
-                    return;
-                }
-            }
-
-            progresso?.Report($"Falha ao copiar '{Path.GetFileName(origem)}' após {MAX_RETRIES} tentativas");
-        }
-
-        private void TentarCopiarArquivo(string origem, string destino, IProgress<string>? progresso)
-        {
-            for (int tentativa = 1; tentativa <= MAX_RETRIES; tentativa++)
-            {
-                try
-                {
                     var diretorioDestino = Path.GetDirectoryName(destino);
                     if (!string.IsNullOrEmpty(diretorioDestino))
                     {
                         Directory.CreateDirectory(diretorioDestino);
                     }
 
-                    File.Copy(origem, destino, true);
+                    using var streamOrigem = new FileStream(origem, FileMode.Open, FileAccess.Read, FileShare.Read);
+                    using var streamDestino = new FileStream(destino, FileMode.Create, FileAccess.Write, FileShare.None);
+                    await streamOrigem.CopyToAsync(streamDestino);
+
                     File.SetLastWriteTimeUtc(destino, File.GetLastWriteTimeUtc(origem));
+                    File.SetAttributes(destino, File.GetAttributes(origem));
+
+                    string hash = await CalcularHashArquivoAsync(origem);
+                    _hashsArquivos[origem] = hash;
 
                     return;
                 }
                 catch (IOException) when (tentativa < MAX_RETRIES)
                 {
-                    Thread.Sleep(RETRY_DELAY_MS);
+                    await Task.Delay(RETRY_DELAY_MS);
                 }
                 catch (Exception ex)
                 {
-                    progresso?.Report($"Erro ao copiar '{Path.GetFileName(origem)}': {ex.Message}");
+                    ReportarProgresso(progresso, new ProgressoEspelhamento
+                    {
+                        Mensagem = $"❌ Erro ao copiar '{Path.GetFileName(origem)}': {ex.Message}"
+                    });
                     return;
                 }
             }
+
+            ReportarProgresso(progresso, new ProgressoEspelhamento
+            {
+                Mensagem = $"❌ Falha ao copiar '{Path.GetFileName(origem)}' após {MAX_RETRIES} tentativas"
+            });
         }
 
-        private void TentarDeletarArquivo(string caminho, IProgress<string>? progresso)
+        private void TentarDeletarArquivo(string caminho, IProgress<ProgressoEspelhamento>? progresso)
         {
             for (int tentativa = 1; tentativa <= MAX_RETRIES; tentativa++)
             {
@@ -503,7 +871,10 @@ namespace JrTools.Flows
                     {
                         File.SetAttributes(caminho, FileAttributes.Normal);
                         File.Delete(caminho);
-                        progresso?.Report($"DELETADO: {Path.GetFileName(caminho)}");
+                        ReportarProgresso(progresso, new ProgressoEspelhamento
+                        {
+                            Mensagem = $"🗑 DELETADO: {Path.GetFileName(caminho)}"
+                        });
                     }
                     return;
                 }
@@ -513,13 +884,16 @@ namespace JrTools.Flows
                 }
                 catch (Exception ex)
                 {
-                    progresso?.Report($"Erro ao deletar '{Path.GetFileName(caminho)}': {ex.Message}");
+                    ReportarProgresso(progresso, new ProgressoEspelhamento
+                    {
+                        Mensagem = $"❌ Erro ao deletar '{Path.GetFileName(caminho)}': {ex.Message}"
+                    });
                     return;
                 }
             }
         }
 
-        private void TentarDeletarDiretorio(string caminho, IProgress<string>? progresso)
+        private void TentarDeletarDiretorio(string caminho, IProgress<ProgressoEspelhamento>? progresso)
         {
             for (int tentativa = 1; tentativa <= MAX_RETRIES; tentativa++)
             {
@@ -527,11 +901,13 @@ namespace JrTools.Flows
                 {
                     if (Directory.Exists(caminho))
                     {
-                        // Tentar deletar apenas se estiver vazio
                         if (!Directory.EnumerateFileSystemEntries(caminho).Any())
                         {
                             Directory.Delete(caminho, false);
-                            progresso?.Report($"PASTA DELETADA: {Path.GetFileName(caminho)}");
+                            ReportarProgresso(progresso, new ProgressoEspelhamento
+                            {
+                                Mensagem = $"🗑 PASTA DELETADA: {Path.GetFileName(caminho)}"
+                            });
                         }
                     }
                     return;
@@ -542,20 +918,15 @@ namespace JrTools.Flows
                 }
                 catch (Exception ex)
                 {
-                    progresso?.Report($"Erro ao deletar pasta '{Path.GetFileName(caminho)}': {ex.Message}");
+                    ReportarProgresso(progresso, new ProgressoEspelhamento
+                    {
+                        Mensagem = $"❌ Erro ao deletar pasta '{Path.GetFileName(caminho)}': {ex.Message}"
+                    });
                     return;
                 }
             }
         }
         #endregion
-
-        #region IDisposable
-        public void Dispose()
-        {
-            Parar();
-            _semaphore?.Dispose();
-            GC.SuppressFinalize(this);
-        }
-        #endregion
     }
+
 }

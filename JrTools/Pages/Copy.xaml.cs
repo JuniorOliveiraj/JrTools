@@ -1,4 +1,5 @@
-using JrTools.Flows;
+﻿using JrTools.Flows;
+using JrTools.Extensions;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -9,15 +10,17 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using JrTools.Dto;
+
+
 
 namespace JrTools.Pages
 {
     /// <summary>
-    /// P�gina de gerenciamento de perfis de espelhamento de pastas
+    /// Página de gerenciamento de perfis de espelhamento de pastas
     /// </summary>
     public sealed partial class Copy : Page
     {
@@ -26,21 +29,23 @@ namespace JrTools.Pages
         private const int MAX_LOG_LINES = 200;
         #endregion
 
-        #region Propriedades e Campos
+        #region Propriedades e Campos Estáticos (Sobrevivem à navegação)
+        private static PastaEspelhador? _espelhadorGlobal;
+        private static PerfilEspelhamento? _perfilEmExecucaoGlobal;
+        private static CancellationTokenSource? _cancellationTokenSourceGlobal;
+        private static readonly ConcurrentQueue<string> _logQueueGlobal = new();
+        private static bool _espelhamentoAtivoGlobal = false;
+        #endregion
+
+        #region Propriedades e Campos da Instância
         private ObservableCollection<PerfilEspelhamento> Perfis { get; set; } = new();
         private readonly string _perfisPath = GetConfigPath();
         private List<PerfilEspelhamento> _todosPerfis = new();
 
-        private PastaEspelhador? _espelhador;
-        private PerfilEspelhamento? _perfilEmExecucao;
-        private CancellationTokenSource? _cancellationTokenSource;
-
-        private readonly ConcurrentQueue<string> _logQueue = new();
-        // Altere a declara��o do campo _logTimer para remover o modificador 'readonly'
         private DispatcherQueueTimer _logTimer;
         #endregion
 
-        #region Construtor e Inicializa��o
+        #region Construtor e Inicialização
         public Copy()
         {
             InitializeComponent();
@@ -48,12 +53,18 @@ namespace JrTools.Pages
             ConfigurarLogTimer();
             ConfigurarEventos();
             _ = CarregarPerfisAsync();
+
+            if (_espelhamentoAtivoGlobal)
+            {
+                RestaurarEstadoEspelhamento();
+            }
         }
 
         private void ConfigurarInterface()
         {
             PerfisListView.ItemsSource = Perfis;
             IniciarButton.IsEnabled = false;
+            ProgressPanel.Visibility = Visibility.Collapsed;
         }
 
         private void ConfigurarLogTimer()
@@ -77,7 +88,42 @@ namespace JrTools.Pages
         private async void OnPageUnloaded(object sender, RoutedEventArgs e)
         {
             _logTimer?.Stop();
-            await PararEspelhamentoAsync();
+
+            // Se estiver espelhando, apenas registrar que continua em background
+            if (_espelhamentoAtivoGlobal && _espelhadorGlobal?.EstaExecutando == true && !_espelhadorGlobal.IsDisposed)
+            {
+                AdicionarLog("ℹ Página fechada. Espelhamento continua em segundo plano.");
+            }
+            // Se não estiver espelhando ou o espelhador estiver disposed, limpar recursos
+            else if (_espelhadorGlobal != null)
+            {
+                try
+                {
+                    await LimparRecursosAsync();
+                }
+                catch
+                {
+                    // Ignorar erros na limpeza durante unload
+                }
+            }
+        }
+
+        private void RestaurarEstadoEspelhamento()
+        {
+            if (_perfilEmExecucaoGlobal != null)
+            {
+                AtualizarUIParaEspelhando();
+                AdicionarLog($"ℹ Retornando à página. Espelhamento ativo: '{_perfilEmExecucaoGlobal.Nome}'");
+
+                var perfil = Perfis.FirstOrDefault(p => p.Nome == _perfilEmExecucaoGlobal.Nome);
+                if (perfil != null)
+                {
+                    PerfisListView.SelectedItem = perfil;
+                }
+
+                // Ocultar progresso se já passou da fase inicial
+                ProgressPanel.Visibility = Visibility.Collapsed;
+            }
         }
         #endregion
 
@@ -147,157 +193,284 @@ namespace JrTools.Pages
         #region Controle de Espelhamento
         private async void IniciarButton_Click(object sender, RoutedEventArgs e)
         {
-            if (EstaEspelhando())
+            // Desabilitar o botão temporariamente para evitar cliques múltiplos
+            IniciarButton.IsEnabled = false;
+
+            try
             {
-                await PararEspelhamentoAsync();
+                if (EstaEspelhando())
+                {
+                    await PararEspelhamentoAsync();
+                }
+                else
+                {
+                    await IniciarEspelhamentoAsync();
+                }
             }
-            else
+            finally
             {
-                await IniciarEspelhamentoAsync();
+                // Aguardar um pouco antes de reabilitar
+                await Task.Delay(500);
+
+                // Reabilitar o botão apenas se não estiver no meio de uma operação
+                if (!EstaEspelhando() && PerfisListView.SelectedItem != null)
+                {
+                    IniciarButton.IsEnabled = true;
+                }
             }
         }
 
         private bool EstaEspelhando()
         {
-            return _espelhador != null && _espelhador.EstaExecutando;
+            return _espelhamentoAtivoGlobal && _espelhadorGlobal != null && !_espelhadorGlobal.IsDisposed && _espelhadorGlobal.EstaExecutando;
         }
 
         private async Task IniciarEspelhamentoAsync()
         {
             if (PerfisListView.SelectedItem is not PerfilEspelhamento perfilSelecionado)
             {
-                AdicionarLog("Nenhum perfil selecionado para iniciar espelhamento.");
+                AdicionarLog("❌ Nenhum perfil selecionado para iniciar espelhamento.");
                 return;
             }
 
-            // Validar diret�rios
             if (!Directory.Exists(perfilSelecionado.DiretorioOrigem))
             {
-                AdicionarLog($"ERRO: Diret�rio de origem n�o existe: {perfilSelecionado.DiretorioOrigem}");
+                AdicionarLog($"❌ ERRO: Diretório de origem não existe: {perfilSelecionado.DiretorioOrigem}");
                 return;
+            }
+
+            // Se já houver algo rodando, limpar primeiro
+            if (_espelhadorGlobal != null || _espelhamentoAtivoGlobal)
+            {
+                AdicionarLog("⚠ Limpando recursos anteriores...");
+                await LimparRecursosAsync();
+                await Task.Delay(500); // Pequena pausa para garantir limpeza
             }
 
             try
             {
-                _perfilEmExecucao = perfilSelecionado;
-                _cancellationTokenSource = new CancellationTokenSource();
-                _espelhador = new PastaEspelhador();
+                _perfilEmExecucaoGlobal = perfilSelecionado;
+                _cancellationTokenSourceGlobal = new CancellationTokenSource();
+                _espelhadorGlobal = new PastaEspelhador();
+                _espelhamentoAtivoGlobal = true;
 
-                AtualizarUIParaEspelhando();
-                AdicionarLog($"Iniciando espelhamento do perfil '{perfilSelecionado.Nome}'...");
-
-                // Criar progresso que despacha para a UI thread
-                var progresso = new Progress<string>(msg =>
+                await DispatcherQueue.EnqueueAsync(() =>
                 {
-                    DispatcherQueue.TryEnqueue(() => AdicionarLog(msg));
+                    AtualizarUIParaEspelhando();
+                    MostrarProgresso();
                 });
 
-                // Iniciar em background sem await - deixa rodando
-                _ = Task.Run(async () =>
+                AdicionarLog($"🚀 Iniciando espelhamento do perfil '{perfilSelecionado.Nome}'...");
+
+                // Criar progresso que atualiza a barra e os logs
+                var progresso = new Progress<ProgressoEspelhamento>(info =>
+                {
+                    if (info == null) return;
+
+                    DispatcherQueue.TryEnqueue(() =>
+                    {
+                        var infoPagina = new ProgressoEspelhamentoCopy
+                        {
+                            Fase = info.Fase,  // Não precisa de conversão pois agora é o mesmo tipo
+                            Percentual = info.Percentual,
+                            ArquivosProcessados = info.ArquivosProcessados,
+                            TotalArquivos = info.TotalArquivos,
+                            ArquivosCopiadados = info.ArquivosCopiadados,
+                            Status = info.Status ?? "",
+                            Detalhes = info.Detalhes ?? "",
+                            Mensagem = info.Mensagem ?? ""
+                        };
+
+                        AtualizarBarraDeProgresso(infoPagina);
+
+                        if (!string.IsNullOrWhiteSpace(info.Mensagem))
+                        {
+                            _logQueueGlobal.Enqueue($"[{DateTime.Now:HH:mm:ss}] {info.Mensagem}");
+                        }
+                    });
+                });
+
+                // Iniciar em background
+                await Task.Run(async () =>
                 {
                     try
                     {
-                        await _espelhador.IniciarEspelhamentoAsync(
+                        if (_espelhadorGlobal == null || _cancellationTokenSourceGlobal == null || _espelhadorGlobal.IsDisposed)
+                        {
+                            throw new InvalidOperationException("Recursos não inicializados corretamente");
+                        }
+
+                        await _espelhadorGlobal.IniciarEspelhamentoAsync(
                             perfilSelecionado.DiretorioOrigem,
                             perfilSelecionado.DiretorioDestino,
                             progresso,
-                            _cancellationTokenSource.Token
+                            _cancellationTokenSourceGlobal.Token
                         );
                     }
                     catch (OperationCanceledException)
                     {
-                        DispatcherQueue.TryEnqueue(() =>
-                            AdicionarLog("Espelhamento cancelado pelo usu�rio.")
-                        );
+                        _logQueueGlobal.Enqueue($"[{DateTime.Now:HH:mm:ss}] ⏹ Espelhamento cancelado pelo usuário.");
                     }
                     catch (Exception ex)
                     {
-                        DispatcherQueue.TryEnqueue(() =>
-                            AdicionarLog($"ERRO CR�TICO: {ex.Message}")
-                        );
+                        _logQueueGlobal.Enqueue($"[{DateTime.Now:HH:mm:ss}] ❌ ERRO CRÍTICO: {ex.Message}");
                     }
                     finally
                     {
-                        DispatcherQueue.TryEnqueue(() =>
+                        await DispatcherQueue.EnqueueAsync(async () =>
                         {
-                            LimparRecursos();
+                            OcultarProgresso();
+                            await LimparRecursosAsync();
                             AtualizarUIParaParado();
                         });
                     }
                 });
-
-                // Aguardar um pouco para garantir que iniciou
-                await Task.Delay(100);
             }
             catch (Exception ex)
             {
-                AdicionarLog($"Erro ao iniciar espelhamento: {ex.Message}");
-                LimparRecursos();
-                AtualizarUIParaParado();
+                AdicionarLog($"❌ Erro ao iniciar espelhamento: {ex.Message}");
+                await DispatcherQueue.EnqueueAsync(async () =>
+                {
+                    OcultarProgresso();
+                    await LimparRecursosAsync();
+                    AtualizarUIParaParado();
+                });
             }
         }
 
         private async Task PararEspelhamentoAsync()
         {
-            if (_espelhador == null || !_espelhador.EstaExecutando)
+            if (!EstaEspelhando())
             {
-                AdicionarLog("Espelhamento j� est� parado.");
+                AdicionarLog("⚠ Espelhamento já está parado.");
                 return;
             }
 
             try
             {
-                AdicionarLog("Parando espelhamento...");
-                IniciarButton.IsEnabled = false;
-                IniciarButton.Content = "Parando...";
+                AdicionarLog("⏳ Parando espelhamento...");
+                await DispatcherQueue.EnqueueAsync(() =>
+                {
+                    IniciarButton.IsEnabled = false;
+                    IniciarButton.Content = "Parando...";
+                });
 
-                // Cancelar a opera��o
-                _cancellationTokenSource?.Cancel();
-
-                // Parar o espelhador de forma ass�ncrona
-                await Task.Run(() => _espelhador?.Parar());
-
-                // Aguardar um pouco para garantir que tudo foi liberado
-                await Task.Delay(300);
+                // Parar o espelhador com timeout de 5 segundos
+                if (_espelhadorGlobal != null && !_espelhadorGlobal.IsDisposed)
+                {
+                    await _espelhadorGlobal.PararAsync(TimeSpan.FromSeconds(5));
+                }
 
                 // Limpar recursos
-                LimparRecursos();
-
-                AdicionarLog("Espelhamento parado com sucesso.");
+                await LimparRecursosAsync();
+                AdicionarLog("✓ Espelhamento parado com sucesso.");
             }
             catch (Exception ex)
             {
-                AdicionarLog($"Erro ao parar espelhamento: {ex.Message}");
+                AdicionarLog($"❌ Erro ao parar espelhamento: {ex.Message}");
+                // Forçar limpeza mesmo com erro
+                await LimparRecursosAsync();
             }
             finally
             {
-                AtualizarUIParaParado();
+                await DispatcherQueue.EnqueueAsync(() =>
+                {
+                    OcultarProgresso();
+                    AtualizarUIParaParado();
+                });
             }
         }
 
-        private void LimparRecursos()
+        private async Task LimparRecursosAsync()
         {
             try
             {
-                _espelhador?.Dispose();
-                _espelhador = null;
+                // Limpar o espelhador primeiro
+                if (_espelhadorGlobal != null)
+                {
+                    await _espelhadorGlobal.DisposeAsync();
+                    _espelhadorGlobal = null;
+                }
 
-                _perfilEmExecucao = null;
+                // Limpar o token de cancelamento
+                if (_cancellationTokenSourceGlobal != null)
+                {
+                    try
+                    {
+                        _cancellationTokenSourceGlobal.Dispose();
+                    }
+                    catch { }
+                    _cancellationTokenSourceGlobal = null;
+                }
 
-                _cancellationTokenSource?.Dispose();
-                _cancellationTokenSource = null;
+                _perfilEmExecucaoGlobal = null;
+                _espelhamentoAtivoGlobal = false;
+
+                // Forçar coleta de lixo para liberar recursos imediatamente
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
             }
             catch (Exception ex)
             {
-                AdicionarLog($"Erro ao limpar recursos: {ex.Message}");
+                AdicionarLog($"❌ Erro ao limpar recursos: {ex.Message}");
             }
         }
         #endregion
 
-        #region Atualiza��o de Interface
+        #region Controle de Barra de Progresso
+        private void MostrarProgresso()
+        {
+            ProgressPanel.Visibility = Visibility.Visible;
+            SyncProgressBar.Value = 0;
+            ProgressPercentText.Text = "0%";
+            ProgressStatusText.Text = "Preparando sincronização...";
+            ProgressDetailsText.Text = "Analisando arquivos...";
+        }
+
+        private void OcultarProgresso()
+        {
+            ProgressPanel.Visibility = Visibility.Collapsed;
+        }
+
+        private void AtualizarBarraDeProgresso(ProgressoEspelhamentoCopy info)
+        {
+            // Atualizar barra de progresso
+            SyncProgressBar.Value = info.Percentual;
+            ProgressPercentText.Text = $"{info.Percentual:F1}%";
+
+            // Atualizar status
+            if (!string.IsNullOrWhiteSpace(info.Status))
+            {
+                ProgressStatusText.Text = info.Status;
+            }
+
+            // Atualizar detalhes
+            if (info.ArquivosProcessados > 0 && info.TotalArquivos > 0)
+            {
+                ProgressDetailsText.Text = $"{info.ArquivosProcessados:N0} de {info.TotalArquivos:N0} arquivos";
+
+                if (info.ArquivosCopiadados > 0)
+                {
+                    ProgressDetailsText.Text += $" ({info.ArquivosCopiadados:N0} copiados)";
+                }
+            }
+            else if (!string.IsNullOrWhiteSpace(info.Detalhes))
+            {
+                ProgressDetailsText.Text = info.Detalhes;
+            }
+
+            // Ocultar progresso quando concluir a sincronização inicial
+            if (info.Fase == FaseEspelhamento.MonitoramentoContinuo)
+            {
+                OcultarProgresso();
+            }
+        }
+        #endregion
+
+        #region Atualização de Interface
         private void AtualizarUIParaEspelhando()
         {
-            IniciarButton.Content = "Parar Espelhamento";
+            IniciarButton.Content = "⏹ Parar Espelhamento";
             IniciarButton.Background = new SolidColorBrush(Microsoft.UI.Colors.Red);
             IniciarButton.IsEnabled = true;
 
@@ -306,7 +479,7 @@ namespace JrTools.Pages
 
         private void AtualizarUIParaParado()
         {
-            IniciarButton.Content = "Iniciar Espelhamento";
+            IniciarButton.Content = "▶ Iniciar Espelhamento";
             IniciarButton.Background = (SolidColorBrush)Application.Current.Resources["ButtonBackground"];
             IniciarButton.IsEnabled = PerfisListView.SelectedItem != null;
 
@@ -349,7 +522,7 @@ namespace JrTools.Pages
             {
                 if (!ValidarCamposDialog())
                 {
-                    AdicionarLog("Todos os campos devem ser preenchidos.");
+                    AdicionarLog("❌ Todos os campos devem ser preenchidos.");
                     return;
                 }
 
@@ -360,7 +533,7 @@ namespace JrTools.Pages
                 await SalvarPerfisAsync();
                 AtualizarPlaceholder();
 
-                AdicionarLog($"Perfil '{novoPerfil.Nome}' adicionado com sucesso.");
+                AdicionarLog($"✓ Perfil '{novoPerfil.Nome}' adicionado com sucesso.");
             }
         }
 
@@ -392,16 +565,22 @@ namespace JrTools.Pages
         {
             if (PerfisListView.SelectedItem is PerfilEspelhamento perfil)
             {
+                if (_espelhamentoAtivoGlobal && _perfilEmExecucaoGlobal?.Nome == perfil.Nome)
+                {
+                    AdicionarLog("❌ Não é possível remover um perfil que está em execução.");
+                    return;
+                }
+
                 _todosPerfis.Remove(perfil);
                 AtualizarListaFiltrada();
                 await SalvarPerfisAsync();
                 AtualizarPlaceholder();
 
-                AdicionarLog($"Perfil '{perfil.Nome}' removido.");
+                AdicionarLog($"🗑 Perfil '{perfil.Nome}' removido.");
             }
             else
             {
-                AdicionarLog("Nenhum perfil selecionado para remo��o.");
+                AdicionarLog("❌ Nenhum perfil selecionado para remoção.");
             }
         }
         #endregion
@@ -440,31 +619,27 @@ namespace JrTools.Pages
         #region Sistema de Logs
         private void AdicionarLog(string mensagem)
         {
-            _logQueue.Enqueue($"[{DateTime.Now:HH:mm:ss}] {mensagem}");
+            _logQueueGlobal.Enqueue($"[{DateTime.Now:HH:mm:ss}] {mensagem}");
         }
 
         private void ProcessarFilaDeLogs(object? sender, object e)
         {
-            if (_logQueue.IsEmpty)
+            if (_logQueueGlobal.IsEmpty)
                 return;
 
             var linhas = LogsTextBox.Text.Split('\n').ToList();
 
-            // Processar todos os logs da fila
-            while (_logQueue.TryDequeue(out var mensagem))
+            while (_logQueueGlobal.TryDequeue(out var mensagem))
             {
                 linhas.Add(mensagem);
             }
 
-            // Limitar o n�mero de linhas
             while (linhas.Count > MAX_LOG_LINES)
             {
                 linhas.RemoveAt(0);
             }
 
             LogsTextBox.Text = string.Join('\n', linhas);
-
-            // Rolar para o final
             RolarLogsParaFinal();
         }
 
@@ -494,13 +669,4 @@ namespace JrTools.Pages
         #endregion
     }
 
-    /// <summary>
-    /// Representa um perfil de espelhamento de diret�rios
-    /// </summary>
-    public class PerfilEspelhamento
-    {
-        public string Nome { get; set; } = "";
-        public string DiretorioOrigem { get; set; } = "";
-        public string DiretorioDestino { get; set; } = "";
-    }
 }

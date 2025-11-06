@@ -1,4 +1,4 @@
-using JrTools.Dto;
+ï»¿using JrTools.Dto;
 using JrTools.Services;
 using JrTools.Services.Db;
 using Microsoft.UI.Xaml;
@@ -55,13 +55,13 @@ namespace JrTools.Pages
             string resultadoApiString = await buscarApi.GetAsync("/api/V1/RH/Ponto/Colaborador/PontoMovel");
             DateTime hoje = DateTime.Today;
 
-            // Horário padrão
+            // HorÃ¡rio padrÃ£o
             DateTime entrada1 = hoje.AddHours(8);
             DateTime saida1 = hoje.AddHours(12);
             DateTime entrada2 = hoje.AddHours(13);
             DateTime saida2 = hoje.AddHours(17).AddMinutes(30);
 
-            // Variável para saída prevista
+            // VariÃ¡vel para saÃ­da prevista
             DateTime saidaPrevista = hoje.AddHours(17).AddMinutes(30); // default 17:30
 
             // Parse do JSON
@@ -103,11 +103,11 @@ namespace JrTools.Pages
 
                         var horasManha = saida1 - entrada1;
 
-                        // Calcula a saída prevista com base na jornada de 8h30
+                        // Calcula a saÃ­da prevista com base na jornada de 8h30
                         var jornadaTotal = TimeSpan.FromHours(8.5);
                         var restante = jornadaTotal - horasManha;
 
-                        // Se já tem entrada da tarde, calcula a saída prevista
+                        // Se jÃ¡ tem entrada da tarde, calcula a saÃ­da prevista
                         if (marcacoes.Count >= 3)
                         {
                             entrada2 = marcacoes[2];
@@ -115,11 +115,11 @@ namespace JrTools.Pages
                         }
                         else
                         {
-                            entrada2 = saida1.AddHours(1); // almoço mínimo 1h
+                            entrada2 = saida1.AddHours(1); // almoÃ§o mÃ­nimo 1h
                             saidaPrevista = entrada2 + restante;
                         }
 
-                        // Se a saída final já foi batida, podemos ignorar para a variável prevista
+                        // Se a saÃ­da final jÃ¡ foi batida, podemos ignorar para a variÃ¡vel prevista
                         // saida2 = marcacoes.Count >= 4 ? marcacoes[3] : saida2;
                     }
                     else
@@ -162,7 +162,7 @@ namespace JrTools.Pages
             // Pega o valor de "SaldoFinal"
             string saldoFinal = doc.RootElement.GetProperty("SaldoFinal").GetString();
 
-            // Formata como você quer
+            // Formata como vocÃª quer
             string saldoFormatado = saldoFinal.Insert(2, "h ") + "m";
             string saldoFormatado2 = saldoFormatado.Replace(":", "");
 
@@ -183,21 +183,21 @@ namespace JrTools.Pages
                 TimeSpan entrada2 = Entrada2TimePicker.Time;
                 TimeSpan saida2 = Saida2TimePicker.Time;
 
-                // Validação simples
+                // ValidaÃ§Ã£o simples
                 if (saida1 < entrada1 || saida2 < entrada2)
                 {
-                    CalculadoraInfoBar.Title = "Erro de Lógica";
-                    CalculadoraInfoBar.Message = "O horário de saída não pode ser anterior ao de entrada.";
+                    CalculadoraInfoBar.Title = "Erro de LÃ³gica";
+                    CalculadoraInfoBar.Message = "O horÃ¡rio de saÃ­da nÃ£o pode ser anterior ao de entrada.";
                     CalculadoraInfoBar.IsOpen = true;
                     TotalHorasTextBlock.Text = "Erro";
                     return;
                 }
 
-                // Calcula a duração de cada período
+                // Calcula a duraÃ§Ã£o de cada perÃ­odo
                 TimeSpan periodo1 = saida1.Subtract(entrada1);
                 TimeSpan periodo2 = saida2.Subtract(entrada2);
 
-                // Soma os períodos para obter o total
+                // Soma os perÃ­odos para obter o total
                 TimeSpan totalHoras = periodo1.Add(periodo2);
 
                 // Formata o resultado e exibe na tela
@@ -246,7 +246,7 @@ namespace JrTools.Pages
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Erro ao carregar lançamentos: {ex.Message}");
+                Console.WriteLine($"Erro ao carregar lanÃ§amentos: {ex.Message}");
             }
         }
 

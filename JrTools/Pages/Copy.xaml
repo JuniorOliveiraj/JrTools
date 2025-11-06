@@ -141,8 +141,44 @@
                                     <TextBlock Text="Iniciar Espelhamento" />
                                 </StackPanel>
                             </Button>
-
                         </Grid>
+
+                        <!-- Barra de Progresso -->
+                        <StackPanel x:Name="ProgressPanel" Spacing="8" Visibility="Collapsed">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock x:Name="ProgressStatusText" 
+                                           Text="Preparando sincronização..."
+                                           FontWeight="SemiBold"
+                                           VerticalAlignment="Center"/>
+
+                                <TextBlock x:Name="ProgressPercentText"
+                                           Grid.Column="1"
+                                           Text="0%"
+                                           FontWeight="Bold"
+                                           FontSize="14"
+                                           Foreground="{ThemeResource SystemAccentColor}"
+                                           VerticalAlignment="Center"/>
+                            </Grid>
+
+                            <ProgressBar x:Name="SyncProgressBar"
+                                         Value="0"
+                                         Maximum="100"
+                                         Height="8"
+                                         CornerRadius="4"
+                                         ShowError="False"
+                                         ShowPaused="False"/>
+
+                            <TextBlock x:Name="ProgressDetailsText"
+                                       Text="Analisando arquivos..."
+                                       FontSize="12"
+                                       Foreground="Gray"
+                                       TextWrapping="Wrap"/>
+                        </StackPanel>
 
                         <TextBlock Text="Logs de Atividade:" FontWeight="SemiBold"/>
                         <ScrollViewer Height="220">
