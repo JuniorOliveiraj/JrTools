@@ -19,7 +19,7 @@ namespace JrTools
     {
         private Pages.HomePage _homePage = new Pages.HomePage();
         private Pages.EspesificosPage _espesificosPage = new Pages.EspesificosPage();
-        private Pages.RhProdPage _rhProdPage = new Pages.RhProdPage();
+        private Pages.AppsRh _appsRhPage = new Pages.AppsRh();
         private Pages.BuildarProjeto _buildarProjeto = new Pages.BuildarProjeto();
         private Pages.Copy _CopyPage = new Pages.Copy();
         private Pages.FecharProcessos _fecharProcessos = new Pages.FecharProcessos();
@@ -66,31 +66,28 @@ namespace JrTools
                 switch (item.Tag)
                 {
                     case "Home":
-                        ContentFrame.Content = _homePage;
-                        break;
-                    case "Especificos":
-                        ContentFrame.Content = _espesificosPage;
+                        ContentFrame.NavigateToType(_homePage.GetType(), null, new FrameNavigationOptions() { IsNavigationStackEnabled = false });
                         break;
                     case "Rhprod":
-                        ContentFrame.Content = _rhProdPage;
+                        ContentFrame.NavigateToType(_appsRhPage.GetType(), null, new FrameNavigationOptions() { IsNavigationStackEnabled = false });
                         break;
                     case "BuildarProjeto":
-                        ContentFrame.Content = _buildarProjeto;
+                        ContentFrame.NavigateToType(_buildarProjeto.GetType(), null, new FrameNavigationOptions() { IsNavigationStackEnabled = false });
                         break;
                     case "CopyPage":
-                        ContentFrame.Content = _CopyPage;
+                        ContentFrame.NavigateToType(_CopyPage.GetType(), null, new FrameNavigationOptions() { IsNavigationStackEnabled = false });
                         break;
                     case "FecharProcessos":
-                        ContentFrame.Content = _fecharProcessos;
+                        ContentFrame.NavigateToType(_fecharProcessos.GetType(), null, new FrameNavigationOptions() { IsNavigationStackEnabled = false });
                         break;
                     case "Documentador":
-                        ContentFrame.Content = _documentador;
+                        ContentFrame.NavigateToType(_documentador.GetType(), null, new FrameNavigationOptions() { IsNavigationStackEnabled = false });
                         break;
                     case "LancarHoras":
-                        ContentFrame.Content = _lancarHoras;
+                        ContentFrame.NavigateToType(_lancarHoras.GetType(), null, new FrameNavigationOptions() { IsNavigationStackEnabled = false });
                         break;
                     case "config":
-                        ContentFrame.Content = _configuracoesPage;
+                        ContentFrame.NavigateToType(_configuracoesPage.GetType(), null, new FrameNavigationOptions() { IsNavigationStackEnabled = false });
                         break;
                 }
             }

@@ -48,7 +48,7 @@ namespace JrTools.Flows
 
         private string BuscarBranchDeTrabalho(string branch)
         {
-            var service = new branchName();
+            var service = new BranchNameHelper();
            return service.ObterBranchInfo(branch).Branch;
         }
     }

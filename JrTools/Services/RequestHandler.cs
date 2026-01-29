@@ -6,56 +6,55 @@ namespace JrTools.Services
 {
     public class RequestHandler
     {
+        private static readonly HttpClient _sharedClient = new HttpClient();
+        
         private readonly string _url;
         private readonly string _method;
         private readonly string _loginType;
-        private readonly HttpClient _client;
 
         public RequestHandler(string url, string method = "GET", string loginType = null)
         {
             _url = url;
             _method = method.ToUpper();
-            _loginType = loginType; // Pode ser usado para autenticação
-            _client = new HttpClient();
+            _loginType = loginType; 
         }
 
-        // Método privado para GET
         private async Task<string> GetAsync()
         {
             try
             {
-                HttpResponseMessage response = await _client.GetAsync(_url);
+                // In a real scenario, consider using _sharedClient directly without authentication if not needed,
+                // or managing headers appropriately.
+                // For this refactor, we are just reusing the client.
+                
+                HttpResponseMessage response = await _sharedClient.GetAsync(_url);
                 response.EnsureSuccessStatusCode();
-                string content = await response.Content.ReadAsStringAsync();
-                return content;
+                return await response.Content.ReadAsStringAsync();
             }
-            catch (HttpRequestException e)
+            catch (HttpRequestException)
             {
-                Console.WriteLine($"Erro na requisição GET: {e.Message}");
+                // Removed Console.WriteLine as per requirements. 
+                // In production, use a proper logger.
                 return null;
             }
         }
 
-        // Método público para enviar requisição baseado no método
         public async Task<string> SendRequestAsync()
         {
-            switch (_method)
+            return _method switch
             {
-                case "GET":
-                    return await GetAsync();
-                default:
-                    Console.WriteLine($"Método {_method} não implementado.");
-                    return null;
-            }
+                "GET" => await GetAsync(),
+                _ => null // Removed Console.WriteLine
+            };
         }
-
      
         public static async Task<string> RequestApiJrLogin(string login, string senha)
         {
-            string url = $"https://api.juniorbelem.com/login?email={login}&password={senha}";
+            // Note: Sending credentials in URL params is unsafe.
+            // Keeping original logic structure but warning about security.
+            string url = $"https://api.juniorbelem.com/login?email={Uri.EscapeDataString(login)}&password={Uri.EscapeDataString(senha)}";
             RequestHandler requestHandler = new RequestHandler(url, "GET", "basic");
-            string response = await requestHandler.SendRequestAsync();
-            return response;
+            return await requestHandler.SendRequestAsync();
         }
     }
 }

@@ -36,6 +36,8 @@ namespace JrTools
         public App()
         {
             InitializeComponent();
+
+
         }
 
         /// <summary>
@@ -49,5 +51,7 @@ namespace JrTools
             MainWindow = _window;
             _window.Activate();
         }
+
+
     }
 }

@@ -48,7 +48,7 @@
 
                 <NavigationView.MenuItems>
                     <NavigationViewItem Icon="Home" Content="Home" Tag="Home"/>
-                    <NavigationViewItem Icon="Play" Content="Rh prod" Tag="Rhprod"/>
+                    <NavigationViewItem Icon="Play" Content="Apps Rh" Tag="Rhprod"/>
                     
                     <NavigationViewItem Content="Buildar Projetos" Tag="BuildarProjeto">
                         <NavigationViewItem.Icon>
@@ -62,8 +62,7 @@
                         </NavigationViewItem.Icon>
                     </NavigationViewItem>
 
-                    <NavigationViewItem Icon="People" Content="Específicos" Tag="Especificos"/>
-
+ 
                     <NavigationViewItem   Content="Fechar Processos" Tag="FecharProcessos">
                         <NavigationViewItem.Icon>
                             <SymbolIcon Symbol="Cancel"/>

@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="JrTools.Pages.AppsRh"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Page.Resources>
+
+        <!-- Card padrão -->
+        <Style x:Key="FancyCardStyle" TargetType="Border">
+            <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+            <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="Padding" Value="24" />
+            <Setter Property="Margin" Value="0,0,0,24" />
+        </Style>
+
+        <!-- Botão do item de menu -->
+        <!-- Botão do item de configuração -->
+        <Style x:Key="SettingItemStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+            <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorSecondaryBrush}" />
+            <Setter Property="Foreground" Value="{ThemeResource TextFillColorPrimaryBrush}" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+
+            <!-- AQUI está o ajuste -->
+            <Setter Property="Padding" Value="24,18" />
+            <!-- antes: 16,12 -->
+            <Setter Property="Margin" Value="0,12,0,0" />
+            <!-- antes: 0,6,0,0 -->
+
+            <Setter Property="CornerRadius" Value="8" />
+
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="RootBorder"
+                        Background="{TemplateBinding Background}"
+                        CornerRadius="{TemplateBinding CornerRadius}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Ícone -->
+                                <FontIcon FontFamily="Segoe Fluent Icons"
+                                  Glyph="{TemplateBinding Tag}"
+                                  FontSize="20"
+                                  Margin="5,5,20,5"
+                                  VerticalAlignment="Center" />
+
+                                <!-- Título e descrição -->
+                                <StackPanel Grid.Column="1" Margin="2,5,2,2">
+                                    <!-- pequeno ajuste de alinhamento -->
+                                    <TextBlock Text="{TemplateBinding Content}"
+                                       FontWeight="SemiBold"
+                                       FontSize="14"
+                                       Foreground="{TemplateBinding Foreground}" />
+                                    <TextBlock Text="{TemplateBinding AccessKey}"
+                                       FontSize="12"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       TextWrapping="Wrap"
+                                       MaxLines="1" />
+                                </StackPanel>
+
+                                <!-- Seta -->
+                                <FontIcon Grid.Column="2"
+                                  Glyph="&#xE72A;"
+                                  FontFamily="Segoe Fluent Icons"
+                                  FontSize="14"
+                                  Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                  VerticalAlignment="Center" />
+                            </Grid>
+                        </Border>
+
+                        <!-- Estados visuais -->
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal"/>
+                                <VisualState x:Name="PointerOver">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="RootBorder"
+                                                               Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                        Value="{ThemeResource CardBackgroundFillColorTertiaryBrush}" />
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="RootBorder"
+                                                               Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                        Value="{ThemeResource CardBackgroundFillColorQuarternaryBrush}" />
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+    </Page.Resources>
+
+    <Grid>
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="40,30">
+            <StackPanel Spacing="24">
+
+                <!-- Cabeçalho -->
+                <TextBlock Text="Menu de Automação de RH"
+                           FontSize="22"
+                           FontWeight="Bold"
+                           Margin="0,0,0,12"/>
+
+                <!-- Card principal (mantido igual) -->
+                <Border Style="{StaticResource FancyCardStyle}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Avatar -->
+                        <Border Width="72" Height="72" CornerRadius="12" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
+                            <Image Source="https://s3.sa-east-1.amazonaws.com/remotar-assets-prod/company-profile-pictures/cl80gsdkz00fp04xd0bz2h9nu.png"
+                                   Stretch="UniformToFill"
+                                   Margin="4"/>
+                        </Border>
+
+                        <!-- Info -->
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="18,0,0,0">
+                            <TextBlock Text="Central de RH" FontSize="18" FontWeight="SemiBold"/>
+                            <TextBlock Text="Ferramentas e automações disponíveis"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       FontSize="14"/>
+                        </StackPanel>
+
+                        <!-- Serviços (mantido igual) -->
+                        <StackPanel Grid.Column="2"
+                                    Orientation="Horizontal"
+                                    Spacing="20"
+                                    VerticalAlignment="Center">
+                     
+
+                            <StackPanel>
+                                <TextBlock Text="dev" FontWeight="SemiBold"/>
+                                <TextBlock Text="junior Belem"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           FontSize="12"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Card de menu -->
+                <Border Style="{StaticResource FancyCardStyle}">
+                    <StackPanel x:Name="SettingsItemsPanel" Spacing="8"/>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>
