@@ -248,7 +248,7 @@ namespace JrTools.ViewModels
                     var startInfo = new System.Diagnostics.ProcessStartInfo
                     {
                         FileName = "powershell.exe",
-                        Arguments = $"-Command \"Restart-WebAppPool -Name '{namePull}'\"",
+                        Arguments = $"-Command \"Start-WebAppPool -Name '{namePull}'\"",
                         RedirectStandardOutput = true,
                         RedirectStandardError = true,
                         UseShellExecute = false,
