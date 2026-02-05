@@ -50,5 +50,81 @@ namespace JrTools.Services
             }
         }
 
+        public async Task<string> RunCommandWithProgressAsync(
+            string arguments,
+            string workingDirectory,
+            IProgress<string> progress = null,
+            string commandTitle = "GIT")
+        {
+            if (!Directory.Exists(workingDirectory))
+            {
+                var msg = $"[ERRO] Diretório não encontrado: {workingDirectory}";
+                progress?.Report(msg);
+                throw new DirectoryNotFoundException(msg);
+            }
+
+            var psi = new ProcessStartInfo
+            {
+                FileName = "git",
+                Arguments = arguments,
+                WorkingDirectory = workingDirectory,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                StandardOutputEncoding = Encoding.UTF8,
+                StandardErrorEncoding = Encoding.UTF8
+            };
+
+            var outputBuilder = new StringBuilder();
+            var tcs = new TaskCompletionSource<bool>();
+
+            using var process = new Process { StartInfo = psi, EnableRaisingEvents = true };
+
+            process.OutputDataReceived += (s, e) =>
+            {
+                if (!string.IsNullOrWhiteSpace(e.Data))
+                {
+                    outputBuilder.AppendLine(e.Data);
+                    progress?.Report($"{commandTitle}: {e.Data}");
+                }
+            };
+
+            process.ErrorDataReceived += (s, e) =>
+            {
+                if (!string.IsNullOrWhiteSpace(e.Data))
+                {
+                    progress?.Report($"{commandTitle} [MSG/ERRO]: {e.Data}");
+                }
+            };
+
+            process.Exited += (s, e) => tcs.TrySetResult(true);
+
+            progress?.Report($"{commandTitle} iniciando em {workingDirectory}...");
+
+            try
+            {
+                process.Start();
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
+
+                await tcs.Task;
+                await process.WaitForExitAsync(); 
+            }
+            catch (Exception ex)
+            {
+                progress?.Report($"[EXCEPTION] {ex.Message}");
+                throw;
+            }
+
+            if (process.ExitCode != 0)
+            {
+                throw new Exception($"{commandTitle} terminou com erro. Código de saída: {process.ExitCode}");
+            }
+
+            progress?.Report($"{commandTitle} concluído.");
+            return outputBuilder.ToString();
+        }
+
     }
 }
