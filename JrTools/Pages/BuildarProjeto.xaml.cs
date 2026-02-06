@@ -33,8 +33,19 @@ namespace JrTools.Pages
         private async void ConfiguracoesPage_Loaded(object sender, RoutedEventArgs e)
         {
             await CarregarConfiguracoes();
+            CarregarMsBuildVersions();
             CarregarProjetos();
             CarregarProjetosDelphi();
+        }
+
+        private void CarregarMsBuildVersions()
+        {
+            var msBuildVersions = MsBuildLocator.FindMsBuildVersions();
+            MsBuildVersionComboBox.ItemsSource = msBuildVersions;
+            if (msBuildVersions.Any())
+            {
+                MsBuildVersionComboBox.SelectedIndex = 0;
+            }
         }
 
         private async System.Threading.Tasks.Task CarregarConfiguracoes()
@@ -81,7 +92,6 @@ namespace JrTools.Pages
             ProjetoDelphiselecionadoComboBox.ItemsSource = ListaDeProjetos;
             ProjetoDelphiselecionadoComboBox.DisplayMemberPath = "Nome";
 
-            // Seleciona automaticamente a pasta "delphi" se existir
             var projetoDelphi = ListaDeProjetos.FirstOrDefault(p =>
                 string.Equals(p.Nome, "prod", StringComparison.OrdinalIgnoreCase));
 
@@ -122,6 +132,12 @@ namespace JrTools.Pages
 
         private async void ProcessarDotnetButton_Click(object sender, RoutedEventArgs e)
         {
+            if (MsBuildVersionComboBox.SelectedItem is not MsBuildInfo msBuildInfo)
+            {
+                ShowValidationError("Selecione uma versão do MSBuild.");
+                return;
+            }
+
             if (SolucaoDotnetSelecionadoComboBox.SelectedItem is not SolucaoInformacoesDto solucaoSelecionada)
             {
                 ShowValidationError("Selecione uma solução antes de processar.");
@@ -170,7 +186,7 @@ namespace JrTools.Pages
                     try
                     {
                         var buildHandler = new BinldarProjetoSrv();
-                        await buildHandler.BuildarProjetoAsync(solucaoSelecionada.Caminho, acaoSelecionada, progresso);
+                        await buildHandler.BuildarProjetoAsync(solucaoSelecionada.Caminho, msBuildInfo.Path, acaoSelecionada, progresso);
                         AppendTerminalLog($"{acaoSelecionada.ToString()} concluído com sucesso!");
 
                         if (acaoSelecionada == AcaoBuild.Build || acaoSelecionada == AcaoBuild.Rebuild)

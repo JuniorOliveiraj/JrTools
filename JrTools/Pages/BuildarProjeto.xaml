@@ -61,6 +61,11 @@
                             <Border Style="{StaticResource FullWidthCardStyle}">
                                 <StackPanel Spacing="12">
                                     <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                                        <TextBlock Text="MsBuild" VerticalAlignment="Center" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                                        <ComboBox x:Name="MsBuildVersionComboBox" MinWidth="400" DisplayMemberPath="DisplayName"/>
+                                    </StackPanel>
+                                    
+                                    <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
                                         <TextBlock x:Name="ProjetoDotnetselecionado"  
                                            Text="Projeto" 
                                            VerticalAlignment="Center" 

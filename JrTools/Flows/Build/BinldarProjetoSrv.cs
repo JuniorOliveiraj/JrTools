@@ -12,14 +12,12 @@ namespace JrTools.Flows.Build
 {
     public class BinldarProjetoSrv
     {
-        public async Task BuildarProjetoAsync(string caminhoSln, AcaoBuild acao, IProgress<string>? progresso = null)
+        public async Task BuildarProjetoAsync(string caminhoSln, string msbuildExe, AcaoBuild acao, IProgress<string>? progresso = null)
         {
             await Task.Run(async () =>
             {
                 try
                 {
-                    string msbuildExe = @"C:\Program Files (x86)\Microsoft Visual Studio\2017\Professional\MSBuild\15.0\Bin\MSBuild.exe";
-
                     if (!File.Exists(msbuildExe))
                         throw new FileNotFoundException("MSBuild.exe não encontrado.", msbuildExe);
 
@@ -58,7 +56,7 @@ namespace JrTools.Flows.Build
                         processo.BeginOutputReadLine();
                         processo.BeginErrorReadLine();
 
-                        await tcs.Task; // espera terminar
+                        await tcs.Task; 
 
                         if (processo.ExitCode != 0)
                             throw new FluxoException($"MSBuild terminou com erro. Código de saída: {processo.ExitCode}");
