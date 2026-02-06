@@ -44,6 +44,7 @@
                                  Text="D:\Benner\fontes\rh\prod" TextChanged="DiretorioProducao_TextChanged"/>
                         <TextBox x:Name="DiretorioEspesificos" Header="Diretórios específicos"
                                  Text="D:\Benner\fontes\rh" TextChanged="DiretorioEspesificos_TextChanged"/>
+                        <ComboBox x:Name="MsBuildVersionComboBox" Header="MsBuild Padrão" DisplayMemberPath="DisplayName" SelectionChanged="MsBuildVersionComboBox_SelectionChanged"/>
                     </StackPanel>
                 </Border>
 

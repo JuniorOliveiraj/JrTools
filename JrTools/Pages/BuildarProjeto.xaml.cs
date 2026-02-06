@@ -1,5 +1,5 @@
 using JrTools.Dto;
-using JrTools.Flows;
+using JrTools.Enums;
 using JrTools.Flows.Build;
 using JrTools.Services;
 using Microsoft.UI.Xaml;
@@ -11,15 +11,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
-
 namespace JrTools.Pages
 {
-    /// <summary>
-    /// An empty page that can be used on its own or navigated to within a Frame.
-    /// </summary>
     public sealed partial class BuildarProjeto : Page
     {
         private ConfiguracoesdataObject _config;
@@ -34,14 +27,33 @@ namespace JrTools.Pages
             ExpanderDotNet.RegisterPropertyChangedCallback(Expander.IsExpandedProperty, Expander_IsExpandedChanged);
             ExpanderDelphi.RegisterPropertyChangedCallback(Expander.IsExpandedProperty, Expander_IsExpandedChanged);
             this.Loaded += ConfiguracoesPage_Loaded;
-
+            AcaoBuildDotnetComboBox.SelectedIndex = 0;
+            AcaoBuildDelphiComboBox.SelectedIndex = 0;
         }
 
         private async void ConfiguracoesPage_Loaded(object sender, RoutedEventArgs e)
         {
             await CarregarConfiguracoes();
+            CarregarMsBuildVersions();
             CarregarProjetos();
             CarregarProjetosDelphi();
+        }
+
+        private void CarregarMsBuildVersions()
+        {
+            var msBuildVersions = MsBuildLocator.FindMsBuildVersions();
+            MsBuildVersionComboBox.ItemsSource = msBuildVersions;
+
+            if (msBuildVersions.Any())
+            {
+                MsBuildInfo? versaoPadrao = null;
+                if (!string.IsNullOrEmpty(_config?.MsBuildPadraoPath))
+                {
+                    versaoPadrao = msBuildVersions.FirstOrDefault(v => v.Path == _config.MsBuildPadraoPath);
+                }
+
+                MsBuildVersionComboBox.SelectedItem = versaoPadrao ?? msBuildVersions.First();
+            }
         }
 
         private async System.Threading.Tasks.Task CarregarConfiguracoes()
@@ -54,7 +66,7 @@ namespace JrTools.Pages
             {
                 await new ContentDialog
                 {
-                    Title = "Erro ao carregar configuraÁıes",
+                    Title = "Erro ao carregar configura√ß√µes",
                     Content = ex.Message,
                     CloseButtonText = "OK",
                     XamlRoot = this.XamlRoot
@@ -88,7 +100,6 @@ namespace JrTools.Pages
             ProjetoDelphiselecionadoComboBox.ItemsSource = ListaDeProjetos;
             ProjetoDelphiselecionadoComboBox.DisplayMemberPath = "Nome";
 
-            // Seleciona automaticamente a pasta "delphi" se existir
             var projetoDelphi = ListaDeProjetos.FirstOrDefault(p =>
                 string.Equals(p.Nome, "prod", StringComparison.OrdinalIgnoreCase));
 
@@ -102,8 +113,6 @@ namespace JrTools.Pages
             }
         }
 
-
-
         private void ProjetoDotnetComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (ProjetoDotnetselecionadoComboBox.SelectedItem is PastaInformacoesDto projetoSelecionado)
@@ -115,7 +124,6 @@ namespace JrTools.Pages
                 SolucaoDotnetSelecionadoComboBox.ItemsSource = ListaSolucoes;
                 SolucaoDotnetSelecionadoComboBox.DisplayMemberPath = "Nome";
 
-                // Seleciona a soluÁ„o "Compilacao_Completa_SemWebApp.sln" se existir
                 var solucaoDefault = ListaSolucoes.FirstOrDefault(s =>
                     string.Equals(s.Nome, "Compilacao_Completa_SemWebApp.sln", StringComparison.OrdinalIgnoreCase));
 
@@ -130,15 +138,21 @@ namespace JrTools.Pages
             }
         }
 
-
-
         private async void ProcessarDotnetButton_Click(object sender, RoutedEventArgs e)
         {
-            if (SolucaoDotnetSelecionadoComboBox.SelectedItem is not SolucaoInformacoesDto solucaoSelecionada)
+            if (MsBuildVersionComboBox.SelectedItem is not MsBuildInfo msBuildInfo)
             {
-                ShowValidationError("Selecione uma soluÁ„o antes de processar.");
+                ShowValidationError("Selecione uma vers√£o do MSBuild.");
                 return;
             }
+
+            if (SolucaoDotnetSelecionadoComboBox.SelectedItem is not SolucaoInformacoesDto solucaoSelecionada)
+            {
+                ShowValidationError("Selecione uma solu√ß√£o antes de processar.");
+                return;
+            }
+
+            var acaoSelecionada = (AcaoBuild)AcaoBuildDotnetComboBox.SelectedIndex;
 
             BuildarDotnetButton.IsEnabled = false;
             LoadingRing.IsActive = true;
@@ -147,7 +161,6 @@ namespace JrTools.Pages
             using var cts = new CancellationTokenSource();
             var progresso = (IProgress<string>)new Progress<string>(msg => AppendTerminalLog(msg));
 
-            // Loop de manter processos fechados em background
             var manterFechadoTask = Task.Run(async () =>
             {
                 while (!cts.Token.IsCancellationRequested)
@@ -162,8 +175,7 @@ namespace JrTools.Pages
                         }
                         catch (Exception ex)
                         {
-                            // N„o quebra o app
-                            progresso.Report($"[WARN] N„o foi possÌvel matar {nomeProcesso}: {ex.Message}");
+                            progresso.Report($"[WARN] N√£o foi poss√≠vel matar {nomeProcesso}: {ex.Message}");
                         }
                     }
                     try { await Task.Delay(3000, cts.Token); }
@@ -173,40 +185,38 @@ namespace JrTools.Pages
 
             try
             {
-                // Antes do build, garante que todos os processos est„o fechados
                 await GarantirProcessosFechados(processos, progresso);
 
-                AppendTerminalLog($"Iniciando build da soluÁ„o: {solucaoSelecionada.Nome}");
+                AppendTerminalLog($"Iniciando {acaoSelecionada.ToString().ToLower()} da solu√ß√£o: {solucaoSelecionada.Nome}");
 
-                // Roda o build em Task separada para n„o travar UI
                 await Task.Run(async () =>
                 {
                     try
                     {
                         var buildHandler = new BinldarProjetoSrv();
-                        await buildHandler.BuildarProjetoAsync(solucaoSelecionada.Caminho, progresso);
-                        AppendTerminalLog("Build concluÌdo com sucesso!");
+                        await buildHandler.BuildarProjetoAsync(solucaoSelecionada.Caminho, msBuildInfo.Path, acaoSelecionada, progresso);
+                        AppendTerminalLog($"{acaoSelecionada.ToString()} conclu√≠do com sucesso!");
 
-                        try
+                        if (acaoSelecionada == AcaoBuild.Build || acaoSelecionada == AcaoBuild.Rebuild)
                         {
-                            var psi = new System.Diagnostics.ProcessStartInfo
+                            try
                             {
-                                FileName = "http://localhost/prod",
-                                UseShellExecute = true
-                            };
-                            System.Diagnostics.Process.Start(psi);
+                                var psi = new System.Diagnostics.ProcessStartInfo
+                                {
+                                    FileName = "http://localhost/prod",
+                                    UseShellExecute = true
+                                };
+                                System.Diagnostics.Process.Start(psi);
+                            }
+                            catch (Exception ex)
+                            {
+                                progresso.Report($"[WARN] N√£o foi poss√≠vel abrir o navegador: {ex.Message}");
+                            }
                         }
-                        catch (Exception ex)
-                        {
-                            progresso.Report($"[WARN] N„o foi possÌvel abrir o navegador: {ex.Message}");
-                        }
-
-
                     }
                     catch (Exception ex)
                     {
-                        // SÛ loga, n„o quebra app
-                        progresso.Report($"[ERRO] Build falhou: {ex.Message}");
+                        progresso.Report($"[ERRO] {acaoSelecionada.ToString()} falhou: {ex.Message}");
                     }
                 });
             }
@@ -216,19 +226,13 @@ namespace JrTools.Pages
             }
             finally
             {
-                cts.Cancel();               // Cancela loop de matar processos
-                await manterFechadoTask;     // Aguarda tÈrmino seguro
+                cts.Cancel();
+                await manterFechadoTask;
 
                 BuildarDotnetButton.IsEnabled = true;
                 LoadingRing.IsActive = false;
             }
         }
-
-
-
-
-
-
 
         private void ProjetoDelphiComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -236,26 +240,30 @@ namespace JrTools.Pages
             {
                 string caminhoProjeto = Path.Combine(projetoSelecionado.Caminho, "Delphi");
 
-                // Usando o mÈtodo genÈrico recursivo com cache
                 ListaSolucoes = Folders.EncontrarProjetosDelphi(caminhoProjeto, usarCache: true);
 
                 SolucaoDelphiSelecionadoComboBox.ItemsSource = ListaSolucoes;
                 SolucaoDelphiSelecionadoComboBox.DisplayMemberPath = "Nome";
 
-                // Seleciona o primeiro item, se existir
                 SolucaoDelphiSelecionadoComboBox.SelectedIndex = ListaSolucoes.Any() ? 0 : -1;
             }
         }
-
-
 
         private async void ProcessarDelphiButton_Click(object sender, RoutedEventArgs e)
         {
             if (SolucaoDelphiSelecionadoComboBox.SelectedItem is not SolucaoInformacoesDto solucaoSelecionada)
             {
-                ShowValidationError("Selecione uma soluÁ„o Delphi antes de processar.");
+                ShowValidationError("Selecione uma solu√ß√£o Delphi antes de processar.");
                 return;
             }
+            
+            if (MsBuildVersionComboBox.SelectedItem is not MsBuildInfo msBuildInfo)
+            {
+                ShowValidationError("Selecione uma vers√£o do MSBuild.");
+                return;
+            }
+
+            var acaoSelecionada = (AcaoBuild)AcaoBuildDelphiComboBox.SelectedIndex;
 
             BuildarDelphiButton.IsEnabled = false;
             LoadingDelphiRing.IsActive = true;
@@ -265,7 +273,7 @@ namespace JrTools.Pages
             try
             {
                 var buildHandler = new BuildarDelphiSrv();
-                await buildHandler.BuildarProjetoDelphiAsync(solucaoSelecionada.Caminho, progresso);
+                await buildHandler.BuildarAsync(solucaoSelecionada.Caminho, msBuildInfo.Path, _config.RsvarsBatPadraoPath, acaoSelecionada, progresso);
             }
             catch (Exception ex)
             {
@@ -278,14 +286,12 @@ namespace JrTools.Pages
             }
         }
 
-
         private void Expander_IsExpandedChanged(DependencyObject sender, DependencyProperty dp)
         {
             var expandedExpander = sender as Expander;
 
             if (expandedExpander.IsExpanded)
             {
-                // Fecha o outro Expander
                 if (expandedExpander == ExpanderDotNet)
                     ExpanderDelphi.IsExpanded = false;
                 else if (expandedExpander == ExpanderDelphi)
@@ -303,30 +309,11 @@ namespace JrTools.Pages
                     progresso.Report($"Processo {nomeProcesso} ainda ativo, tentando fechar...");
                     await ProcessKiller.KillByNameAsync(nomeProcesso, progresso);
                     tentativas++;
-                    if (tentativas > 10) // evita loop infinito
-                        throw new Exception($"N„o foi possÌvel encerrar o processo {nomeProcesso} antes do build.");
-                    await Task.Delay(1000); // espera 1 segundo antes da prÛxima tentativa
+                    if (tentativas > 10)
+                        throw new Exception($"N√£o foi poss√≠vel encerrar o processo {nomeProcesso} antes do build.");
+                    await Task.Delay(1000);
                 }
             }
-        }
-        public static List<SolucaoInformacoesDto> ListarArquivosPorExtensao(string diretorio, string extensao)
-        {
-            var lista = new List<SolucaoInformacoesDto>();
-
-            if (Directory.Exists(diretorio))
-            {
-                var arquivos = Directory.GetFiles(diretorio, $"*{extensao}", SearchOption.AllDirectories);
-                foreach (var arquivo in arquivos)
-                {
-                    lista.Add(new SolucaoInformacoesDto
-                    {
-                        Nome = Path.GetFileName(arquivo),
-                        Caminho = arquivo
-                    });
-                }
-            }
-
-            return lista;
         }
 
         private void ShowValidationError(string mensagem)
@@ -334,6 +321,7 @@ namespace JrTools.Pages
             ValidationInfoBar.Message = mensagem;
             ValidationInfoBar.IsOpen = true;
         }
+
         private void AppendTerminalLog(string mensagem)
         {
             DispatcherQueue.TryEnqueue(() =>
@@ -363,8 +351,5 @@ namespace JrTools.Pages
                 TerminalScrollViewerDelphi.ChangeView(null, TerminalScrollViewerDelphi.ScrollableHeight, null);
             });
         }
-
-
-
     }
 }

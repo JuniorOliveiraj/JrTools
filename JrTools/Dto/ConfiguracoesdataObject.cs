@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,5 +12,6 @@ namespace JrTools.Dto
         public string DiretorioBinarios { get; set; }
         public string DiretorioProducao { get; set; }
         public string DiretorioEspecificos { get; set; }
+        public string MsBuildPadraoPath { get; set; }
     }
 }

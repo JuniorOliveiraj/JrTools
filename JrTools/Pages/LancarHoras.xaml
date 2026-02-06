@@ -35,11 +35,12 @@
                             <!-- DatePicker à direita -->
                         </Grid.ColumnDefinitions>
 
-                        <TextBlock Text="Lançamento de Horas" 
-                           FontSize="20" 
-                           FontWeight="Bold"
-                           VerticalAlignment="Center"
-                           Grid.Column="0"/>
+                        <TextBlock x:Name="FormTitle" 
+                                   Text="Lançamento de Horas" 
+                                   FontSize="20" 
+                                   FontWeight="Bold"
+                                   VerticalAlignment="Center"
+                                   Grid.Column="0"/>
 
                         <DatePicker Grid.Column="1"  VerticalAlignment="Center" x:Name="DiaLancamento" SelectedDateChanged="DiaLancamento_Changed"/>
                     </Grid>
@@ -51,12 +52,12 @@
                     <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12">
                         <StackPanel>
                             <TextBlock Text="Hora de Início" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                            <TimePicker x:Name="HoraInicioPicker" ClockIdentifier="24HourClock" TimeChanged="HoraPicker_TimeChanged" />
+                            <TimePicker x:Name="HoraInicioPicker" ClockIdentifier="24HourClock" />
                         </StackPanel>
 
                         <StackPanel Grid.Column="1">
                             <TextBlock Text="Hora de Fim" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                            <TimePicker x:Name="HoraFimPicker" ClockIdentifier="24HourClock" TimeChanged="HoraPicker_TimeChanged" />
+                            <TimePicker x:Name="HoraFimPicker" ClockIdentifier="24HourClock" />
                         </StackPanel>
 
                         <StackPanel Grid.Column="2">
@@ -67,6 +68,7 @@
                                        PlaceholderText="0"
                                        SpinButtonPlacementMode="Compact"
                                        HorizontalAlignment="Stretch"
+                                       LostFocus="TotalHorasBox_LostFocus"
                                        ToolTipService.ToolTip="Se preencher Início e Fim, o total será calculado automaticamente" />
                         </StackPanel>
                     </Grid>
@@ -100,11 +102,18 @@
                                 Click="AddProjectButton_Click"/>
                     </Grid>
 
-                    <!-- Botão de salvar -->
-                    <Button Content="Salvar Lançamento" 
-                            HorizontalAlignment="Right"
-                            Margin="0,12,0,0"
-                            Style="{StaticResource AccentButtonStyle}" Click="SalvarLancamentoButton_Click" />
+                    <!-- Botões de ação -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,12,0,0">
+                        <Button x:Name="ClearButton"
+                                Content="Limpar"
+                                Click="ClearButton_Click"
+                                Visibility="Collapsed"/>
+                        <Button x:Name="SaveButton"
+                                Content="Salvar Lançamento" 
+                                Style="{StaticResource AccentButtonStyle}" 
+                                Click="SalvarLancamentoButton_Click" />
+                    </StackPanel>
+
                 </StackPanel>
             </Border>
 
@@ -117,28 +126,38 @@
                                Margin="0,0,0,8"/>
 
                     <!-- Cabeçalho de colunas -->
-                    <Grid Padding="8" ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto" ColumnSpacing="16">
+                    <Grid Padding="8" ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="16">
                         <TextBlock Text="Início" FontWeight="SemiBold" Grid.Column="0" Width="80"/>
                         <TextBlock Text="Fim" FontWeight="SemiBold" Grid.Column="1" Width="80"/>
                         <TextBlock Text="Total (h)" FontWeight="SemiBold" Grid.Column="2" Width="60"/>
                         <TextBlock Text="Descrição" FontWeight="SemiBold" Grid.Column="3" />
+						<TextBlock Text="Ação" FontWeight="SemiBold" Grid.Column="4" />
                     </Grid>
 
                     <!-- Lista -->
                     <ListView x:Name="LancamentosListView"
-                              IsItemClickEnabled="False"
-                              SelectionMode="None"
+                              IsItemClickEnabled="True"
+                              SelectionMode="Single"
+                              SelectionChanged="LancamentosListView_SelectionChanged"
                               CornerRadius="8"
                               BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                               BorderThickness="1">
 
                         <ListView.ItemTemplate>
                             <DataTemplate x:DataType="local1:HoraLancamento">
-                                <Grid Padding="8" ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto" ColumnSpacing="16">
-                                    <TextBlock Text="{x:Bind HoraInicio, Mode=OneWay}" Grid.Column="1" Width="80" />
-                                    <TextBlock Text="{x:Bind HoraFim, Mode=OneWay}" Grid.Column="2" Width="80"/>
-                                    <TextBlock Text="{x:Bind TotalHoras, Mode=OneWay}" Grid.Column="3" Width="60"/>
-                                    <TextBlock Text="{x:Bind Descricao, Mode=OneWay}" Grid.Column="4" TextTrimming="CharacterEllipsis" />
+                                <Grid Padding="8" ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="16">
+                                    <TextBlock Text="{x:Bind HoraInicio, Mode=OneWay}" Grid.Column="0" Width="80" />
+                                    <TextBlock Text="{x:Bind HoraFim, Mode=OneWay}" Grid.Column="1" Width="80"/>
+                                    <TextBlock Text="{x:Bind TotalHoras, Mode=OneWay}" Grid.Column="2" Width="60"/>
+                                    <TextBlock Text="{x:Bind Descricao, Mode=OneWay}" Grid.Column="3" TextTrimming="CharacterEllipsis" />
+									<Button Grid.Column="4"
+											x:Name="DeleteButton"
+											Click="DeleteButton_Click"
+											Tag="{x:Bind}"
+											Background="Transparent"
+											BorderBrush="Transparent">
+										<FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE74D;"/>
+									</Button>
                                 </Grid>
                             </DataTemplate>
                         </ListView.ItemTemplate>

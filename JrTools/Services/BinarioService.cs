@@ -1,4 +1,4 @@
-﻿using JrTools.Dto;
+using JrTools.Dto;
 using JrTools.Utils;
 using System;
 using System.Collections.Generic;
@@ -137,64 +137,25 @@ namespace JrTools.Services
 
         private async Task LimparPastaDestinoAsync(string caminho, IProgress<string>? progresso = null)
         {
-            if (!Directory.Exists(caminho))
-            {
-                Directory.CreateDirectory(caminho);
-                progresso?.Report($"[INFO] Criada pasta {caminho}");
-                return;
-            }
-
-            var arquivos = Directory.GetFiles(caminho, "*", SearchOption.AllDirectories);
-            var pastas = Directory.GetDirectories(caminho, "*", SearchOption.AllDirectories);
-
-            int total = arquivos.Length + pastas.Length;
-            int cont = 0;
-
-            // Deletar arquivos
-            foreach (var arquivo in arquivos)
+            await Task.Run(() =>
             {
                 try
                 {
-                    File.SetAttributes(arquivo, FileAttributes.Normal);
-                    File.Delete(arquivo);
+                    if (Directory.Exists(caminho))
+                    {
+                        progresso?.Report($"[INFO] Limpando pasta de destino: {caminho}");
+                        Directory.Delete(caminho, true);
+                    }
+                    Directory.CreateDirectory(caminho);
+                    progresso?.Report("[INFO] Limpeza da pasta concluída.");
                 }
                 catch (Exception ex)
                 {
-                    throw new FluxoException($"Não foi possível deletar o arquivo {arquivo}: {ex.Message}");
+                    var fluxEx = new FluxoException($"Não foi possível limpar a pasta {caminho}: {ex.Message}");
+                    progresso?.Report($"[ERRO] {fluxEx.Message}");
+                    throw fluxEx;
                 }
-
-                cont++;
-                if (cont % 50 == 0)
-                {
-                    int percentual = (int)((cont * 100) / total);
-                    progresso?.Report($"[INFO] Limpando... {percentual}%");
-                    await Task.Yield(); 
-                }
-            }
-
-            // Deletar pastas
-            foreach (var dir in pastas)
-            {
-                try
-                {
-                    var dirInfo = new DirectoryInfo(dir) { Attributes = FileAttributes.Normal };
-                    dirInfo.Delete(true);
-                }
-                catch (Exception ex)
-                {
-                    throw new FluxoException($"Não foi possível deletar a pasta {dir}: {ex.Message}");
-                }
-
-                cont++;
-                if (cont % 10 == 0)
-                {
-                    int percentual = (int)((cont * 100) / total);
-                    progresso?.Report($"[INFO] Limpando... {percentual}%");
-                    await Task.Yield();
-                }
-            }
-
-            progresso?.Report("[INFO] Limpeza da pasta concluída.");
+            });
         }
 
 

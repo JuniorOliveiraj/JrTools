@@ -1,4 +1,5 @@
-﻿using JrTools.Utils;
+using JrTools.Enums;
+using JrTools.Utils;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -11,39 +12,37 @@ namespace JrTools.Flows.Build
 {
     public class BuildarDelphiSrv
     {
-        public async Task BuildarProjetoDelphiAsync(
-            string caminhoGroupProj,
-            IProgress<string>? progresso = null,
-            string? args = null)
+        public async Task BuildarAsync(string caminhoDoProjeto, string msbuildExe, string rsvarsBat, AcaoBuild acao, IProgress<string>? progresso = null)
         {
             await Task.Run(async () =>
             {
                 try
                 {
-                    // Caminhos padrão — ajuste conforme seu ambiente
-                    string rsvarsBat = @"C:\Program Files (x86)\Embarcadero\Studio\17.0\bin\rsvars.bat";
-                    string msbuildExe = @"C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\MSBuild\15.0\Bin\MSBuild.exe";
-
                     if (!File.Exists(rsvarsBat))
                         throw new FileNotFoundException("Arquivo rsvars.bat não encontrado.", rsvarsBat);
 
                     if (!File.Exists(msbuildExe))
                         throw new FileNotFoundException("MSBuild.exe não encontrado.", msbuildExe);
 
-                    if (!File.Exists(caminhoGroupProj))
-                        throw new FileNotFoundException("Arquivo .groupproj não encontrado.", caminhoGroupProj);
+                    if (!File.Exists(caminhoDoProjeto))
+                        throw new FileNotFoundException("Arquivo de projeto não encontrado.", caminhoDoProjeto);
 
-                    if (string.IsNullOrEmpty(args))
-                        args = $"\"{caminhoGroupProj}\" /nologo /verbosity:normal /p:DCC_Hints=false /p:DCC_Warnings=false";
+                    string target = acao switch
+                    {
+                        AcaoBuild.Build => "Build",
+                        AcaoBuild.Limpar => "Clean",
+                        AcaoBuild.Rebuild => "Rebuild",
+                        _ => "Build"
+                    };
 
-                    // Monta o comando em lote
-                    string cmdScript = $@"
-                    @echo off
-                        call ""{rsvarsBat}""
-                        ""{msbuildExe}"" {args}
-                    ";
+                    string args = $"\"{caminhoDoProjeto}\" /t:{target} /p:Configuration=Release /nologo /verbosity:normal /p:DCC_Hints=false /p:DCC_Warnings=false";
 
-                    // Cria um arquivo temporário .cmd para executar o build
+                    string cmdScript = $"""
+                        @echo off
+                        call "{rsvarsBat}"
+                        "{msbuildExe}" {args}
+                        """;
+
                     string tempCmd = Path.Combine(Path.GetTempPath(), $"build_delphi_{Guid.NewGuid():N}.cmd");
                     await File.WriteAllTextAsync(tempCmd, cmdScript, Encoding.Default);
 
@@ -67,7 +66,7 @@ namespace JrTools.Flows.Build
                         processo.ErrorDataReceived += (s, e) => { if (e.Data != null) progresso?.Report("[ERRO] " + e.Data); };
                         processo.Exited += (s, e) => tcs.TrySetResult(true);
 
-                        progresso?.Report($"[INFO] Iniciando build Delphi: {caminhoGroupProj}");
+                        progresso?.Report($"[INFO] Iniciando {acao.ToString().ToLower()} Delphi: {caminhoDoProjeto}");
                         processo.Start();
                         processo.BeginOutputReadLine();
                         processo.BeginErrorReadLine();
@@ -77,18 +76,17 @@ namespace JrTools.Flows.Build
                         if (processo.ExitCode != 0)
                             throw new FluxoException($"MSBuild Delphi terminou com erro. Código de saída: {processo.ExitCode}");
 
-                        progresso?.Report("[INFO] Build Delphi concluído com sucesso!");
+                        progresso?.Report($"[INFO] {acao.ToString()} Delphi concluído com sucesso!");
                     }
 
                     File.Delete(tempCmd);
                 }
                 catch (Exception ex)
                 {
-                    progresso?.Report($"[ERRO] Falha ao buildar Delphi: {ex.Message}");
-                    throw new FluxoException($"[ERRO] Falha ao buildar Delphi: {ex.Message}");
+                    progresso?.Report($"[ERRO] Falha ao executar a ação {acao.ToString().ToLower()} no projeto Delphi: {ex.Message}");
+                    throw new FluxoException($"[ERRO] Falha ao executar a ação {acao.ToString().ToLower()} no projeto Delphi: {ex.Message}");
                 }
             });
         }
     }
 }
-

@@ -1,4 +1,4 @@
-﻿using JrTools.Dto;
+using JrTools.Dto;
 using JrTools.Flows;
 using JrTools.Services.Db;
 using Microsoft.UI.Xaml;
@@ -15,6 +15,7 @@ namespace JrTools.Pages
         private readonly ObservableCollection<HoraLancamento> Lancamentos = new();
         private readonly ObservableCollection<string> Projetos = new();
         private HorasToggle? _horasService;
+        private HoraLancamento? _lancamentoSelecionado;
 
         public LancarHoras()
         {
@@ -40,8 +41,8 @@ namespace JrTools.Pages
             foreach (var projeto in projetos)
                 Projetos.Add(projeto);
 
-            ProjetoComboBox.SelectedItem = "Nenhum";
             await CarregarLancamentosAsync();
+            LimparFormulario();
         }
 
         private async void AddProjectButton_Click(object sender, RoutedEventArgs e)
@@ -62,9 +63,11 @@ namespace JrTools.Pages
             {
                 try
                 {
-                    await HorasToggle.AdicionarProjetoAsync(novoProjetoTextBox.Text, Projetos);
-                    Projetos.Add(novoProjetoTextBox.Text);
-                    ProjetoComboBox.SelectedItem = novoProjetoTextBox.Text;
+                    var nomeProjeto = novoProjetoTextBox.Text;
+                    await HorasToggle.AdicionarProjetoAsync(nomeProjeto, Projetos);
+                    if (!Projetos.Contains(nomeProjeto))
+                        Projetos.Add(nomeProjeto);
+                    ProjetoComboBox.SelectedItem = nomeProjeto;
                 }
                 catch (Exception ex)
                 {
@@ -79,7 +82,7 @@ namespace JrTools.Pages
             {
                 if (_horasService == null) return;
 
-                if (string.IsNullOrEmpty(DescricaoBox.Text) && ProjetoComboBox.SelectedItem?.ToString() == "Nenhum")
+                if (string.IsNullOrEmpty(DescricaoBox.Text) && (ProjetoComboBox.SelectedItem == null || ProjetoComboBox.SelectedItem.ToString() == "Nenhum"))
                 {
                     ShowValidationError("A Descrição ou o projeto devem ser preenchidos");
                     return;
@@ -91,29 +94,27 @@ namespace JrTools.Pages
                     return;
                 }
 
-                string? projetoSelecionado = ProjetoComboBox.SelectedItem?.ToString() == "Nenhum"
-                    ? string.Empty
-                    : ProjetoComboBox.SelectedItem?.ToString();
+                string? projetoSelecionado = (ProjetoComboBox.SelectedItem?.ToString() == "Nenhum") ? string.Empty : ProjetoComboBox.SelectedItem?.ToString();
+                string descricaoBase = _horasService.GerarDescricaoFinal(DescricaoBox.Text, projetoSelecionado);
 
-                string descricaoFinal = _horasService.GerarDescricaoFinal(DescricaoBox.Text, projetoSelecionado);
-
-                TimeSpan duracao = TimeSpan.FromHours(TotalHorasBox.Value);
-                TimeSpan? horaInicio = HoraInicioPicker.SelectedTime;
-                horaInicio = _horasService.ObterHoraInicioDisponivel(horaInicio, duracao, Lancamentos);
-
-                var novoLancamento = new HoraLancamento
+                var lancamento = new HoraLancamento
                 {
+                    Id = _lancamentoSelecionado?.Id ?? 0,
                     Data = DiaLancamento.Date.Date,
-                    HoraInicio = horaInicio.Value,
-                    HoraFim = horaInicio.Value + duracao,
-                    TotalHoras = duracao.TotalHours,
-                    Descricao = descricaoFinal,
+                    HoraInicio = HoraInicioPicker.SelectedTime,
+                    HoraFim = HoraFimPicker.SelectedTime,
+                    TotalHoras = TotalHorasBox.Value,
+                    Descricao = descricaoBase,
                     Projeto = projetoSelecionado
                 };
 
-                await _horasService.SalvarLancamentoAsync(novoLancamento);
+                if (_lancamentoSelecionado == null)
+                    await _horasService.SalvarLancamentoAsync(lancamento);
+                else
+                    await _horasService.AtualizarLancamentoAsync(lancamento);
+
                 await CarregarLancamentosAsync();
-                ClearForm();
+                LimparFormulario();
             }
             catch (Exception ex)
             {
@@ -129,22 +130,12 @@ namespace JrTools.Pages
                 var lancamentos = await _horasService.CarregarLancamentosDoDiaAsync(DiaLancamento.Date.Date);
 
                 Lancamentos.Clear();
-                foreach (var l in lancamentos)
+                foreach (var l in lancamentos.OrderBy(l => l.HoraInicio))
                     Lancamentos.Add(l);
             }
             catch (Exception ex)
             {
                 ShowValidationError($"Erro ao carregar lançamentos: {ex.Message}");
-            }
-        }
-
-        private void HoraPicker_TimeChanged(object sender, TimePickerValueChangedEventArgs e)
-        {
-            if (HoraInicioPicker.SelectedTime.HasValue && HoraFimPicker.SelectedTime.HasValue)
-            {
-                var inicio = HoraInicioPicker.SelectedTime.Value;
-                var fim = HoraFimPicker.SelectedTime.Value;
-                TotalHorasBox.Value = fim >= inicio ? (fim - inicio).TotalHours : 0;
             }
         }
 
@@ -154,18 +145,76 @@ namespace JrTools.Pages
             ValidationInfoBar.Message = message;
             ValidationInfoBar.IsOpen = true;
         }
+
         private async void DiaLancamento_Changed(DatePicker sender, DatePickerSelectedValueChangedEventArgs e)
         {
             await CarregarLancamentosAsync();
+            LimparFormulario();
         }
-        private void ClearForm()
+
+        private void LimparFormulario()
         {
+            _lancamentoSelecionado = null;
+            LancamentosListView.SelectedItem = null;
+            FormTitle.Text = "Lançamento de Horas";
+
             HoraInicioPicker.SelectedTime = null;
             HoraFimPicker.SelectedTime = null;
             TotalHorasBox.Value = 0;
             DescricaoBox.Text = string.Empty;
-            ProjetoComboBox.SelectedIndex = -1;
+            ProjetoComboBox.SelectedItem = Projetos.FirstOrDefault(p => p == "Nenhum");
             ValidationInfoBar.IsOpen = false;
+
+            SaveButton.Content = "Salvar Lançamento";
+            ClearButton.Visibility = Visibility.Collapsed;
+        }
+
+        private void PreencherFormularioComLancamento(HoraLancamento lancamento)
+        {
+            FormTitle.Text = "Editar Lançamento";
+            HoraInicioPicker.SelectedTime = lancamento.HoraInicio;
+            HoraFimPicker.SelectedTime = lancamento.HoraFim;
+            TotalHorasBox.Value = lancamento.TotalHoras ?? 0;
+            DescricaoBox.Text = lancamento.Descricao;
+            ProjetoComboBox.SelectedItem = lancamento.Projeto ?? Projetos.FirstOrDefault(p => p == "Nenhum");
+
+            SaveButton.Content = "Salvar Alterações";
+            ClearButton.Visibility = Visibility.Visible;
+        }
+
+        private async void DeleteButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_horasService == null) return;
+
+            var button = (Button)sender;
+            if (button.Tag is HoraLancamento lancamento)
+            {
+                await _horasService.DeleteLancamentoAsync(lancamento);
+                await CarregarLancamentosAsync();
+                LimparFormulario(); 
+            }
+        }
+
+        private void LancamentosListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            _lancamentoSelecionado = LancamentosListView.SelectedItem as HoraLancamento;
+            if (_lancamentoSelecionado != null)
+            {
+                PreencherFormularioComLancamento(_lancamentoSelecionado);
+            }
+        }
+
+        private void TotalHorasBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (HoraInicioPicker.SelectedTime.HasValue && TotalHorasBox.Value > 0)
+            {
+                HoraFimPicker.SelectedTime = HoraInicioPicker.SelectedTime.Value.Add(TimeSpan.FromHours(TotalHorasBox.Value));
+            }
+        }
+
+        private void ClearButton_Click(object sender, RoutedEventArgs e)
+        {
+            LimparFormulario();
         }
     }
 }
