@@ -137,7 +137,7 @@ namespace JrTools.Negocios
         private async Task BuildarProjetoAsync(string caminhoSln)
         {
             var buildHandler = new BinldarProjetoSrv();
-            await buildHandler.BuildarProjetoAsync(caminhoSln, _progresso);
+            await buildHandler.BuildarProjetoAsync(caminhoSln, JrTools.Enums.AcaoBuild.Rebuild, _progresso);
         }
 
         private async Task<ValidarTagBranch> VerificarSeBranchContemTagAsync(string tag, string branchParaVerificar, string diretorioProducao)

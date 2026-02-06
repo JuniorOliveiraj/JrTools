@@ -151,7 +151,7 @@ namespace JrTools.Services
                 }
                 catch (Exception ex)
                 {
-                    var fluxEx = new FluxoException($"Não foi possível limpar a pasta {caminho}: {ex.Message}", ex);
+                    var fluxEx = new FluxoException($"Não foi possível limpar a pasta {caminho}: {ex.Message}");
                     progresso?.Report($"[ERRO] {fluxEx.Message}");
                     throw fluxEx;
                 }
