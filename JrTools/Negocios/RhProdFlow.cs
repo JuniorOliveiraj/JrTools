@@ -1,4 +1,4 @@
-﻿using JrTools.Dto;
+using JrTools.Dto;
 using JrTools.Flows;
 using JrTools.Flows.Build;
 using JrTools.Services;
@@ -37,13 +37,10 @@ namespace JrTools.Negocios
 
                 var config = await ConfigHelper.LerConfiguracoesAsync();
 
-                // 1. Validação e Checkout Git
                 await GerenciarGitAsync(dto, branch, config.DiretorioProducao);
 
-                // 2. Gerenciamento de Processos (Kill)
                 await GerenciarProcessosAnterioresAsync(dto);
 
-                // 3. Guardião (Provider)
                 CancellationTokenSource? ctsGuardian = null;
                 if (dto.PrividerFechado)
                 {
@@ -51,19 +48,16 @@ namespace JrTools.Negocios
                     _ = IniciarGuardianBPrv230Async(ctsGuardian.Token, CreateProgressForGuardian());
                 }
 
-                // 4. Atualização de Binários
                 if (dto.AtualizarBinarios)
                 {
                     await AtualizarBinariosAsync(dto, config.DiretorioBinarios);
                 }
 
-                // 5. Compilação
                 if (dto.BuildarProjeto)
                 {
-                    await BuildarProjetoAsync(@"D:\Benner\fontes\rh\prod\dotnet\Solutions\Compilacao_Completa_SemWebApp.sln");
+                    await BuildarProjetoAsync(config, @"D:\Benner\fontes\rh\prod\dotnet\Solutions\Compilacao_Completa_SemWebApp.sln");
                 }
 
-                // Cleanup do Guardião se foi iniciado
                 ctsGuardian?.Cancel();
 
                 Log("[INFO] Fluxo concluído com sucesso!");
@@ -134,10 +128,17 @@ namespace JrTools.Negocios
             await binarioFlow.ExecutarBuscarBinarios(_progresso, diretorioBinarios);
         }
 
-        private async Task BuildarProjetoAsync(string caminhoSln)
+        private async Task BuildarProjetoAsync(ConfiguracoesdataObject config, string caminhoSln)
         {
+            if (string.IsNullOrEmpty(config.MsBuildPadraoPath))
+            {
+                throw new FluxoException("O caminho para o MSBuild.exe não está configurado. Defina o MSBuild padrão na página de configurações.");
+            }
+
+            Log($"[INFO] Usando MSBuild em: {config.MsBuildPadraoPath}");
+
             var buildHandler = new BinldarProjetoSrv();
-            await buildHandler.BuildarProjetoAsync(caminhoSln, JrTools.Enums.AcaoBuild.Rebuild, _progresso);
+            await buildHandler.BuildarProjetoAsync(caminhoSln, config.MsBuildPadraoPath, JrTools.Enums.AcaoBuild.Rebuild, _progresso);
         }
 
         private async Task<ValidarTagBranch> VerificarSeBranchContemTagAsync(string tag, string branchParaVerificar, string diretorioProducao)
@@ -162,7 +163,6 @@ namespace JrTools.Negocios
                 Log(retorno.Mensagem);
             }
 
-            // Comparar Commits
             var commitTag = await gitHandler.ObterCommitDeTagAsync(_progresso, diretorioProducao, tag);
             var commitBranch = await gitHandler.ObterCommitDeBranchAsync(_progresso, diretorioProducao, branchTarget);
 

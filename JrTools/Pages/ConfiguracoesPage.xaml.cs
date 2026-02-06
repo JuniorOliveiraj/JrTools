@@ -1,9 +1,9 @@
-﻿using JrTools.Dto;
+using JrTools.Dto;
 using JrTools.Services;
-using JrTools.Services.Db;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
+using System.Linq;
 
 namespace JrTools.Pages
 {
@@ -27,9 +27,34 @@ namespace JrTools.Pages
         {
             await CarregarConfiguracoes();
             await CarregarDadosPessoais();
+            CarregarMsBuildVersions();
         }
 
         #region Parametrizações
+
+        private void CarregarMsBuildVersions()
+        {
+            var msBuildVersions = MsBuildLocator.FindMsBuildVersions();
+            MsBuildVersionComboBox.ItemsSource = msBuildVersions;
+
+            if (!string.IsNullOrEmpty(_config?.MsBuildPadraoPath))
+            {
+                var selectedVersion = msBuildVersions.FirstOrDefault(v => v.Path == _config.MsBuildPadraoPath);
+                if (selectedVersion != null)
+                {
+                    MsBuildVersionComboBox.SelectedItem = selectedVersion;
+                }
+            }
+        }
+
+        private async void MsBuildVersionComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_config != null && MsBuildVersionComboBox.SelectedItem is MsBuildInfo selectedVersion)
+            {
+                _config.MsBuildPadraoPath = selectedVersion.Path;
+                await ConfigHelper.SalvarConfiguracoesAsync(_config);
+            }
+        }
 
         private async System.Threading.Tasks.Task CarregarConfiguracoes()
         {
@@ -85,7 +110,6 @@ namespace JrTools.Pages
                 _dadosPessoais = await PerfilPessoalHelper.LerConfiguracoesAsync() ?? new DadosPessoaisDataObject();
                 LoginRhWeb.Text = _dadosPessoais.LoginRhWeb ?? string.Empty;
 
-                // Mostrar * correspondentes ao tamanho real
                 SenhaRhWeb.Password = _dadosPessoais.SenhaRhWeb ?? string.Empty;
                 SenhaRhWebVisible.Text = new string('*', SenhaRhWeb.Password.Length);
 

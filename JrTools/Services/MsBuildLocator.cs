@@ -1,5 +1,5 @@
 using JrTools.Dto;
-using System; 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -11,17 +11,32 @@ namespace JrTools.Services
         public static List<MsBuildInfo> FindMsBuildVersions()
         {
             var versions = new List<MsBuildInfo>();
-            string programFilesX86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
 
-            if (string.IsNullOrEmpty(programFilesX86) || !Directory.Exists(programFilesX86))
+            var basePaths = new List<string>
             {
-                return versions; 
+                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles)
+            }.Distinct();
+
+            foreach (var basePath in basePaths)
+            {
+                FindMsBuildInBasePath(basePath, versions);
             }
 
-            string vsBasePath = Path.Combine(programFilesX86, "Microsoft Visual Studio");
-            if (!Directory.Exists(vsBasePath)) 
+            return versions.OrderByDescending(v => v.Version).ToList();
+        }
+
+        private static void FindMsBuildInBasePath(string basePath, List<MsBuildInfo> versions)
+        {
+            if (string.IsNullOrEmpty(basePath) || !Directory.Exists(basePath))
             {
-                return versions;
+                return;
+            }
+
+            string vsBasePath = Path.Combine(basePath, "Microsoft Visual Studio");
+            if (!Directory.Exists(vsBasePath))
+            {
+                return;
             }
 
             string[] yearDirectories = Directory.GetDirectories(vsBasePath);
@@ -36,7 +51,7 @@ namespace JrTools.Services
                     {
                         string version = new DirectoryInfo(yearDir).Name + " (" + new DirectoryInfo(editionDir).Name + ")";
                         versions.Add(new MsBuildInfo { Version = version, Path = msBuildPath });
-                        continue; 
+                        continue;
                     }
 
                     string msBuildLegacyPath = Path.Combine(editionDir, "MSBuild", "15.0", "Bin", "MSBuild.exe");
@@ -47,8 +62,6 @@ namespace JrTools.Services
                     }
                 }
             }
-
-            return versions.OrderByDescending(v => v.Version).ToList();
         }
     }
 }

@@ -42,9 +42,16 @@ namespace JrTools.Pages
         {
             var msBuildVersions = MsBuildLocator.FindMsBuildVersions();
             MsBuildVersionComboBox.ItemsSource = msBuildVersions;
+
             if (msBuildVersions.Any())
             {
-                MsBuildVersionComboBox.SelectedIndex = 0;
+                MsBuildInfo? versaoPadrao = null;
+                if (!string.IsNullOrEmpty(_config?.MsBuildPadraoPath))
+                {
+                    versaoPadrao = msBuildVersions.FirstOrDefault(v => v.Path == _config.MsBuildPadraoPath);
+                }
+
+                MsBuildVersionComboBox.SelectedItem = versaoPadrao ?? msBuildVersions.First();
             }
         }
 
