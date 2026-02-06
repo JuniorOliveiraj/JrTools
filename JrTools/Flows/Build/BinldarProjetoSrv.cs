@@ -1,4 +1,5 @@
-﻿using JrTools.Utils;
+using JrTools.Enums;
+using JrTools.Utils;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -11,7 +12,7 @@ namespace JrTools.Flows.Build
 {
     public class BinldarProjetoSrv
     {
-        public async Task BuildarProjetoAsync(string caminhoSln, IProgress<string>? progresso = null, string? args = null)
+        public async Task BuildarProjetoAsync(string caminhoSln, AcaoBuild acao, IProgress<string>? progresso = null)
         {
             await Task.Run(async () =>
             {
@@ -22,8 +23,15 @@ namespace JrTools.Flows.Build
                     if (!File.Exists(msbuildExe))
                         throw new FileNotFoundException("MSBuild.exe não encontrado.", msbuildExe);
 
-                    if (args == null || string.IsNullOrEmpty(args))
-                        args = $"\"{caminhoSln}\" /t:Build /p:Configuration=Release";
+                    string target = acao switch
+                    {
+                        AcaoBuild.Build => "Build",
+                        AcaoBuild.Limpar => "Clean",
+                        AcaoBuild.Rebuild => "Rebuild",
+                        _ => "Build"
+                    };
+
+                    string args = $"\"{caminhoSln}\" /t:{target} /p:Configuration=Release";
 
                     var psi = new ProcessStartInfo
                     {
@@ -45,7 +53,7 @@ namespace JrTools.Flows.Build
                         processo.ErrorDataReceived += (s, e) => { if (e.Data != null) progresso?.Report("[ERRO] " + e.Data); };
                         processo.Exited += (s, e) => tcs.SetResult(true);
 
-                        progresso?.Report($"[INFO] Iniciando build da solução: {caminhoSln}");
+                        progresso?.Report($"[INFO] Iniciando {acao.ToString().ToLower()} da solução: {caminhoSln}");
                         processo.Start();
                         processo.BeginOutputReadLine();
                         processo.BeginErrorReadLine();
@@ -55,18 +63,15 @@ namespace JrTools.Flows.Build
                         if (processo.ExitCode != 0)
                             throw new FluxoException($"MSBuild terminou com erro. Código de saída: {processo.ExitCode}");
 
-                        progresso?.Report("[INFO] Build concluído com sucesso!");
+                        progresso?.Report($"[INFO] {acao.ToString()} concluído com sucesso!");
                     }
                 }
                 catch (Exception ex)
                 {
-                    progresso?.Report($"[ERRO] Falha ao buildar projeto: {ex.Message}");
-                    throw new FluxoException($"[ERRO] Falha ao buildar projeto: {ex.Message}");
-                    throw;
+                    progresso?.Report($"[ERRO] Falha ao executar a ação {acao.ToString().ToLower()} no projeto: {ex.Message}");
+                    throw new FluxoException($"[ERRO] Falha ao executar a ação {acao.ToString().ToLower()} no projeto: {ex.Message}");
                 }
             });
         }
-
-
     }
 }

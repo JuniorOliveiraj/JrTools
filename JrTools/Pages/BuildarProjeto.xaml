@@ -100,6 +100,14 @@
                                                VerticalAlignment="Top"/>
                                         </ScrollViewer>
                                     </Border>
+                                     <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                                        <TextBlock Text="Ação" VerticalAlignment="Center" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                                        <ComboBox x:Name="AcaoBuildDotnetComboBox" MinWidth="200">
+                                            <ComboBoxItem Content="Build"/>
+                                            <ComboBoxItem Content="Limpar"/>
+                                            <ComboBoxItem Content="Rebuild"/>
+                                        </ComboBox>
+                                    </StackPanel>
 
                                     <!-- Botão Processar Full Width com ProgressRing -->
                                     <Grid HorizontalAlignment="Stretch">
@@ -122,6 +130,8 @@
                     </Expander.Content>
 
                 </Expander>
+
+
 
 
 
