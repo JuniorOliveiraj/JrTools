@@ -35,7 +35,20 @@ namespace JrTools.Flows.Build
                         _ => "Build"
                     };
 
-                    string args = $"\"{caminhoDoProjeto}\" /t:{target} /p:Configuration=Release /nologo /verbosity:normal /p:DCC_Hints=false /p:DCC_Warnings=false";
+                    // Mantém a mesma configuração utilizada no script PowerShell
+                    // DCC_LibraryPath e LU são importantes para o compilador Delphi localizar libs corretamente.
+                    string libraryPath = @"C:\Program Files (x86)\Embarcadero\Studio\17.0\lib\win32\release;$(BDSUSERDIR)\Imports;$(BDS)\Imports;$(BDSCOMMONDIR)\Dcp\$(Platform);$(BDS)\include";
+
+                    string args =
+                        $"\"{caminhoDoProjeto}\" " +
+                        $"/t:{target} " +
+                        "/p:Configuration=Release " +
+                        "/nologo " +
+                        "/verbosity:normal " +
+                        "/p:DCC_Hints=false " +
+                        "/p:DCC_Warnings=false " +
+                        $"/p:DCC_LibraryPath=\"{libraryPath}\" " +
+                        "/p:LU=\"\"";
 
                     string cmdScript = $"""
                         @echo off

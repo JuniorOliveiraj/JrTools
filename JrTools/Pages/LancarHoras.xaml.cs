@@ -88,21 +88,81 @@ namespace JrTools.Pages
                     return;
                 }
 
+                string? projetoSelecionado = (ProjetoComboBox.SelectedItem?.ToString() == "Nenhum") ? string.Empty : ProjetoComboBox.SelectedItem?.ToString();
+                string descricaoBase = _horasService.GerarDescricaoFinal(DescricaoBox.Text, projetoSelecionado);
+
+                // Lê os horários informados
+                TimeSpan? horaInicio = HoraInicioPicker.SelectedTime;
+                TimeSpan? horaFim = HoraFimPicker.SelectedTime;
+
+                // Se não há duração, mas há início e fim, calcula a duração automaticamente
+                if (TotalHorasBox.Value <= 0 && horaInicio.HasValue && horaFim.HasValue)
+                {
+                    var diff = horaFim.Value - horaInicio.Value;
+                    if (diff <= TimeSpan.Zero)
+                    {
+                        ShowValidationError("O horário de fim deve ser maior que o de início.");
+                        return;
+                    }
+
+                    TotalHorasBox.Value = diff.TotalHours;
+                }
+
                 if (TotalHorasBox.Value <= 0)
                 {
                     ShowValidationError("A duração deve ser maior que zero.");
                     return;
                 }
 
-                string? projetoSelecionado = (ProjetoComboBox.SelectedItem?.ToString() == "Nenhum") ? string.Empty : ProjetoComboBox.SelectedItem?.ToString();
-                string descricaoBase = _horasService.GerarDescricaoFinal(DescricaoBox.Text, projetoSelecionado);
+                // Caso o usuário informe somente as horas (ex: 4h) sem início/fim,
+                // define o início após o último lançamento do dia (ou 08:00 se não houver nenhum)
+                if (!horaInicio.HasValue && !horaFim.HasValue && TotalHorasBox.Value > 0)
+                {
+                    // Início padrão
+                    TimeSpan inicioPadrao = TimeSpan.FromHours(8);
+
+                    // Busca o último lançamento do dia atual, se existir
+                    var ultimoLancamento = Lancamentos
+                        .Where(l => l.HoraInicio.HasValue || l.HoraFim.HasValue)
+                        .OrderBy(l =>
+                        {
+                            // Define um "fim" calculado para ordenar corretamente
+                            if (l.HoraFim.HasValue)
+                                return l.HoraFim.Value;
+                            if (l.HoraInicio.HasValue && l.TotalHoras.HasValue)
+                                return l.HoraInicio.Value + TimeSpan.FromHours(l.TotalHoras.Value);
+                            return l.HoraInicio ?? TimeSpan.Zero;
+                        })
+                        .LastOrDefault();
+
+                    if (ultimoLancamento != null)
+                    {
+                        if (ultimoLancamento.HoraFim.HasValue)
+                            inicioPadrao = ultimoLancamento.HoraFim.Value;
+                        else if (ultimoLancamento.HoraInicio.HasValue && ultimoLancamento.TotalHoras.HasValue)
+                            inicioPadrao = ultimoLancamento.HoraInicio.Value + TimeSpan.FromHours(ultimoLancamento.TotalHoras.Value);
+                    }
+
+                    horaInicio = inicioPadrao;
+                    horaFim = horaInicio.Value.Add(TimeSpan.FromHours(TotalHorasBox.Value));
+
+                    // Reflete o padrão também na interface
+                    HoraInicioPicker.SelectedTime = horaInicio;
+                    HoraFimPicker.SelectedTime = horaFim;
+                }
+                // Caso haja início e apenas a duração, garante o cálculo do fim
+                else if (horaInicio.HasValue && !horaFim.HasValue && TotalHorasBox.Value > 0)
+                {
+                    horaFim = horaInicio.Value.Add(TimeSpan.FromHours(TotalHorasBox.Value));
+                    HoraFimPicker.SelectedTime = horaFim;
+                }
 
                 var lancamento = new HoraLancamento
                 {
                     Id = _lancamentoSelecionado?.Id ?? 0,
                     Data = DiaLancamento.Date.Date,
-                    HoraInicio = HoraInicioPicker.SelectedTime,
-                    HoraFim = HoraFimPicker.SelectedTime,
+                    HoraInicio = horaInicio,
+                    HoraFim = horaFim,
                     TotalHoras = TotalHorasBox.Value,
                     Descricao = descricaoBase,
                     Projeto = projetoSelecionado

@@ -158,67 +158,45 @@ namespace JrTools.Pages
             LoadingRing.IsActive = true;
 
             string[] processos = { "BPrv230", "CS1" };
-            using var cts = new CancellationTokenSource();
             var progresso = (IProgress<string>)new Progress<string>(msg => AppendTerminalLog(msg));
-
-            var manterFechadoTask = Task.Run(async () =>
+ 
+            // Verifica previamente se existe algum dos processos problemáticos em execução.
+            // Só se houver, ativamos o "guardian" que mata e mantém esses processos fechados.
+            bool precisaMonitorarProcessos = false;
+            foreach (var nomeProcesso in processos)
             {
-                while (!cts.Token.IsCancellationRequested)
+                try
                 {
-                    foreach (var nomeProcesso in processos)
+                    int qtd = await ProcessKiller.QuantidadeDeProcessos(nomeProcesso, progresso);
+                    if (qtd > 0)
                     {
-                        try
-                        {
-                            await ProcessKiller.KillByNameAsync(nomeProcesso, progresso);
-                            int qtd = await ProcessKiller.QuantidadeDeProcessos(nomeProcesso, progresso);
-                            progresso.Report($"{nomeProcesso} restante: {qtd}");
-                        }
-                        catch (Exception ex)
-                        {
-                            progresso.Report($"[WARN] Não foi possível matar {nomeProcesso}: {ex.Message}");
-                        }
+                        precisaMonitorarProcessos = true;
+                        break;
                     }
-                    try { await Task.Delay(3000, cts.Token); }
-                    catch (TaskCanceledException) { break; }
                 }
-            });
+                catch (Exception ex)
+                {
+                    progresso.Report($"[WARN] Falha ao verificar processo {nomeProcesso}: {ex.Message}");
+                }
+            }
 
             try
             {
-                await GarantirProcessosFechados(processos, progresso);
-
-                AppendTerminalLog($"Iniciando {acaoSelecionada.ToString().ToLower()} da solução: {solucaoSelecionada.Nome}");
-
-                await Task.Run(async () =>
+                // Se houver processos em execução, usamos o ProcessGuardianService para garantir
+                // que eles permaneçam fechados durante todo o build.
+                if (precisaMonitorarProcessos)
                 {
-                    try
-                    {
-                        var buildHandler = new BinldarProjetoSrv();
-                        await buildHandler.BuildarProjetoAsync(solucaoSelecionada.Caminho, msBuildInfo.Path, acaoSelecionada, progresso);
-                        AppendTerminalLog($"{acaoSelecionada.ToString()} concluído com sucesso!");
-
-                        if (acaoSelecionada == AcaoBuild.Build || acaoSelecionada == AcaoBuild.Rebuild)
-                        {
-                            try
-                            {
-                                var psi = new System.Diagnostics.ProcessStartInfo
-                                {
-                                    FileName = "http://localhost/prod",
-                                    UseShellExecute = true
-                                };
-                                System.Diagnostics.Process.Start(psi);
-                            }
-                            catch (Exception ex)
-                            {
-                                progresso.Report($"[WARN] Não foi possível abrir o navegador: {ex.Message}");
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        progresso.Report($"[ERRO] {acaoSelecionada.ToString()} falhou: {ex.Message}");
-                    }
-                });
+                    var guardian = new ProcessGuardianService();
+                    await guardian.ExecutarComProcessosFechadosAsync(
+                        processos,
+                        async _ => await ExecutarBuildDotnetAsync(solucaoSelecionada, msBuildInfo, acaoSelecionada, progresso),
+                        progresso);
+                }
+                else
+                {
+                    // Se não há processos, apenas executa o build normalmente (sem matar nada em loop).
+                    await ExecutarBuildDotnetAsync(solucaoSelecionada, msBuildInfo, acaoSelecionada, progresso);
+                }
             }
             catch (Exception ex)
             {
@@ -226,11 +204,42 @@ namespace JrTools.Pages
             }
             finally
             {
-                cts.Cancel();
-                await manterFechadoTask;
-
                 BuildarDotnetButton.IsEnabled = true;
                 LoadingRing.IsActive = false;
+            }
+        }
+
+        private async Task ExecutarBuildDotnetAsync(SolucaoInformacoesDto solucaoSelecionada, MsBuildInfo msBuildInfo, AcaoBuild acaoSelecionada, IProgress<string> progresso)
+        {
+            AppendTerminalLog($"Iniciando {acaoSelecionada.ToString().ToLower()} da solução: {solucaoSelecionada.Nome}");
+
+            try
+            {
+                var buildHandler = new BinldarProjetoSrv();
+                await buildHandler.BuildarProjetoAsync(solucaoSelecionada.Caminho, msBuildInfo.Path, acaoSelecionada, progresso);
+                AppendTerminalLog($"{acaoSelecionada.ToString()} concluído com sucesso!");
+
+                if (acaoSelecionada == AcaoBuild.Build || acaoSelecionada == AcaoBuild.Rebuild)
+                {
+                    try
+                    {
+                        var psi = new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = "http://localhost/prod",
+                            UseShellExecute = true
+                        };
+                        System.Diagnostics.Process.Start(psi);
+                    }
+                    catch (Exception ex)
+                    {
+                        progresso.Report($"[WARN] Não foi possível abrir o navegador: {ex.Message}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                progresso.Report($"[ERRO] {acaoSelecionada.ToString()} falhou: {ex.Message}");
+                throw;
             }
         }
 
@@ -272,8 +281,17 @@ namespace JrTools.Pages
 
             try
             {
+                // Localiza o rsvars.bat do Delphi de forma semelhante a como buscamos o MsBuildPadraoPath,
+                // porém restrito à tela de build Delphi (não fica na tela de configurações geral).
+                var rsvarsBatPath = ObterRsvarsBatPadrao();
+                if (string.IsNullOrWhiteSpace(rsvarsBatPath))
+                {
+                    ShowValidationError("Arquivo rsvars.bat do Delphi não encontrado em caminhos padrão. Ajuste o método ObterRsvarsBatPadrao.");
+                    return;
+                }
+
                 var buildHandler = new BuildarDelphiSrv();
-                await buildHandler.BuildarAsync(solucaoSelecionada.Caminho, msBuildInfo.Path, _config.RsvarsBatPadraoPath, acaoSelecionada, progresso);
+                await buildHandler.BuildarAsync(solucaoSelecionada.Caminho, msBuildInfo.Path, rsvarsBatPath, acaoSelecionada, progresso);
             }
             catch (Exception ex)
             {
@@ -284,6 +302,37 @@ namespace JrTools.Pages
                 BuildarDelphiButton.IsEnabled = true;
                 LoadingDelphiRing.IsActive = false;
             }
+        }
+
+        /// <summary>
+        /// Resolve o caminho padrão do rsvars.bat do Delphi.
+        /// Similar em espírito ao carregamento do MsBuildPadraoPath, mas
+        /// específico desta tela de build Delphi (não exposto na tela de configurações).
+        /// </summary>
+        /// <returns>Caminho completo do rsvars.bat, ou null se não encontrado.</returns>
+        private string? ObterRsvarsBatPadrao()
+        {
+            // Adicione aqui outros caminhos que você utiliza no ambiente, se necessário.
+            var caminhosPossiveis = new[]
+            {
+                @"C:\Program Files (x86)\Embarcadero\Studio\17.0\bin\rsvars.bat",
+                @"C:\Program Files (x86)\Embarcadero\Studio\18.0\bin\rsvars.bat"
+            };
+
+            foreach (var caminho in caminhosPossiveis)
+            {
+                try
+                {
+                    if (File.Exists(caminho))
+                        return caminho;
+                }
+                catch
+                {
+                    // Ignora erros de IO pontuais e continua tentando os próximos caminhos.
+                }
+            }
+
+            return null;
         }
 
         private void Expander_IsExpandedChanged(DependencyObject sender, DependencyProperty dp)
