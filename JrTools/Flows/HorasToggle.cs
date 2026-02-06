@@ -66,30 +66,6 @@ namespace JrTools.Flows
             return descricaoFinal.Trim();
         }
 
-        public TimeSpan ObterHoraInicioDisponivel(TimeSpan? horaInicio, TimeSpan duracao, IEnumerable<HoraLancamento> lancamentos)
-        {
-            TimeSpan inicioAlmoco = TimeSpan.FromHours(12);
-            TimeSpan fimAlmoco = TimeSpan.FromHours(13);
-
-            TimeSpan inicio = horaInicio ?? (lancamentos.Any() ? lancamentos.Max(l => l.HoraFim ?? l.HoraInicio.Value) : TimeSpan.FromHours(8));
-            TimeSpan fim = inicio + duracao;
-
-            while (lancamentos.Any(l => (l.HoraFim ?? l.HoraInicio) > inicio && l.HoraInicio < fim)
-                   || (inicio < fimAlmoco && fim > inicioAlmoco))
-            {
-                var conflitos = lancamentos.Where(l => (l.HoraFim ?? l.HoraInicio) > inicio && l.HoraInicio < fim).ToList();
-
-                if (conflitos.Any())
-                    inicio = conflitos.Max(l => l.HoraFim ?? l.HoraInicio.Value);
-                else if (inicio < fimAlmoco && fim > inicioAlmoco)
-                    inicio = fimAlmoco;
-
-                fim = inicio + duracao;
-            }
-
-            return inicio;
-        }
-
         public async Task SalvarLancamentoAsync(HoraLancamento lancamento)
         {
             if (string.IsNullOrWhiteSpace(_token))
@@ -101,6 +77,18 @@ namespace JrTools.Flows
 
             var result = await toggl.CreateTimeEntryAsync(workspaceId, lancamento);
             Console.WriteLine($"🟢 Lançamento criado: {result.GetProperty("id").GetInt64()}");
+        }
+
+        public async Task AtualizarLancamentoAsync(HoraLancamento lancamento)
+        {
+            if (string.IsNullOrWhiteSpace(_token))
+                throw new InvalidOperationException("Token do Toggl não configurado. Vá para Configurações e adicione seu token.");
+
+            if (lancamento.Id == 0)
+                throw new InvalidOperationException("Não é possível atualizar um lançamento sem ID.");
+
+            var toggl = new TogglClient(_token);
+            await toggl.UpdateTimeEntryAsync(lancamento);
         }
 
         public async Task<List<HoraLancamento>> CarregarLancamentosDoDiaAsync(DateTime dataLancamento)
@@ -130,7 +118,7 @@ namespace JrTools.Flows
 
                 lancamentos.Add(new HoraLancamento
                 {
-					Id = entry.GetProperty("id").GetInt64(),
+                    Id = entry.GetProperty("id").GetInt64(),
                     HoraInicio = localStart.TimeOfDay,
                     HoraFim = localEnd?.TimeOfDay,
                     TotalHoras = totalHoras,
@@ -150,7 +138,6 @@ namespace JrTools.Flows
                 throw new InvalidOperationException("Token do Toggl não configurado. Vá para Configurações e adicione seu token.");
 
             var toggl = new TogglClient(_token);
-
             await toggl.DeleteTimeEntryAsync(lancamento.Id);
         }
     }

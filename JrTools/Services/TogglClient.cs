@@ -90,6 +90,52 @@ namespace JrTools.Services
             return JsonDocument.Parse(responseBody).RootElement;
         }
 
+        public async Task UpdateTimeEntryAsync(HoraLancamento horaLancamento)
+        {
+            var me = await GetMeAsync();
+            long workspaceId = me.GetProperty("default_workspace_id").GetInt64();
+
+            if (horaLancamento.Data == null)
+                horaLancamento.Data = DateTime.Today;
+
+            var startDateTime = horaLancamento.Data.Value
+                .Add(horaLancamento.HoraInicio ?? TimeSpan.Zero);
+
+            double durationSeconds = 0;
+
+            if (horaLancamento.HoraFim.HasValue)
+            {
+                var endDateTime = horaLancamento.Data.Value.Add(horaLancamento.HoraFim.Value);
+                durationSeconds = (endDateTime - startDateTime).TotalSeconds;
+
+                if (durationSeconds < 0)
+                    durationSeconds = 0;
+            }
+            else if (horaLancamento.TotalHoras.HasValue && horaLancamento.TotalHoras > 0)
+            {
+                durationSeconds = horaLancamento.TotalHoras.Value * 3600;
+            }
+            else
+            {
+                durationSeconds = -1;
+            }
+
+            var payload = new
+            {
+                description = horaLancamento.Descricao ?? "Lançamento sem descrição",
+                start = startDateTime.ToString("yyyy-MM-ddTHH:mm:sszzz"),
+                duration = (int)durationSeconds,
+                wid = workspaceId,
+                created_with = "csharp-integration"
+            };
+
+            var json = JsonSerializer.Serialize(payload);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PutAsync($"{_baseUrl}/workspaces/{workspaceId}/time_entries/{horaLancamento.Id}", content);
+            response.EnsureSuccessStatusCode();
+        }
+
         public async Task DeleteTimeEntryAsync(long timeEntryId)
         {
             var me = await GetMeAsync();
