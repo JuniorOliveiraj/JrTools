@@ -28,6 +28,7 @@ namespace JrTools.Pages
             ExpanderDelphi.RegisterPropertyChangedCallback(Expander.IsExpandedProperty, Expander_IsExpandedChanged);
             this.Loaded += ConfiguracoesPage_Loaded;
             AcaoBuildDotnetComboBox.SelectedIndex = 0;
+            AcaoBuildDelphiComboBox.SelectedIndex = 0;
         }
 
         private async void ConfiguracoesPage_Loaded(object sender, RoutedEventArgs e)
@@ -255,6 +256,14 @@ namespace JrTools.Pages
                 ShowValidationError("Selecione uma solução Delphi antes de processar.");
                 return;
             }
+            
+            if (MsBuildVersionComboBox.SelectedItem is not MsBuildInfo msBuildInfo)
+            {
+                ShowValidationError("Selecione uma versão do MSBuild.");
+                return;
+            }
+
+            var acaoSelecionada = (AcaoBuild)AcaoBuildDelphiComboBox.SelectedIndex;
 
             BuildarDelphiButton.IsEnabled = false;
             LoadingDelphiRing.IsActive = true;
@@ -264,7 +273,7 @@ namespace JrTools.Pages
             try
             {
                 var buildHandler = new BuildarDelphiSrv();
-                await buildHandler.BuildarProjetoDelphiAsync(solucaoSelecionada.Caminho, progresso);
+                await buildHandler.BuildarAsync(solucaoSelecionada.Caminho, msBuildInfo.Path, _config.RsvarsBatPadraoPath, acaoSelecionada, progresso);
             }
             catch (Exception ex)
             {

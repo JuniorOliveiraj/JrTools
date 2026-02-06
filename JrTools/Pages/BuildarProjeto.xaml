@@ -149,6 +149,13 @@
                                            Style="{ThemeResource BodyStrongTextBlockStyle}"/>
 
                                         <ComboBox x:Name="SolucaoDelphiSelecionadoComboBox" MinWidth="200"/>
+                                        
+                                        <TextBlock Text="Ação" VerticalAlignment="Center" Style="{ThemeResource BodyStrongTextBlockStyle}" Margin="20,0,0,0"/>
+                                        <ComboBox x:Name="AcaoBuildDelphiComboBox" MinWidth="200">
+                                            <ComboBoxItem Content="Build"/>
+                                            <ComboBoxItem Content="Limpar"/>
+                                            <ComboBoxItem Content="Rebuild"/>
+                                        </ComboBox>
                                     </StackPanel>
                                 </StackPanel>
                             </Border>

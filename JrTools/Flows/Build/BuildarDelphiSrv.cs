@@ -37,11 +37,11 @@ namespace JrTools.Flows.Build
 
                     string args = $"\"{caminhoDoProjeto}\" /t:{target} /p:Configuration=Release /nologo /verbosity:normal /p:DCC_Hints=false /p:DCC_Warnings=false";
 
-                    string cmdScript = $@"""
-                    @echo off
-                        call \"{rsvarsBat}\""
-                        \"{msbuildExe}\"" {args}
-                    """;
+                    string cmdScript = $"""
+                        @echo off
+                        call "{rsvarsBat}"
+                        "{msbuildExe}" {args}
+                        """;
 
                     string tempCmd = Path.Combine(Path.GetTempPath(), $"build_delphi_{Guid.NewGuid():N}.cmd");
                     await File.WriteAllTextAsync(tempCmd, cmdScript, Encoding.Default);
