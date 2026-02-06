@@ -1,4 +1,4 @@
-﻿using JrTools.Dto;
+using JrTools.Dto;
 using JrTools.Flows;
 using JrTools.Services.Db;
 using Microsoft.UI.Xaml;
@@ -95,23 +95,56 @@ namespace JrTools.Pages
                     ? string.Empty
                     : ProjetoComboBox.SelectedItem?.ToString();
 
-                string descricaoFinal = _horasService.GerarDescricaoFinal(DescricaoBox.Text, projetoSelecionado);
+                string descricaoBase = _horasService.GerarDescricaoFinal(DescricaoBox.Text, projetoSelecionado);
+                TimeSpan duracaoTotal = TimeSpan.FromHours(TotalHorasBox.Value);
 
-                TimeSpan duracao = TimeSpan.FromHours(TotalHorasBox.Value);
-                TimeSpan? horaInicio = HoraInicioPicker.SelectedTime;
-                horaInicio = _horasService.ObterHoraInicioDisponivel(horaInicio, duracao, Lancamentos);
+                TimeSpan? horaInicio = null;
+
+                if (HoraInicioPicker.SelectedTime.HasValue)
+                {
+                    horaInicio = HoraInicioPicker.SelectedTime.Value;
+                }
+                else
+                {
+                    var quatroHorasHoje = Lancamentos
+                        .Where(l => l.TotalHoras.HasValue && Math.Abs(Convert.ToDouble(l.TotalHoras.Value) - 4.0) < 0.01)
+                        .OrderBy(l => l.HoraInicio)
+                        .ToList();
+                    if (duracaoTotal.TotalHours == 4 && quatroHorasHoje.Count == 1)
+                    {
+                        horaInicio = TimeSpan.FromHours(14);
+                    }
+                    else if (Lancamentos.Any())
+                    {
+                        horaInicio = Lancamentos.Max(l => l.HoraFim ?? TimeSpan.FromHours(8));
+                        if (horaInicio < TimeSpan.FromHours(8))
+                        {
+                            horaInicio = TimeSpan.FromHours(8);
+                        }
+                    }
+                    else
+                    {
+                        horaInicio = TimeSpan.FromHours(8);
+                    }
+                }
+
+                // Garante nunca criar lançamento antes das 8h se usuário não definiu horário
+                if (!HoraInicioPicker.SelectedTime.HasValue && horaInicio < TimeSpan.FromHours(8))
+                {
+                    horaInicio = TimeSpan.FromHours(8);
+                }
 
                 var novoLancamento = new HoraLancamento
                 {
                     Data = DiaLancamento.Date.Date,
                     HoraInicio = horaInicio.Value,
-                    HoraFim = horaInicio.Value + duracao,
-                    TotalHoras = duracao.TotalHours,
-                    Descricao = descricaoFinal,
+                    HoraFim = horaInicio.Value + duracaoTotal,
+                    TotalHoras = duracaoTotal.TotalHours,
+                    Descricao = descricaoBase,
                     Projeto = projetoSelecionado
                 };
-
                 await _horasService.SalvarLancamentoAsync(novoLancamento);
+
                 await CarregarLancamentosAsync();
                 ClearForm();
             }
@@ -166,6 +199,17 @@ namespace JrTools.Pages
             DescricaoBox.Text = string.Empty;
             ProjetoComboBox.SelectedIndex = -1;
             ValidationInfoBar.IsOpen = false;
+        }
+
+        private async void DeleteButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_horasService == null) return;
+
+            var button = (Button)sender;
+            var lancamento = (HoraLancamento)button.Tag;
+
+            await _horasService.DeleteLancamentoAsync(lancamento);
+            await CarregarLancamentosAsync();
         }
     }
 }

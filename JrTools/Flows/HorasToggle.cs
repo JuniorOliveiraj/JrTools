@@ -1,4 +1,4 @@
-﻿using JrTools.Dto;
+using JrTools.Dto;
 using JrTools.Services;
 using JrTools.Services.Db;
 using System;
@@ -130,6 +130,7 @@ namespace JrTools.Flows
 
                 lancamentos.Add(new HoraLancamento
                 {
+					Id = entry.GetProperty("id").GetInt64(),
                     HoraInicio = localStart.TimeOfDay,
                     HoraFim = localEnd?.TimeOfDay,
                     TotalHoras = totalHoras,
@@ -141,6 +142,16 @@ namespace JrTools.Flows
             }
 
             return lancamentos;
+        }
+
+        public async Task DeleteLancamentoAsync(HoraLancamento lancamento)
+        {
+            if (string.IsNullOrWhiteSpace(_token))
+                throw new InvalidOperationException("Token do Toggl não configurado. Vá para Configurações e adicione seu token.");
+
+            var toggl = new TogglClient(_token);
+
+            await toggl.DeleteTimeEntryAsync(lancamento.Id);
         }
     }
 }

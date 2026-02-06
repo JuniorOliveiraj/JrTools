@@ -1,13 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System;
 
 namespace JrTools.Dto
 {
     public class HoraLancamento
     {
+        public long Id { get; set; }
         public DateTime? Data { get; set; }
         public TimeSpan? HoraInicio { get; set; }
         public TimeSpan? HoraFim { get; set; }

@@ -1,4 +1,4 @@
-﻿using JrTools.Dto;
+using JrTools.Dto;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -90,7 +90,14 @@ namespace JrTools.Services
             return JsonDocument.Parse(responseBody).RootElement;
         }
 
+        public async Task DeleteTimeEntryAsync(long timeEntryId)
+        {
+            var me = await GetMeAsync();
+            long workspaceId = me.GetProperty("default_workspace_id").GetInt64();
 
+            var response = await _httpClient.DeleteAsync($"{_baseUrl}/workspaces/{workspaceId}/time_entries/{timeEntryId}");
+            response.EnsureSuccessStatusCode();
+        }
 
         public async Task<JsonElement> GetTodayTimeEntriesAsync(DateTime dataLancamento)
         {

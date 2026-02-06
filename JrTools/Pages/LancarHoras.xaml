@@ -117,11 +117,12 @@
                                Margin="0,0,0,8"/>
 
                     <!-- Cabeçalho de colunas -->
-                    <Grid Padding="8" ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto" ColumnSpacing="16">
+                    <Grid Padding="8" ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="16">
                         <TextBlock Text="Início" FontWeight="SemiBold" Grid.Column="0" Width="80"/>
                         <TextBlock Text="Fim" FontWeight="SemiBold" Grid.Column="1" Width="80"/>
                         <TextBlock Text="Total (h)" FontWeight="SemiBold" Grid.Column="2" Width="60"/>
                         <TextBlock Text="Descrição" FontWeight="SemiBold" Grid.Column="3" />
+						<TextBlock Text="Ação" FontWeight="SemiBold" Grid.Column="4" />
                     </Grid>
 
                     <!-- Lista -->
@@ -134,11 +135,19 @@
 
                         <ListView.ItemTemplate>
                             <DataTemplate x:DataType="local1:HoraLancamento">
-                                <Grid Padding="8" ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto" ColumnSpacing="16">
-                                    <TextBlock Text="{x:Bind HoraInicio, Mode=OneWay}" Grid.Column="1" Width="80" />
-                                    <TextBlock Text="{x:Bind HoraFim, Mode=OneWay}" Grid.Column="2" Width="80"/>
-                                    <TextBlock Text="{x:Bind TotalHoras, Mode=OneWay}" Grid.Column="3" Width="60"/>
-                                    <TextBlock Text="{x:Bind Descricao, Mode=OneWay}" Grid.Column="4" TextTrimming="CharacterEllipsis" />
+                                <Grid Padding="8" ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="16">
+                                    <TextBlock Text="{x:Bind HoraInicio, Mode=OneWay}" Grid.Column="0" Width="80" />
+                                    <TextBlock Text="{x:Bind HoraFim, Mode=OneWay}" Grid.Column="1" Width="80"/>
+                                    <TextBlock Text="{x:Bind TotalHoras, Mode=OneWay}" Grid.Column="2" Width="60"/>
+                                    <TextBlock Text="{x:Bind Descricao, Mode=OneWay}" Grid.Column="3" TextTrimming="CharacterEllipsis" />
+									<Button Grid.Column="4"
+											x:Name="DeleteButton"
+											Click="DeleteButton_Click"
+											Tag="{x:Bind}"
+											Background="Transparent"
+											BorderBrush="Transparent">
+										<FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE74D;"/>
+									</Button>
                                 </Grid>
                             </DataTemplate>
                         </ListView.ItemTemplate>
