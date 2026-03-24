@@ -13,5 +13,7 @@ namespace JrTools.Dto
         public string DiretorioProducao { get; set; }
         public string DiretorioEspecificos { get; set; }
         public string MsBuildPadraoPath { get; set; }
+        public string CaminhoCSReportImport { get; set; }
+            = @"D:\Benner\Servicos\ReportKeeper.V1\CSReportImport.exe";
     }
 }

@@ -16,13 +16,14 @@ namespace JrTools.Pages
 
         private void LoadSettingsItems()
         {
-            // Lista de opções de sistema
+            // Lista de opï¿½ï¿½es de sistema
             var items = new List<SystemSettingItem>
             {
-                new("Projetos Rh", "Altere a versão do sistema de forma rápida.", "\uE912", typeof(RhProdPage)),
+                new("Projetos Rh", "Altere a versï¿½o do sistema de forma rï¿½pida.", "\uE912", typeof(RhProdPage)),
                 new("Cria", "Ta Afim mesmo de levar uns esculachos?", "\uE99A", typeof(Cria)),
-                new("Cria Fix", "Corrigir a formatação UTF8-BOM dos arquivs", "\uE99A", typeof(CriaFix)),
-                new("ambiente específico", "Subir ambiente específico completo.", "\uE716", typeof(EspesificosPage)),
+                new("Cria Fix", "Corrigir a formataï¿½ï¿½o UTF8-BOM dos arquivs", "\uE99A", typeof(CriaFix)),
+                new("ambiente especï¿½fico", "Subir ambiente especï¿½fico completo.", "\uE716", typeof(EspesificosPage)),
+                new("Importador de RelatÃ³rios", "Importar relatÃ³rios .rpt para o servidor Benner.", "\uE8A5", typeof(ImportadorRelatoriosPage)),
             };
 
             // Limpa o painel e adiciona dinamicamente
@@ -42,7 +43,7 @@ namespace JrTools.Pages
                 };
 
                 btn.Padding = new Thickness(24, 18, 24, 18); // mais "acolchoamento" interno
-                btn.Margin = new Thickness(0, 18, 0, 0);     // mais espaço entre os itens
+                btn.Margin = new Thickness(0, 18, 0, 0);     // mais espaï¿½o entre os itens
 
                 btn.Click += (s, e) => OnSettingItemClick(item);
                 
@@ -62,7 +63,7 @@ namespace JrTools.Pages
                 ContentDialog dialog = new()
                 {
                     Title = item.Title,
-                    Content = "Página ainda não implementada.",
+                    Content = "Pï¿½gina ainda nï¿½o implementada.",
                     CloseButtonText = "OK",
                     XamlRoot = this.XamlRoot
                 };

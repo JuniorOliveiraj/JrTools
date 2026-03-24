@@ -45,6 +45,10 @@
                         <TextBox x:Name="DiretorioEspesificos" Header="Diretórios específicos"
                                  Text="D:\Benner\fontes\rh" TextChanged="DiretorioEspesificos_TextChanged"/>
                         <ComboBox x:Name="MsBuildVersionComboBox" Header="MsBuild Padrão" DisplayMemberPath="DisplayName" SelectionChanged="MsBuildVersionComboBox_SelectionChanged"/>
+                        <TextBox x:Name="CaminhoCSReportImport"
+                                 Header="Caminho CSReportImport.exe"
+                                 PlaceholderText="D:\Benner\Servicos\ReportKeeper.V1\CSReportImport.exe"
+                                 TextChanged="CaminhoCSReportImport_TextChanged"/>
                     </StackPanel>
                 </Border>
 
