@@ -16,6 +16,9 @@ namespace JrTools.Services
         public static Task KillBuilderAsync(IProgress<string>? progresso = null)
             => KillByNameAsync("Builder", progresso);
 
+        public static Task KillW3wpAsync(IProgress<string>? progresso = null)
+            => KillByNameAsync("w3wp", progresso);
+
 
         public static Task ListProcessAsync(IProgress<string>? progresso = null)
         {

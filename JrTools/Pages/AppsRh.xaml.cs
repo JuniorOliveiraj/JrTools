@@ -23,7 +23,10 @@ namespace JrTools.Pages
                 new("Cria", "Ta Afim mesmo de levar uns esculachos?", "\uE99A", typeof(Cria)),
                 new("Cria Fix", "Corrigir a formata��o UTF8-BOM dos arquivs", "\uE99A", typeof(CriaFix)),
                 new("ambiente espec�fico", "Subir ambiente espec�fico completo.", "\uE716", typeof(EspesificosPage)),
+                new("Altomações - WES", "Instalar artefatos e gerar p�ginas via wes.exe.", "\uE896", typeof(InstalarArtefatosPage)),
                 new("Importador de Relatórios", "Importar relatórios .rpt para o servidor Benner.", "\uE8A5", typeof(ImportadorRelatoriosPage)),
+                new("Subir Ambiente Manual", "Sobe o ambiente manualmente, passo a passo.", "\uE8B7", typeof(SubirAmbienteManualPage)),
+                new("Criar Aplicação IIS", "Cria uma nova aplicação no IIS com pool existente.", "\uE774", typeof(CriarAplicacaoIisPage)),
             };
 
             // Limpa o painel e adiciona dinamicamente

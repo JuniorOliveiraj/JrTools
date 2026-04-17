@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <Page
     x:Class="JrTools.Pages.EspesificosPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -100,9 +101,6 @@
                     </StackPanel>
                 </Border>
 
-                   
-                   
-
                 <!-- CARD 4: Terminal de Processamento (Agora fora do ItemsControl e com estilo próprio) -->
                 <Border Background="Black" CornerRadius="4" Padding="8">
                     <ScrollViewer x:Name="TerminalScrollViewer" Height="200" VerticalScrollBarVisibility="Auto">
@@ -126,4 +124,3 @@
         </ScrollViewer>
     </Grid>
 </Page>
-

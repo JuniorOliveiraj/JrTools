@@ -5,6 +5,9 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:JrTools.Pages"
     xmlns:models="using:JrTools.Models"
+    xmlns:dto="using:JrTools.Dto"
+    xmlns:services="using:JrTools.Services"
+    xmlns:converters="using:JrTools.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:viewmodels="using:JrTools.ViewModels"
@@ -12,6 +15,9 @@
     mc:Ignorable="d">
 
     <Page.Resources>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <converters:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibilityConverter"/>
+        <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
         <Style x:Key="ResponsiveCardStyle" TargetType="Border">
             <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}"/>
             <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}"/>
@@ -89,52 +95,150 @@
                     </StackPanel>
                 </Border>
 
+                <!-- BANNER PÓS-DEPLOY -->
+                <Border x:Name="DeployBanner"
+                        Visibility="{x:Bind ViewModel.DeployRecovery, Mode=OneWay, Converter={StaticResource NullToVisibilityConverter}}"
+                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource AccentAAFillColorDefaultBrush}"
+                        BorderThickness="1" CornerRadius="8" Padding="16,12" Margin="8,0">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="{x:Bind ViewModel.DeployRecovery.Titulo, Mode=OneWay}"
+                                       FontWeight="SemiBold" FontSize="13"/>
+                            <ItemsControl ItemsSource="{x:Bind ViewModel.DeployRecovery.Results, Mode=OneWay}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="services:ProviderRecoveryResult">
+                                        <TextBlock Text="{x:Bind Resumo}" FontFamily="Consolas" FontSize="12" Margin="0,2"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                        <Button Grid.Column="1" Content="✕" VerticalAlignment="Top"
+                                Click="FecharBannerDeploy_Click"
+                                Background="Transparent" BorderThickness="0" FontSize="14"/>
+                    </Grid>
+                </Border>
+
                 <!-- DETALHES -->
                 <Expander Header="Detalhes BPrv230" IsExpanded="True" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
-                    <StackPanel Spacing="16" Padding="16">
-                        <Grid>
+                    <Grid RowSpacing="12">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Linha superior: lista de providers | informações do provider -->
+                        <Grid ColumnSpacing="12">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*" MinWidth="220"/>
+                                <ColumnDefinition Width="2*"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="Lista de processos em execução" VerticalAlignment="Center" Foreground="Gray"/>
-                            <Button Grid.Column="1" x:Name="MatarProcessoButton" Content="Encerrar Individual" Click="MatarProcessoButton_Click" IsEnabled="False" Foreground="White" Background="Red"/>
+
+                            <!-- Coluna esquerda: lista de providers -->
+                            <StackPanel Spacing="8" Padding="0,8,0,0">
+                                <TextBlock Text="Providers em execução" Foreground="Gray" FontSize="12"/>
+                                <ListView x:Name="ProcessosDataGrid"
+                                          ItemsSource="{x:Bind ViewModel.BPrv230Details, Mode=OneWay}"
+                                          SelectionMode="Single"
+                                          SelectionChanged="ProcessosDataGrid_SelectionChanged"
+                                          MinHeight="180">
+                                    <ListView.ItemTemplate>
+                                        <DataTemplate x:DataType="models:ProcessInfo">
+                                            <Grid Padding="4,6">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel>
+                                                    <TextBlock Text="{x:Bind ProcessName}" FontWeight="SemiBold"/>
+                                                    <TextBlock Text="{x:Bind CommandLine}" FontSize="11" Foreground="Gray" TextTrimming="CharacterEllipsis"/>
+                                                </StackPanel>
+                                                <TextBlock Grid.Column="1" Text="{x:Bind PID}" FontSize="11" Foreground="Gray" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ListView.ItemTemplate>
+                                </ListView>
+                                <Button x:Name="MatarProcessoButton" Content="Encerrar selecionado"
+                                        Click="MatarProcessoButton_Click" IsEnabled="False"
+                                        Foreground="White" Background="Red" HorizontalAlignment="Stretch"/>
+                            </StackPanel>
+
+                            <!-- Coluna direita: informações do provider selecionado -->
+                            <StackPanel Grid.Column="1" Spacing="8" Padding="0,8,0,0"
+                                        Visibility="{x:Bind ViewModel.HasSelectedProvider, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Informações do Provider" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                    <ComboBox Grid.Column="1" x:Name="LogTypeCombo"
+                                              SelectedIndex="0"
+                                              SelectionChanged="LogTypeCombo_SelectionChanged">
+                                        <ComboBoxItem Content="BDebug (Tudo)"/>
+                                        <ComboBoxItem Content="BDebug (Slice)"/>
+                                        <ComboBoxItem Content="Provider Info"/>
+                                    </ComboBox>
+                                </Grid>
+
+                                <Border Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                                        CornerRadius="6" Padding="10">
+                                    <ItemsControl ItemsSource="{x:Bind ViewModel.SelectedProviderInfo, Mode=OneWay}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="dto:ProviderInfoItem">
+                                                <Grid Padding="0,3" ColumnSpacing="8">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="160"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Text="{x:Bind Description}" Foreground="Gray" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Grid.Column="1" Text="{x:Bind Value, Mode=OneWay}" FontSize="12" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </Border>
+                            </StackPanel>
+
+                            <!-- Placeholder coluna direita -->
+                            <Border Grid.Column="1" Padding="16"
+                                    Visibility="{x:Bind ViewModel.HasSelectedProvider, Mode=OneWay, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+                                <TextBlock Text="Selecione um provider para ver os detalhes."
+                                           Foreground="Gray" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                            </Border>
                         </Grid>
 
-                        <ListView x:Name="ProcessosDataGrid" 
-                                  ItemsSource="{x:Bind ViewModel.BPrv230Details, Mode=OneWay}"
-                                  SelectionMode="Single"
-                                  SelectionChanged="ProcessosDataGrid_SelectionChanged"
-                                  MinHeight="200">
-                            <ListView.ItemTemplate>
-                                <DataTemplate x:DataType="models:ProcessInfo">
-                                    <Grid Padding="8">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="150"/>
-                                            <ColumnDefinition Width="80"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Text="{x:Bind ProcessName}" FontWeight="Bold"/>
-                                        <TextBlock Grid.Column="1" Text="{x:Bind PID}"/>
-                                        <TextBlock Grid.Column="2" Text="{x:Bind CommandLine}" TextTrimming="CharacterEllipsis"/>
-                                    </Grid>
-                                </DataTemplate>
-                            </ListView.ItemTemplate>
-                        </ListView>
-                    </StackPanel>
+                        <!-- Linha inferior: log full width -->
+                        <StackPanel Grid.Row="1" Spacing="6"
+                                    Visibility="{x:Bind ViewModel.HasSelectedProvider, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Log em tempo real" Foreground="Gray" FontSize="12" VerticalAlignment="Center"/>
+                                <Button Grid.Column="1" Content="Exportar .txt"
+                                        Click="ExportarLogsButton_Click" FontSize="12"/>
+                            </Grid>
+                            <TextBox x:Name="ProviderLogOutput"
+                                     Text="{x:Bind ViewModel.SelectedProviderLog, Mode=OneWay}"
+                                     FontFamily="Consolas" FontSize="11"
+                                     TextWrapping="Wrap"
+                                     IsReadOnly="True"
+                                     AcceptsReturn="True"
+                                     Height="220"
+                                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                     BorderThickness="0"
+                                     Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                                     TextChanged="ProviderLogOutput_TextChanged"/>
+                        </StackPanel>
+                    </Grid>
                 </Expander>
 
-                <!-- TERMINAL -->
-                <Border Style="{StaticResource FullWidthCardStyle}">
-                    <StackPanel Spacing="8">
-                        <TextBlock Text="Progresso e Logs" FontWeight="Bold"/>
-                        <Border Background="Black" Padding="10" CornerRadius="4">
-                            <ScrollViewer x:Name="TerminalScrollViewer" Height="200">
-                                <TextBlock x:Name="TerminalOutput" Text="{x:Bind ViewModel.Logs, Mode=OneWay}" Foreground="White" FontFamily="Consolas" TextWrapping="Wrap"/>
-                            </ScrollViewer>
-                        </Border>
-                    </StackPanel>
-                </Border>
             </StackPanel>
         </ScrollViewer>
     </Grid>

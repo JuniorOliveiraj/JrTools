@@ -1,14 +1,15 @@
+using JrTools.Dto;
 using JrTools.Models;
 using JrTools.Services;
 using Microsoft.UI.Dispatching;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Collections.Generic;
 
 namespace JrTools.ViewModels
 {
@@ -37,14 +38,62 @@ namespace JrTools.ViewModels
 
         private readonly ProcessMonitorService _monitorService;
         private readonly ProcessKillerService _killerService;
+        private readonly ProviderBufferService _bufferService;
         private DispatcherQueue? _dispatcher;
         private CancellationTokenSource? _autoKillCts;
         private CancellationTokenSource? _refreshCts;
+        private CancellationTokenSource? _providerLogCts;
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
         public ObservableCollection<ProcessViewModel> MonitoredProcesses { get; } = new();
         public ObservableCollection<ProcessInfo> BPrv230Details { get; } = new();
+        public ObservableCollection<ProviderInfoItem> SelectedProviderInfo { get; } = new();
+
+        private DeployRecoveryDto? _deployRecovery;
+        public DeployRecoveryDto? DeployRecovery
+        {
+            get => _deployRecovery;
+            set { _deployRecovery = value; OnPropertyChanged(); }
+        }
+
+        private ProcessInfo? _selectedProvider;
+        public ProcessInfo? SelectedProvider
+        {
+            get => _selectedProvider;
+            set
+            {
+                if (_selectedProvider == value) return;
+                _selectedProvider = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(HasSelectedProvider));
+                StartProviderLogLoop(value?.PID);
+            }
+        }
+
+        public bool HasSelectedProvider => _selectedProvider != null;
+
+        private string _selectedProviderLog = "";
+        public string SelectedProviderLog
+        {
+            get => _selectedProviderLog;
+            set { _selectedProviderLog = value; OnPropertyChanged(); }
+        }
+
+        private ProviderLogType _selectedLogType = ProviderLogType.BDebugAll;
+        public ProviderLogType SelectedLogType
+        {
+            get => _selectedLogType;
+            set
+            {
+                if (_selectedLogType == value) return;
+                _selectedLogType = value;
+                OnPropertyChanged();
+                // Força refresh imediato ao trocar tipo
+                if (_selectedProvider != null)
+                    _ = RefreshProviderLogAsync(_selectedProvider.PID, value);
+            }
+        }
 
         private bool _isAutoKillEnabled;
         public bool IsAutoKillEnabled
@@ -81,6 +130,7 @@ namespace JrTools.ViewModels
         {
             _monitorService = new ProcessMonitorService();
             _killerService = new ProcessKillerService();
+            _bufferService = new ProviderBufferService();
 
             var configs = new[]
             {
@@ -127,7 +177,9 @@ namespace JrTools.ViewModels
         {
             while (!token.IsCancellationRequested)
             {
-                RefreshAllNow();
+                try { RefreshAllNow(); }
+                catch { /* nunca deixa o loop morrer */ }
+
                 try { await Task.Delay(5000, token); }
                 catch (TaskCanceledException) { break; }
             }
@@ -206,24 +258,36 @@ namespace JrTools.ViewModels
 
         private async Task AutoKillTask(CancellationToken token)
         {
-            while (!token.IsCancellationRequested)
+            try
             {
-                var toKill = MonitoredProcesses
-                    .Where(p => p.IsEnabled)
-                    .Select(p => p.Name)
-                    .ToList();
-
-                foreach (var name in toKill)
+                while (!token.IsCancellationRequested)
                 {
-                    if (token.IsCancellationRequested) break;
-                    if (_monitorService.GetProcessCount(name) > 0)
-                    {
-                        await _killerService.KillProcessesByNameAsync(name);
-                    }
-                }
+                    var toKill = MonitoredProcesses
+                        .Where(p => p.IsEnabled)
+                        .Select(p => p.Name)
+                        .ToList();
 
-                try { await Task.Delay(3000, token); }
-                catch (TaskCanceledException) { break; }
+                    foreach (var name in toKill)
+                    {
+                        if (token.IsCancellationRequested) break;
+                        try
+                        {
+                            if (_monitorService.GetProcessCount(name) > 0)
+                                await _killerService.KillProcessesByNameAsync(name);
+                        }
+                        catch (Exception ex)
+                        {
+                            AddLog($"⚠️ Erro ao matar {name}: {ex.Message}");
+                        }
+                    }
+
+                    try { await Task.Delay(3000, token); }
+                    catch (TaskCanceledException) { break; }
+                }
+            }
+            catch (Exception ex)
+            {
+                AddLog($"❌ AutoKillTask encerrado inesperadamente: {ex.Message}");
             }
             AddLog("⏹ Modo 'Manter Tudo Fechado' DESATIVADO.");
         }
@@ -235,6 +299,46 @@ namespace JrTools.ViewModels
             {
                 await _killerService.KillProcessesByNameAsync(vm.Name);
             }
+        }
+
+        public async Task KillProviderAsync(int pid)
+        {
+            AddLog($"⌛ Encerrando provider PID {pid}...");
+            var killed = await _killerService.KillProcessByIdAsync(pid);
+            if (killed)
+            {
+                SelectedProvider = null;
+                AddLog($"⚡ Provider PID {pid} encerrado.");
+            }
+        }
+
+        /// <summary>
+        /// Chamado pelo RhProdFlow após o build terminar.
+        /// Inicia o rastreamento de recovery dos providers e exibe o banner de resultado.
+        /// </summary>
+        public void IniciarRastreamentoPosDeployAsync(string[] processNames, int timeoutSeconds = 120)
+        {
+            var buildFinishedAt = DateTime.Now;
+            AddLog($"🔍 Aguardando providers subirem após o deploy...");
+
+            var tracker = new ProviderRecoveryTracker(_bufferService);
+            var recovery = new DeployRecoveryDto
+            {
+                BuildFinishedAt = buildFinishedAt,
+                IsVisible = true
+            };
+
+            tracker.ProviderRecovered += (s, result) =>
+            {
+                _dispatcher?.TryEnqueue(() =>
+                {
+                    recovery.Results.Add(result);
+                    AddLog(result.Resumo);
+                });
+            };
+
+            _ = tracker.StartAsync(processNames, timeoutSeconds);
+            DeployRecovery = recovery;
         }
 
         private async Task RestartRhAppPoolAsync()
@@ -265,6 +369,55 @@ namespace JrTools.ViewModels
             {
                 AddLog($"❌ Erro ao reiniciar AppPool Rh: {ex.Message}");
             }
+        }
+
+        private void StartProviderLogLoop(int? pid)
+        {
+            _providerLogCts?.Cancel();
+            _providerLogCts = null;
+            SelectedProviderInfo.Clear();
+            SelectedProviderLog = "";
+
+            if (pid == null) return;
+
+            _providerLogCts = new CancellationTokenSource();
+            _ = ProviderLogTask(pid.Value, _providerLogCts.Token);
+        }
+
+        private async Task ProviderLogTask(int pid, CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                try { await RefreshProviderLogAsync(pid, _selectedLogType); }
+                catch { /* buffer pode não estar disponível, ignora */ }
+
+                try { await Task.Delay(1500, token); }
+                catch (TaskCanceledException) { break; }
+            }
+        }
+
+        private async Task RefreshProviderLogAsync(int pid, ProviderLogType logType)
+        {
+            var snapshot = await Task.Run(() => _bufferService.ReadSnapshot(pid, logType));
+
+            _dispatcher?.TryEnqueue(() =>
+            {
+                // Atualiza info items (sync por Key)
+                var incoming = snapshot.InfoItems;
+                var toRemove = SelectedProviderInfo.Where(i => !incoming.Any(x => x.Key == i.Key)).ToList();
+                foreach (var r in toRemove) SelectedProviderInfo.Remove(r);
+
+                foreach (var item in incoming)
+                {
+                    var existing = SelectedProviderInfo.FirstOrDefault(i => i.Key == item.Key);
+                    if (existing == null)
+                        SelectedProviderInfo.Add(item);
+                    else
+                        existing.Value = item.Value;
+                }
+
+                SelectedProviderLog = snapshot.LogText;
+            });
         }
 
         private void AddLog(string message)

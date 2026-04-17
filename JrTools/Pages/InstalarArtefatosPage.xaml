@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="JrTools.Pages.InstalarArtefatosPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Page.Resources>
+        <Style x:Key="CardStyle" TargetType="Border">
+            <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+            <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="Padding" Value="20" />
+        </Style>
+    </Page.Resources>
+
+    <Grid>
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="40,30">
+            <StackPanel Spacing="16">
+
+                <!-- Cabeçalho -->
+                <TextBlock Text="Automatizações — WES"
+                           FontSize="22"
+                           FontWeight="Bold"/>
+
+                <InfoBar x:Name="InfoBarAviso" IsOpen="False" Severity="Warning" IsClosable="False"/>
+
+                <!-- Configurações (compartilhadas com Importador) -->
+                <Border Style="{StaticResource CardStyle}">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="Configurações" FontWeight="SemiBold"/>
+
+                        <!-- Seleção do projeto -->
+                        <ComboBox x:Name="CmbProjetoWes"
+                                  Header="Projeto WES"
+                                  HorizontalAlignment="Stretch"
+                                  PlaceholderText="Carregando projetos..."
+                                  SelectionChanged="CmbProjetoWes_SelectionChanged"/>
+
+                        <TextBox x:Name="TxtWesExePath"
+                                 Header="Caminho do wes.exe (preenchido automaticamente)"
+                                 IsReadOnly="True"
+                                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+
+                        <Grid ColumnSpacing="12" RowSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <TextBox x:Name="TxtServidor"
+                                     Grid.Row="0" Grid.Column="0"
+                                     Header="Servidor"
+                                     PlaceholderText="Ex: servidor.empresa.com.br"
+                                     TextChanged="TxtConfig_TextChanged"/>
+                            <TextBox x:Name="TxtSistema"
+                                     Grid.Row="0" Grid.Column="1"
+                                     Header="Sistema"
+                                     PlaceholderText="rh"
+                                     TextChanged="TxtConfig_TextChanged"/>
+                            <TextBox x:Name="TxtUsuario"
+                                     Grid.Row="1" Grid.Column="0"
+                                     Header="Usuário"
+                                     TextChanged="TxtConfig_TextChanged"/>
+                            <PasswordBox x:Name="TxtSenha"
+                                         Grid.Row="1" Grid.Column="1"
+                                         Header="Senha"
+                                         PasswordChanged="TxtSenha_PasswordChanged"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- Comandos WES -->
+                <Border Style="{StaticResource CardStyle}">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="Comandos WES" FontWeight="SemiBold"/>
+
+                        <!-- config set -->
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Definir configuração" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                            <TextBlock Text="wes.exe config set -h {servidor} -s {sistema} -u {usuario} -p {senha}"
+                                       FontFamily="Consolas" FontSize="12"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            <Button x:Name="BtnConfigSet" Click="BtnConfigSet_Click" MinWidth="200" HorizontalAlignment="Left" Margin="0,4,0,0">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <ProgressRing x:Name="LoadingConfigSet" IsActive="False" Width="16" Height="16"/>
+                                    <TextBlock Text="Executar config set"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+
+                        <NavigationViewItemSeparator/>
+
+                        <!-- cache clear -->
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Limpar cache" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                            <TextBlock Text="wes.exe cache clear"
+                                       FontFamily="Consolas" FontSize="12"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            <Button x:Name="BtnCacheClear" Click="BtnCacheClear_Click" MinWidth="200" HorizontalAlignment="Left" Margin="0,4,0,0">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <ProgressRing x:Name="LoadingCacheClear" IsActive="False" Width="16" Height="16"/>
+                                    <TextBlock Text="Executar cache clear"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+
+                        <NavigationViewItemSeparator/>
+
+                        <!-- artifacts install -->
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Instalar artefatos" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                            <TextBlock Text="wes.exe artifacts install -s"
+                                       FontFamily="Consolas" FontSize="12"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            <Button x:Name="BtnArtifactsInstall" Click="BtnArtifactsInstall_Click" MinWidth="200" HorizontalAlignment="Left" Margin="0,4,0,0">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <ProgressRing x:Name="LoadingArtifacts" IsActive="False" Width="16" Height="16"/>
+                                    <TextBlock Text="Executar artifacts install"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+
+                        <NavigationViewItemSeparator/>
+
+                        <!-- pages generate -->
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Gerar páginas" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                            <TextBlock Text="wes.exe pages generate"
+                                       FontFamily="Consolas" FontSize="12"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            <Button x:Name="BtnPagesGenerate" Click="BtnPagesGenerate_Click" MinWidth="200" HorizontalAlignment="Left" Margin="0,4,0,0">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <ProgressRing x:Name="LoadingPages" IsActive="False" Width="16" Height="16"/>
+                                    <TextBlock Text="Executar pages generate"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+
+                    </StackPanel>
+                </Border>
+
+                <!-- Log -->
+                <Border Style="{StaticResource CardStyle}">
+                    <StackPanel Spacing="8">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Log de execução" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            <Button x:Name="BtnLimparLog" Grid.Column="1" Content="Limpar"
+                                    FontSize="11" Padding="8,2" Click="BtnLimparLog_Click"/>
+                        </Grid>
+                        <ScrollViewer x:Name="ScrollLog" MaxHeight="200" VerticalScrollBarVisibility="Auto">
+                            <TextBlock x:Name="TxtLog"
+                                       FontFamily="Consolas" FontSize="12"
+                                       TextWrapping="Wrap"
+                                       IsTextSelectionEnabled="True"/>
+                        </ScrollViewer>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>

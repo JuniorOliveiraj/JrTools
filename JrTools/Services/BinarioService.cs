@@ -46,6 +46,69 @@ namespace JrTools.Services
         }
 
         /// <summary>
+        /// Extrai o binário apenas para a pasta Delphi, sem criar a pasta RH_LOCAL_DESENV.
+        /// Usado quando o caller vai criar um link simbólico no lugar da pasta nomeada.
+        /// </summary>
+        public async Task ExtrairApenasDelphiAsync(BinarioInfoDataObject binarioInfo, IProgress<string>? progresso = null)
+        {
+            try
+            {
+                if (!Directory.Exists(_pastaTemporaria))
+                    Directory.CreateDirectory(_pastaTemporaria);
+
+                if (!Directory.Exists(binarioInfo.destino))
+                    Directory.CreateDirectory(binarioInfo.destino);
+
+                string pastaDestino = Path.Combine(binarioInfo.destino, "Delphi");
+                Directory.CreateDirectory(pastaDestino);
+
+                string caminhoTemporario = Path.Combine(_pastaTemporaria, binarioInfo.NomeOriginal + ".zip");
+
+                if (!File.Exists(caminhoTemporario))
+                {
+                    progresso?.Report($"[INFO] Copiando {binarioInfo.Caminho} para {caminhoTemporario}...");
+
+                    long tamanhoTotal = new FileInfo(binarioInfo.Caminho).Length;
+                    long totalCopiado = 0;
+
+                    using var origem  = new FileStream(binarioInfo.Caminho, FileMode.Open, FileAccess.Read);
+                    using var destino = new FileStream(caminhoTemporario, FileMode.Create, FileAccess.Write);
+
+                    byte[] buffer = new byte[81920];
+                    int bytesLidos;
+                    while ((bytesLidos = await origem.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                    {
+                        await destino.WriteAsync(buffer, 0, bytesLidos);
+                        totalCopiado += bytesLidos;
+                        int pct = (int)((totalCopiado * 100) / tamanhoTotal);
+                        int barras = (pct * 30) / 100;
+                        progresso?.Report($"[{new string('#', barras)}{new string('-', 30 - barras)}] {pct}%");
+                    }
+
+                    progresso?.Report("[INFO] Arquivo copiado com sucesso.");
+                }
+                else
+                {
+                    progresso?.Report("[INFO] Zip já existe na pasta temporária, reutilizando.");
+                }
+
+                progresso?.Report($"[INFO] Limpando {pastaDestino}...");
+                await LimparPastaDestinoAsync(pastaDestino, progresso);
+
+                progresso?.Report($"[INFO] Extraindo para {pastaDestino}...");
+                await Task.Run(() => ZipFile.ExtractToDirectory(caminhoTemporario, pastaDestino, true));
+
+                progresso?.Report($"[INFO] Extração concluída: {pastaDestino}");
+            }
+            catch (Exception ex)
+            {
+                progresso?.Report($"[ERRO] Falha ao extrair binário: {ex.Message}");
+                throw;
+            }
+        }
+
+
+        /// <summary>
         /// Copia o zip do binário para a pasta temporária e extrai para a pasta de destino, sem travar a UI.
         /// Cria barra de progresso na cópia.
         /// Limpa a pasta de destino antes da extração.

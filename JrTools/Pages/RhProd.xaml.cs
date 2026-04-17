@@ -27,14 +27,14 @@ namespace JrTools.Pages
         {
             ListaDeProjetos = new List<string>
             {
-                "producao_09.00",
-                "producao_08.06",
-                "producao_08.05",
-                "producao_08.04",
-                "dev-09.00.00",
-                "dev-08.06.00",
-                "dev-08.05.00",
-                "dev-08.04.00",
+                "prd/09.00",
+                "prd/08.06",
+                "prd/08.05",
+                "prd/08.04",
+                "dev/09.00.00",
+                "dev/08.06.00",
+                "dev/08.05.00",
+                "dev/08.04.00",
                 "Outro"
             };
 

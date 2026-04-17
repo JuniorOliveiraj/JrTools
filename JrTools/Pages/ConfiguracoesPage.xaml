@@ -49,6 +49,10 @@
                                  Header="Caminho CSReportImport.exe"
                                  PlaceholderText="D:\Benner\Servicos\ReportKeeper.V1\CSReportImport.exe"
                                  TextChanged="CaminhoCSReportImport_TextChanged"/>
+                        <TextBox x:Name="WesExePath"
+                                 Header="Caminho wes.exe"
+                                 PlaceholderText="D:\Benner\fontes\rh\prod\WES\WebApp\Bin\wes.exe"
+                                 TextChanged="WesExePath_TextChanged"/>
                     </StackPanel>
                 </Border>
 

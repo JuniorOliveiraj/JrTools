@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="JrTools.Pages.Apps.CriarAplicacaoIisPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Page.Resources>
+        <Style x:Key="CardStyle" TargetType="Border">
+            <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}"/>
+            <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="20"/>
+        </Style>
+    </Page.Resources>
+
+    <Grid>
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="40,30">
+            <StackPanel Spacing="16">
+
+                <TextBlock Text="Criar Aplicação IIS" FontSize="22" FontWeight="Bold"/>
+
+                <InfoBar x:Name="InfoBarAviso" IsOpen="False" IsClosable="False"/>
+
+                <!-- Card: Configuração -->
+                <Border Style="{StaticResource CardStyle}">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="Configuração" FontWeight="SemiBold"/>
+
+                        <Grid ColumnSpacing="12" RowSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <ComboBox x:Name="CmbProjeto"
+                                      Grid.Row="0" Grid.Column="0"
+                                      Header="Projeto (pasta fonte)"
+                                      HorizontalAlignment="Stretch"
+                                      PlaceholderText="Carregando..."
+                                      SelectionChanged="CmbProjeto_SelectionChanged"/>
+
+                            <ComboBox x:Name="CmbPool"
+                                      Grid.Row="0" Grid.Column="1"
+                                      Header="Application Pool"
+                                      HorizontalAlignment="Stretch"
+                                      PlaceholderText="Carregando..."/>
+
+                            <TextBox x:Name="TxtSite"
+                                     Grid.Row="1" Grid.Column="0"
+                                     Header="Site IIS"
+                                     Text="Default Web Site"/>
+
+                            <TextBox x:Name="TxtNomeApp"
+                                     Grid.Row="1" Grid.Column="1"
+                                     Header="Nome da aplicação"
+                                     PlaceholderText="Ex: WES_RH_PROD"/>
+
+                            <TextBox x:Name="TxtCaminho"
+                                     Grid.Row="2" Grid.ColumnSpan="2"
+                                     Header="Caminho físico (preenchido automaticamente)"
+                                     IsReadOnly="True"
+                                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                        </Grid>
+
+                        <Button x:Name="BtnCriar" Click="BtnCriar_Click" MinWidth="200" HorizontalAlignment="Left" Margin="0,4,0,0">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <ProgressRing x:Name="LoadingCriar" IsActive="False" Width="16" Height="16"/>
+                                <TextBlock Text="Criar Aplicação IIS"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Border>
+
+                <!-- Log -->
+                <Border Style="{StaticResource CardStyle}">
+                    <StackPanel Spacing="8">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Log de execução" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" Content="Limpar" FontSize="11" Padding="8,2" Click="BtnLimparLog_Click"/>
+                        </Grid>
+                        <ScrollViewer x:Name="ScrollLog" MaxHeight="200" VerticalScrollBarVisibility="Auto">
+                            <TextBlock x:Name="TxtLog" FontFamily="Consolas" FontSize="12"
+                                       TextWrapping="Wrap" IsTextSelectionEnabled="True"/>
+                        </ScrollViewer>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>

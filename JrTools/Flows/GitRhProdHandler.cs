@@ -101,10 +101,10 @@ namespace JrTools.Flows
                 .Select(l => l.Trim())
                 .ToList();
 
-            if (branches.Any(b => b.Contains("origin/producao_09.00", StringComparison.OrdinalIgnoreCase)))
-                progresso?.Report($"✅ A tag {tag} está contida na branch origin/producao_09.00");
+            if (branches.Any(b => b.Contains("origin/prd/09.00", StringComparison.OrdinalIgnoreCase)))
+                progresso?.Report($"✅ A tag {tag} está contida na branch origin/prd/09.00");
             else
-                progresso?.Report($"⚠️  A tag {tag} NÃO está na branch origin/producao_09.00");
+                progresso?.Report($"⚠️  A tag {tag} NÃO está na branch origin/prd/09.00");
 
             return branches;
         }

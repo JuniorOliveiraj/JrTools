@@ -63,6 +63,12 @@
 		<ProjectCapability Include="Msix" />
 	</ItemGroup>
 	<ItemGroup>
+		<Reference Include="Microsoft.Web.Administration">
+			<HintPath>C:\Windows\System32\inetsrv\Microsoft.Web.Administration.dll</HintPath>
+			<Private>true</Private>
+		</Reference>
+	</ItemGroup>
+	<ItemGroup>
 		<PackageReference Include="CommunityToolkit.WinUI.UI.Controls.Markdown" Version="7.1.2" />
 		<PackageReference Include="DocumentFormat.OpenXml" Version="3.3.0" />
 		<PackageReference Include="DotnetGeminiSDK" Version="2.0.0" />
@@ -70,6 +76,7 @@
 		<PackageReference Include="HtmlAgilityPack" Version="1.12.4" />
 		<PackageReference Include="HtmlToOpenXml.dll" Version="3.2.8" />
 		<PackageReference Include="Markdig" Version="0.42.0" />
+		<PackageReference Include="Microsoft.Web.Administration" Version="11.1.0" />
 		<PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.4948" />
 		<PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250606001" />
 		<PackageReference Include="OpenAI" Version="2.5.0" />
@@ -148,6 +155,22 @@
 	  <Page Update="Pages\ImportadorRelatoriosPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </Page>
+	</ItemGroup>
+	<ItemGroup>
+	  <Page Update="Pages\Apps\SubirAmbienteManualPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </Page>
+	</ItemGroup>
+	<ItemGroup>
+	  <None Remove="Pages\Apps\SubirAmbienteManualPage.xaml" />
+	</ItemGroup>
+	<ItemGroup>
+	  <Page Update="Pages\Apps\CriarAplicacaoIisPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </Page>
+	</ItemGroup>
+	<ItemGroup>
+	  <None Remove="Pages\Apps\CriarAplicacaoIisPage.xaml" />
 	</ItemGroup>
 
 	<!--

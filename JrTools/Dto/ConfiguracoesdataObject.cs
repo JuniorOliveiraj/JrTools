@@ -1,8 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace JrTools.Dto
 {
@@ -15,5 +11,11 @@ namespace JrTools.Dto
         public string MsBuildPadraoPath { get; set; }
         public string CaminhoCSReportImport { get; set; }
             = @"D:\Benner\Servicos\ReportKeeper.V1\CSReportImport.exe";
+        public string WesExePath { get; set; }
+            = @"D:\Benner\fontes\rh\prod\WES\WebApp\Bin\wes.exe";
+
+        // Subir Ambiente Manual
+        public string? UltimaPastaAmbiente { get; set; }
+        public List<string> HistoricoPastasAmbiente { get; set; } = new();
     }
 }

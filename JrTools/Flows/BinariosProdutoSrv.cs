@@ -49,7 +49,10 @@ namespace JrTools.Flows
         private string BuscarBranchDeTrabalho(string branch)
         {
             var service = new BranchNameHelper();
-           return service.ObterBranchInfo(branch).Branch;
+            // Ex: sms/dev/09.00.00 → dev/09.00.00 → dev-09.00.00 (nome do zip no servidor)
+            // Ex: sms/prd/09.00    → prd/09.00    → prd-09.00
+            var branchNormalizada = service.ObterBranchInfo(branch).Branch;
+            return branchNormalizada.Replace("/", "-");
         }
     }
 }

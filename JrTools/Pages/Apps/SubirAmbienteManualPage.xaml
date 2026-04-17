@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="JrTools.Pages.Apps.SubirAmbienteManualPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Page.Resources>
+        <Style x:Key="CardStyle" TargetType="Border">
+            <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+            <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="Padding" Value="20" />
+        </Style>
+    </Page.Resources>
+
+    <Grid>
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="40,30">
+            <StackPanel Spacing="16">
+
+                <TextBlock Text="Subir Ambiente Manual"
+                           FontSize="22"
+                           FontWeight="Bold"/>
+
+                <InfoBar x:Name="InfoBarAviso" IsOpen="False" IsClosable="False"/>
+
+                <!-- Card 1: Configurações WES -->
+                <Border Style="{StaticResource CardStyle}">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="Configurações WES" FontWeight="SemiBold"/>
+
+                        <!-- Seleção do projeto -->
+                        <ComboBox x:Name="CmbProjetoWes"
+                                  Header="Projeto WES"
+                                  HorizontalAlignment="Stretch"
+                                  PlaceholderText="Carregando projetos..."
+                                  SelectionChanged="CmbProjetoWes_SelectionChanged"/>
+
+                        <TextBox x:Name="TxtWesExePath"
+                                 Header="Caminho do wes.exe (preenchido automaticamente)"
+                                 IsReadOnly="True"
+                                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+
+                        <Grid ColumnSpacing="12" RowSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <TextBox x:Name="TxtServidor"
+                                     Grid.Row="0" Grid.Column="0"
+                                     Header="Servidor"
+                                     PlaceholderText="Ex: servidor.empresa.com.br"
+                                     TextChanged="TxtConfig_TextChanged"/>
+                            <TextBox x:Name="TxtSistema"
+                                     Grid.Row="0" Grid.Column="1"
+                                     Header="Sistema"
+                                     PlaceholderText="rh"
+                                     TextChanged="TxtConfig_TextChanged"/>
+                            <TextBox x:Name="TxtUsuario"
+                                     Grid.Row="1" Grid.Column="0"
+                                     Header="Usuário"
+                                     TextChanged="TxtConfig_TextChanged"/>
+                            <PasswordBox x:Name="TxtSenha"
+                                         Grid.Row="1" Grid.Column="1"
+                                         Header="Senha"
+                                         PasswordChanged="TxtSenha_PasswordChanged"/>
+                        </Grid>
+
+                        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+                                <Button x:Name="BtnSetarConfiguracoes" Click="BtnSetarConfiguracoes_Click">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <ProgressRing x:Name="LoadingConfigSet" IsActive="False" Width="16" Height="16"/>
+                                        <TextBlock Text="Setar Configurações"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button x:Name="BtnLimparCache" Click="BtnLimparCache_Click">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <ProgressRing x:Name="LoadingLimparCache" IsActive="False" Width="16" Height="16"/>
+                                        <TextBlock Text="Limpar Cache"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button x:Name="BtnInstalarArtefatos" Click="BtnInstalarArtefatos_Click">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <ProgressRing x:Name="LoadingInstalarArtefatos" IsActive="False" Width="16" Height="16"/>
+                                        <TextBlock Text="Instalar Artefatos"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button x:Name="BtnRegenerarPaginas" Click="BtnRegenerarPaginas_Click">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <ProgressRing x:Name="LoadingRegenerarPaginas" IsActive="False" Width="16" Height="16"/>
+                                        <TextBlock Text="Regenerar Páginas"/>
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </StackPanel>
+                </Border>
+
+                <!-- Card 2: Atualizar Binários -->
+                <Border Style="{StaticResource CardStyle}">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="Atualizar Binários" FontWeight="SemiBold"/>
+
+                        <ComboBox x:Name="CmbBranch"
+                                  Header="Branch / Versão"
+                                  HorizontalAlignment="Stretch"
+                                  PlaceholderText="Selecione a branch"/>
+
+                        <ToggleSwitch x:Name="ToggleReutilizarBinarios"
+                                      Header="Reutilizar binários já baixados"
+                                      OffContent="Vai deletar o zip existente e baixar um novo do servidor"
+                                      OnContent="Vai usar o zip que já está na pasta temporária"/>
+
+                        <AutoSuggestBox x:Name="AutoPasta"
+                                        Header="Nome da pasta de link (além do delphi)"
+                                        PlaceholderText="Ex: RH_LOCAL_DESENV_09.01"
+                                        QueryIcon="Find"
+                                        TextChanged="AutoPasta_TextChanged"
+                                        SuggestionChosen="AutoPasta_SuggestionChosen"/>
+
+                        <ToggleSwitch x:Name="ToggleUsarLink"
+                                      IsOn="True"
+                                      Header="Usar link simbólico"
+                                      OffContent="Vai extrair direto para a pasta indicada"
+                                      OnContent="Vai criar um link simbólico (mklink /J) apontando para delphi"/>
+
+                        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+                            <Button x:Name="BtnAtualizarBinarios" Click="BtnAtualizarBinarios_Click">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <ProgressRing x:Name="LoadingBinarios" IsActive="False" Width="16" Height="16"/>
+                                    <TextBlock Text="Atualizar Binários"/>
+                                </StackPanel>
+                            </Button>
+                            <Button x:Name="BtnAdicionarLink" Click="BtnAdicionarLink_Click">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <ProgressRing x:Name="LoadingLink" IsActive="False" Width="16" Height="16"/>
+                                    <TextBlock Text="Adicionar Link"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Card 3: Criar Aplicação IIS -->
+                <Border Style="{StaticResource CardStyle}">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="Criar Aplicação IIS" FontWeight="SemiBold"/>
+
+                        <Grid ColumnSpacing="12" RowSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <ComboBox x:Name="CmbProjeto"
+                                      Grid.Row="0" Grid.Column="0"
+                                      Header="Projeto (pasta fonte)"
+                                      HorizontalAlignment="Stretch"
+                                      PlaceholderText="Carregando..."
+                                      SelectionChanged="CmbProjeto_SelectionChanged"/>
+
+                            <ComboBox x:Name="CmbPool"
+                                      Grid.Row="0" Grid.Column="1"
+                                      Header="Application Pool"
+                                      HorizontalAlignment="Stretch"
+                                      PlaceholderText="Carregando..."/>
+
+                            <TextBox x:Name="TxtSiteIis"
+                                     Grid.Row="1" Grid.Column="0"
+                                     Header="Site IIS"
+                                     Text="Default Web Site"/>
+
+                            <TextBox x:Name="TxtNomeApp"
+                                     Grid.Row="1" Grid.Column="1"
+                                     Header="Nome da aplicação"
+                                     PlaceholderText="Ex: WES_RH_PROD"/>
+
+                            <TextBox x:Name="TxtCaminhoIis"
+                                     Grid.Row="2" Grid.ColumnSpan="2"
+                                     Header="Caminho físico (preenchido automaticamente)"
+                                     IsReadOnly="True"
+                                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                        </Grid>
+
+                        <Button x:Name="BtnCriarApp" Click="BtnCriarApp_Click" MinWidth="200" HorizontalAlignment="Left" Margin="0,4,0,0">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <ProgressRing x:Name="LoadingCriarApp" IsActive="False" Width="16" Height="16"/>
+                                <TextBlock Text="Criar Aplicação IIS"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Border>
+
+                <!-- Log -->
+                <Border Style="{StaticResource CardStyle}">
+                    <StackPanel Spacing="8">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Log de execução" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            <Button x:Name="BtnLimparLog" Grid.Column="1" Content="Limpar"
+                                    FontSize="11" Padding="8,2" Click="BtnLimparLog_Click"/>
+                        </Grid>
+                        <ScrollViewer x:Name="ScrollLog" MaxHeight="200" VerticalScrollBarVisibility="Auto">
+                            <TextBlock x:Name="TxtLog"
+                                       FontFamily="Consolas" FontSize="12"
+                                       TextWrapping="Wrap"
+                                       IsTextSelectionEnabled="True"/>
+                        </ScrollViewer>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>

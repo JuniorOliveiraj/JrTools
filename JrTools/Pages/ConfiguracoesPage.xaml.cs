@@ -66,6 +66,7 @@ namespace JrTools.Pages
                 DiretorioProducao.Text = _config.DiretorioProducao ?? string.Empty;
                 DiretorioEspesificos.Text = _config.DiretorioEspecificos ?? string.Empty;
                 CaminhoCSReportImport.Text = _config.CaminhoCSReportImport ?? string.Empty;
+                WesExePath.Text = _config.WesExePath ?? string.Empty;
             }
             catch (Exception ex)
             {
@@ -110,6 +111,13 @@ namespace JrTools.Pages
             var valido = CaminhoCSReportImport.Text.EndsWith("CSReportImport.exe", StringComparison.OrdinalIgnoreCase);
             ValidationInfoBar.Message = "O arquivo informado deve ser o CSReportImport.exe.";
             ValidationInfoBar.IsOpen = !valido && !string.IsNullOrWhiteSpace(CaminhoCSReportImport.Text);
+        }
+
+        private async void WesExePath_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_config == null) return;
+            _config.WesExePath = WesExePath.Text;
+            await ConfigHelper.SalvarConfiguracoesAsync(_config);
         }
 
         #endregion

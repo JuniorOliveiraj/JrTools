@@ -15,25 +15,25 @@ namespace JrTools.Utils
             if (string.IsNullOrWhiteSpace(branchInput))
                 throw new ArgumentException("Branch inválida", nameof(branchInput));
 
-            // Remove prefixos tipo sms/ ou smsproducao_
-            // Ex: sms/dev-08.05.13/0910239-nome  → dev-08.05.13
-            // Ex: smsproducao_08.05/0910239-nome → producao_08.05
-            string pattern = @"(?:^sms/?|^smsproducao_)([^/]+)";
-            var match = Regex.Match(branchInput, pattern, RegexOptions.IgnoreCase);
-
+            // Novo padrão Azure DevOps:
+            // Ex: sms/dev/09.00.00  → dev/09.00.00
+            // Ex: sms/prd/09.00     → prd/09.00
+            // Ex: dev/09.00.00      → dev/09.00.00
+            // Ex: prd/09.00         → prd/09.00
             string branchFinal;
+            var match = Regex.Match(branchInput, @"^sms/(.+)$", RegexOptions.IgnoreCase);
             if (match.Success)
             {
                 branchFinal = match.Groups[1].Value;
             }
             else
             {
-                // Caso já venha normalizada (ex: producao_08.05 ou dev-08.05.13)
-                branchFinal = branchInput.Split('/')[0];
+                branchFinal = branchInput;
             }
 
-            // Detecta se é produção
-            bool isProducao = branchFinal.StartsWith("producao", StringComparison.OrdinalIgnoreCase);
+            // Detecta se é produção pelo prefixo prd/
+            bool isProducao = branchFinal.StartsWith("prd/", StringComparison.OrdinalIgnoreCase)
+                           || branchFinal.Equals("prd", StringComparison.OrdinalIgnoreCase);
 
             return new BranchInfo
             {

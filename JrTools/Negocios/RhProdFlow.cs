@@ -53,12 +53,34 @@ namespace JrTools.Negocios
                     await AtualizarBinariosAsync(dto, config.DiretorioBinarios);
                 }
 
+                // Para o guardian ANTES do build — o MSBuild precisa do provider
+                if (ctsGuardian != null)
+                {
+                    Log("[INFO] Parando guardian antes do build...");
+                    ctsGuardian.Cancel();
+                    ctsGuardian = null;
+                    await Task.Delay(1000); // aguarda o guardian encerrar
+                }
+
                 if (dto.BuildarProjeto)
                 {
                     await BuildarProjetoAsync(config, @"D:\Benner\fontes\rh\prod\dotnet\Solutions\Compilacao_Completa_SemWebApp.sln");
                 }
 
-                ctsGuardian?.Cancel();
+                // Mata provider e w3wp após o build
+                if (dto.PrividerFechado)
+                {
+                    Log("[INFO] Encerrando BPrv230 e w3wp pós-build...");
+                    await ProcessKiller.KillBPrv230Async(_progresso);
+                    await ProcessKiller.KillW3wpAsync(_progresso);
+                }
+
+                // Inicia rastreamento de recovery dos providers pós-build
+                if (dto.PrividerFechado)
+                {
+                    JrTools.ViewModels.FecharProcessosViewModel.Instance
+                        .IniciarRastreamentoPosDeployAsync(new[] { "BPrv230" });
+                }
 
                 Log("[INFO] Fluxo concluído com sucesso!");
                 return (true, _logs.ToString(), string.Empty);
@@ -205,10 +227,17 @@ namespace JrTools.Negocios
             progresso?.Report("Iniciando guardião BPrv230...");
             while (!cancellationToken.IsCancellationRequested)
             {
-                await ProcessKiller.KillBPrv230Async(progresso);
                 try
                 {
-                    progresso?.Report("Tentando matar provider...");
+                    await ProcessKiller.KillBPrv230Async(progresso);
+                }
+                catch (Exception ex)
+                {
+                    progresso?.Report($"[GUARDIAN WARN] {ex.Message}");
+                }
+
+                try
+                {
                     await Task.Delay(30000, cancellationToken);
                 }
                 catch (TaskCanceledException)
