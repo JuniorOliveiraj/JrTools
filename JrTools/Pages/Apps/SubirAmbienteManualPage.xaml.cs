@@ -36,6 +36,13 @@ namespace JrTools.Pages.Apps
             Loaded += OnLoaded;
         }
 
+        protected override async void OnNavigatedTo(Microsoft.UI.Xaml.Navigation.NavigationEventArgs e)
+        {
+            base.OnNavigatedTo(e);
+            _cfg = await ConfigHelper.LerConfiguracoesAsync();
+            CarregarBranches();
+        }
+
         private async void OnLoaded(object sender, RoutedEventArgs e)
         {
             _carregandoConfig = true;
@@ -213,24 +220,36 @@ namespace JrTools.Pages.Apps
 
         private void CarregarBranches()
         {
-            CmbBranch.ItemsSource = new List<string>
-            {
-                "prd/09.00", "prd/08.06", "prd/08.05", "prd/08.04",
-                "dev/09.00.00", "dev/08.06.00", "dev/08.05.00", "dev/08.04.00"
-            };
-            CmbBranch.SelectedIndex = 0;
+            // Preenche com a última branch usada
+            if (!string.IsNullOrWhiteSpace(_cfg?.UltimaBranchAmbiente))
+                AutoBranch.Text = _cfg.UltimaBranchAmbiente;
         }
+
+        private void AutoBranch_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+        {
+            if (args.Reason != AutoSuggestionBoxTextChangeReason.UserInput) return;
+
+            var lista  = _cfg?.ListaBranches ?? new List<string>();
+            var filtro = sender.Text.Trim();
+
+            sender.ItemsSource = string.IsNullOrWhiteSpace(filtro)
+                ? lista.Where(b => b != "Outro").ToList()
+                : lista.Where(b => b != "Outro" && b.Contains(filtro, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+
+        private void AutoBranch_SuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
+            => sender.Text = args.SelectedItem?.ToString() ?? sender.Text;
 
         private async void BtnAtualizarBinarios_Click(object sender, RoutedEventArgs e)
         {
-            var branch     = CmbBranch.SelectedItem?.ToString();
+            var branch     = AutoBranch.Text.Trim();
             var reutilizar = ToggleReutilizarBinarios.IsOn;
             var usarLink   = ToggleUsarLink.IsOn;
             var nomePasta  = AutoPasta.Text.Trim();
 
             if (string.IsNullOrWhiteSpace(branch))
             {
-                MostrarErro("Selecione uma branch.");
+                MostrarErro("Informe a branch / versão.");
                 return;
             }
             if (usarLink && string.IsNullOrWhiteSpace(nomePasta))
@@ -238,6 +257,8 @@ namespace JrTools.Pages.Apps
                 MostrarErro("Informe o nome da pasta para o link.");
                 return;
             }
+
+            await SalvarBranchNoHistoricoAsync(branch);
 
             if (!string.IsNullOrWhiteSpace(nomePasta))
                 await SalvarPastaNoHistoricoAsync(nomePasta);
@@ -338,6 +359,16 @@ namespace JrTools.Pages.Apps
             AppendLog(proc.ExitCode == 0
                 ? $"[INFO] Link criado com sucesso: {destino}"
                 : $"[ERRO] Falha ao criar link (código {proc.ExitCode}).");
+        }
+
+        private async Task SalvarBranchNoHistoricoAsync(string branch)
+        {
+            if (_cfg == null) return;
+            _cfg.UltimaBranchAmbiente = branch;
+            // Adiciona na ListaBranches se for nova (exceto "Outro")
+            if (branch != "Outro" && !_cfg.ListaBranches.Contains(branch, StringComparer.OrdinalIgnoreCase))
+                _cfg.ListaBranches.Insert(0, branch);
+            await ConfigHelper.SalvarConfiguracoesAsync(_cfg);
         }
 
         private async Task SalvarPastaNoHistoricoAsync(string nomePasta)

@@ -13,33 +13,37 @@ namespace JrTools.Pages
     {
         private const int MAX_TERMINAL_LENGTH = 15000;
         private readonly ProcessGuardianService _processGuardian;
-        
+
         public List<string> ListaDeProjetos { get; set; }
 
         public RhProdPage()
         {
             InitializeComponent();
             _processGuardian = new ProcessGuardianService();
-            CarregarProjetos();
+            Loaded += async (_, _) => await CarregarProjetosAsync();
         }
 
-        private void CarregarProjetos()
+        protected override async void OnNavigatedTo(Microsoft.UI.Xaml.Navigation.NavigationEventArgs e)
         {
-            ListaDeProjetos = new List<string>
-            {
-                "prd/09.00",
-                "prd/08.06",
-                "prd/08.05",
-                "prd/08.04",
-                "dev/09.00.00",
-                "dev/08.06.00",
-                "dev/08.05.00",
-                "dev/08.04.00",
-                "Outro"
-            };
+            base.OnNavigatedTo(e);
+            await CarregarProjetosAsync();
+        }
 
+        private async Task CarregarProjetosAsync()
+        {
+            var cfg = await ConfigHelper.LerConfiguracoesAsync();
+            ListaDeProjetos = cfg?.ListaBranches?.Count > 0
+                ? new List<string>(cfg.ListaBranches)
+                : new List<string> { "prd/09.00", "dev/09.00.00", "Outro" };
+
+            if (!ListaDeProjetos.Contains("Outro"))
+                ListaDeProjetos.Add("Outro");
+
+            var selecionado = ProjetoComboBox.SelectedItem?.ToString();
             ProjetoComboBox.ItemsSource = ListaDeProjetos;
-            ProjetoComboBox.SelectedIndex = 0;
+
+            var idx = selecionado != null ? ListaDeProjetos.IndexOf(selecionado) : 0;
+            ProjetoComboBox.SelectedIndex = idx >= 0 ? idx : 0;
         }
 
         private async void ProcessarButton_Click(object sender, RoutedEventArgs e)
@@ -47,15 +51,14 @@ namespace JrTools.Pages
             try
             {
                 SetUiState(processing: true);
-                
+
                 TerminalOutput.Text = "[INFO] Iniciando processamento...\n";
                 ValidationInfoBar.IsOpen = false;
 
                 if (!ValidarEntradas(out var dto)) return;
 
                 string[] processosParaMonitorar = { "BPrv230", "CS1", "Builder" };
-                
-                // Progresso que atualiza a UI
+
                 var uiProgress = new Progress<string>(AppendTerminalLog);
 
                 await _processGuardian.ExecutarComProcessosFechadosAsync(
@@ -79,13 +82,9 @@ namespace JrTools.Pages
         {
             var flow = new RhProdFlow();
             var (success, logs, errorMessage) = await flow.ExecutarAsync(dto, progresso);
-            
-            // Opcional: AppendTerminalLog(logs); // Se o fluxo já reporta progresso linha-a-linha, isso duplicaria.
-            
+
             if (!success)
-            {
                 DispatcherQueue.TryEnqueue(() => ShowError(errorMessage));
-            }
             else
             {
                 progresso.Report("[INFO] Processamento concluído com sucesso!");
@@ -106,20 +105,17 @@ namespace JrTools.Pages
 
             dto = new PageProdutoDataObject
             {
-                Breach = selectedProjeto,
-                AtualizarBinarios = BaixarBinarioToggle.IsOn,
-                BuildarProjeto = CompilarEspecificosToggle.IsOn,
-                AtualizarBreach = GitPull.IsOn,
+                Breach                     = selectedProjeto,
+                AtualizarBinarios          = BaixarBinarioToggle.IsOn,
+                BuildarProjeto             = CompilarEspecificosToggle.IsOn,
+                AtualizarBreach            = GitPull.IsOn,
                 BreachEspecificaDeTrabalho = selectedProjeto == "Outro" ? breachEspecifica.Text : string.Empty,
-                TagEspecificaDeTrabalho = selectedProjeto == "Outro" 
-                    ? (tagEspecifica.Text == "Nenhum" ? string.Empty : tagEspecifica.Text) 
+                TagEspecificaDeTrabalho    = selectedProjeto == "Outro"
+                    ? (tagEspecifica.Text == "Nenhum" ? string.Empty : tagEspecifica.Text)
                     : string.Empty,
-                
-                // Flags de processos agora são controladas externamente pelo Guardian, 
-                // mas mantemos compatibilidade se o Flow ainda checa.
-                RunnerFechado = false, 
+                RunnerFechado  = false,
                 BuilderFechado = false,
-                PrividerFechado = false // Guardian já cuida disso
+                PrividerFechado = false
             };
 
             return true;
@@ -131,7 +127,7 @@ namespace JrTools.Pages
             {
                 var psi = new System.Diagnostics.ProcessStartInfo
                 {
-                    FileName = "http://localhost/prod",
+                    FileName        = "http://localhost/prod",
                     UseShellExecute = true
                 };
                 System.Diagnostics.Process.Start(psi);
@@ -145,52 +141,43 @@ namespace JrTools.Pages
         private void SetUiState(bool processing)
         {
             ProcessarButton2.IsEnabled = !processing;
-            LoadingRing.IsActive = processing;
+            LoadingRing.IsActive       = processing;
         }
 
         private void ShowError(string message)
         {
             ValidationInfoBar.Message = message;
-            ValidationInfoBar.IsOpen = true;
+            ValidationInfoBar.IsOpen  = true;
         }
 
         private void AppendTerminalLog(string mensagem)
         {
-            // Garante execução na Thread de UI
             if (DispatcherQueue.HasThreadAccess)
-            {
                 AtualizarTextoTerminal(mensagem);
-            }
             else
-            {
                 DispatcherQueue.TryEnqueue(() => AtualizarTextoTerminal(mensagem));
-            }
         }
 
         private void AtualizarTextoTerminal(string mensagem)
         {
             TerminalOutput.Text += mensagem + "\n";
-
             if (TerminalOutput.Text.Length > MAX_TERMINAL_LENGTH)
-            {
-                TerminalOutput.Text = TerminalOutput.Text.Substring(TerminalOutput.Text.Length - MAX_TERMINAL_LENGTH);
-            }
-
+                TerminalOutput.Text = TerminalOutput.Text[^MAX_TERMINAL_LENGTH..];
             TerminalScrollViewer.ChangeView(null, TerminalScrollViewer.ScrollableHeight, null);
         }
 
         private void ProjetoComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            var isOutro = ProjetoComboBox.SelectedItem?.ToString() == "Outro";
-            
+            var isOutro    = ProjetoComboBox.SelectedItem?.ToString() == "Outro";
             var visibility = isOutro ? Visibility.Visible : Visibility.Collapsed;
+
             breachEspecifica.Visibility = visibility;
-            tagEspecifica.Visibility = visibility;
+            tagEspecifica.Visibility    = visibility;
 
             if (!isOutro)
             {
                 breachEspecifica.Text = string.Empty;
-                tagEspecifica.Text = string.Empty;
+                tagEspecifica.Text    = string.Empty;
             }
             else
             {

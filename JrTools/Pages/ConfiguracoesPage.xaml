@@ -106,6 +106,55 @@
                     </StackPanel>
                 </Border>
             </Grid>
+            <!-- Card Branches -->
+            <Border Style="{StaticResource ResponsiveCardStyle}" Margin="8,0,8,8">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Branches disponíveis" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                    <TextBlock Text="Lista usada no Subir Ambiente Manual e Projetos RH. Você pode adicionar, editar ou excluir qualquer branch."
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontSize="12"/>
+
+                    <ListView x:Name="ListViewBranches" MaxHeight="260" SelectionMode="None">
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem">
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                <Setter Property="Padding" Value="0"/>
+                            </Style>
+                        </ListView.ItemContainerStyle>
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="x:String">
+                                <Grid Padding="4,6" ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{x:Bind}" VerticalAlignment="Center" Grid.Column="0"/>
+                                    <Button Grid.Column="1"
+                                            Tag="{x:Bind}"
+                                            Click="BtnExcluirBranch_Click"
+                                            Padding="6,4"
+                                            Background="Transparent">
+                                        <FontIcon Glyph="&#xE74D;" FontSize="12"
+                                                  Foreground="{ThemeResource SystemFillColorCriticalBrush}"/>
+                                    </Button>
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+
+                    <Grid ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="TxtNovaBranch"
+                                 Grid.Column="0"
+                                 PlaceholderText="Ex: dev/09.05.00"
+                                 KeyDown="TxtNovaBranch_KeyDown"/>
+                        <Button Grid.Column="1" Content="Adicionar" Click="BtnAdicionarBranch_Click"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
         </StackPanel>
     </ScrollViewer>
 

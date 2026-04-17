@@ -109,10 +109,12 @@
                     <StackPanel Spacing="12">
                         <TextBlock Text="Atualizar Binários" FontWeight="SemiBold"/>
 
-                        <ComboBox x:Name="CmbBranch"
-                                  Header="Branch / Versão"
-                                  HorizontalAlignment="Stretch"
-                                  PlaceholderText="Selecione a branch"/>
+                        <AutoSuggestBox x:Name="AutoBranch"
+                                        Header="Branch / Versão"
+                                        PlaceholderText="Ex: prd/09.00 ou dev/09.05.00"
+                                        QueryIcon="Find"
+                                        TextChanged="AutoBranch_TextChanged"
+                                        SuggestionChosen="AutoBranch_SuggestionChosen"/>
 
                         <ToggleSwitch x:Name="ToggleReutilizarBinarios"
                                       Header="Reutilizar binários já baixados"

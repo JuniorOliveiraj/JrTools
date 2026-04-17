@@ -62,11 +62,13 @@ namespace JrTools.Pages
             try
             {
                 _config = await ConfigHelper.LerConfiguracoesAsync() ?? new ConfiguracoesdataObject();
-                DiretorioBinarios.Text = _config.DiretorioBinarios ?? string.Empty;
-                DiretorioProducao.Text = _config.DiretorioProducao ?? string.Empty;
+                DiretorioBinarios.Text    = _config.DiretorioBinarios    ?? string.Empty;
+                DiretorioProducao.Text    = _config.DiretorioProducao    ?? string.Empty;
                 DiretorioEspesificos.Text = _config.DiretorioEspecificos ?? string.Empty;
                 CaminhoCSReportImport.Text = _config.CaminhoCSReportImport ?? string.Empty;
-                WesExePath.Text = _config.WesExePath ?? string.Empty;
+                WesExePath.Text           = _config.WesExePath           ?? string.Empty;
+
+                AtualizarListViewBranches();
             }
             catch (Exception ex)
             {
@@ -198,7 +200,51 @@ namespace JrTools.Pages
 
         #endregion
 
-        #region Toggle Visibilidade
+        #region Branches
+
+        private void AtualizarListViewBranches()
+        {
+            ListViewBranches.ItemsSource = null;
+            ListViewBranches.ItemsSource = _config.ListaBranches
+                .Where(b => b != "Outro")
+                .ToList();
+        }
+
+        private async void BtnAdicionarBranch_Click(object sender, RoutedEventArgs e)
+        {
+            var nova = TxtNovaBranch.Text.Trim();
+            if (string.IsNullOrWhiteSpace(nova)) return;
+
+            if (!_config.ListaBranches.Contains(nova, StringComparer.OrdinalIgnoreCase))
+            {
+                var idxOutro = _config.ListaBranches.IndexOf("Outro");
+                if (idxOutro >= 0)
+                    _config.ListaBranches.Insert(idxOutro, nova);
+                else
+                    _config.ListaBranches.Add(nova);
+
+                await ConfigHelper.SalvarConfiguracoesAsync(_config);
+                AtualizarListViewBranches();
+            }
+
+            TxtNovaBranch.Text = string.Empty;
+        }
+
+        private async void BtnExcluirBranch_Click(object sender, RoutedEventArgs e)
+        {
+            if ((sender as Button)?.Tag is not string branch) return;
+            _config.ListaBranches.Remove(branch);
+            await ConfigHelper.SalvarConfiguracoesAsync(_config);
+            AtualizarListViewBranches();
+        }
+
+        private void TxtNovaBranch_KeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+        {
+            if (e.Key == Windows.System.VirtualKey.Enter)
+                BtnAdicionarBranch_Click(sender, e);
+        }
+
+        #endregion
 
         private void ToggleSenhaVisibility_Click(object sender, RoutedEventArgs e)
         {
@@ -254,6 +300,5 @@ namespace JrTools.Pages
             }
         }
 
-        #endregion
     }
 }

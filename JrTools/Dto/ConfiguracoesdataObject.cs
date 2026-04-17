@@ -17,5 +17,14 @@ namespace JrTools.Dto
         // Subir Ambiente Manual
         public string? UltimaPastaAmbiente { get; set; }
         public List<string> HistoricoPastasAmbiente { get; set; } = new();
+        public string? UltimaBranchAmbiente { get; set; }
+
+        // Branches editáveis (compartilhado entre RhProd e SubirAmbienteManual)
+        public List<string> ListaBranches { get; set; } = new()
+        {
+            "prd/09.00", "prd/08.06", "prd/08.05", "prd/08.04",
+            "dev/09.00.00", "dev/08.06.00", "dev/08.05.00", "dev/08.04.00",
+            "Outro"
+        };
     }
 }
