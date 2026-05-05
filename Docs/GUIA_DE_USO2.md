@@ -41,13 +41,14 @@ Use quando quiser ver um resumo rápido e utilitários do dia.
 
 ### Apps RH (Central de RH)
 
-![1774478137559](images/GUIA_DE_USO2/1774478137559.png)
+![1777991866561](images/GUIA_DE_USO2/1777991866561.png)
 
 Use como “hub” para abrir as automações de RH. As opções aparecem em sequência; abaixo está o **mesmo fluxo, na mesma ordem**.
 
 #### 1) Projetos RH (Subir ambiente Prod)
 
-![1774478245917](images/GUIA_DE_USO2/1774478245917.png)
+![1777991988051](images/GUIA_DE_USO2/1777991988051.png)
+
 
 Objetivo: rodar um fluxo automatizado para preparar/subir o ambiente “Prod” e abrir o resultado no navegador.
 
@@ -105,9 +106,25 @@ Objetivo: preparar/subir um ambiente específico com várias opções de execuç
   - Preencha os parâmetros (servidor/usuário/senha/site/aplicação/pool/provedores).
   - Clique em **PROCESSAR** e acompanhe o **terminal**.
 - **Importante**
-  - Esta tela está presente no app, e prepara o ambiente para compilação e execução de projetos específicos.
+  - **Esta tela está presente no app, e prepara o ambiente para compilação e execução de projetos específicos.**
 
-#### 5) Importador de Relatórios
+#### 5) Automações - WES
+
+![1777992049953](images/GUIA_DE_USO2/1777992049953.png)
+
+Objetivo: executar comandos do `wes.exe` (WES SDK) para configurar o ambiente, limpar cache, instalar artefatos e gerar páginas.
+
+- **Como usar**
+  - Em **Apps RH**, clique em **Automações - WES**.
+  - No card **Configurações**, selecione o projeto (ex.: `prod`) e verifique se as credenciais (Servidor, Sistema, Usuário, Senha) estão corretas.
+  - No card **Comandos WES**, você pode:
+    - **Executar config set**: Define as configurações no `wes.exe` e injeta `useCOMFree=false` no `web.config`.
+    - **Executar cache clear**: Limpa o cache do sistema.
+    - **Executar artifacts install**: Instala os artefatos (metadados) do sistema.
+    - **Executar pages generate**: Gera as páginas dinâmicas do WES.
+  - Acompanhe o **Log de execução** ao final da página.
+
+#### 6) Importador de Relatórios
 
 ![1774479779847](images/GUIA_DE_USO2/1774479779847.png)
 
@@ -128,7 +145,39 @@ Objetivo: importar relatórios **.rpt** para o servidor Benner usando o `CSRepor
   - Acompanhe:
     - **Progresso** (barra)
     - **Log de execução**
--
+
+#### 7) Subir Ambiente Manual
+
+![1777992081921](images/GUIA_DE_USO2/1777992081921.png)
+
+Objetivo: realizar o processo de subida de ambiente passo a passo, incluindo atualização de binários, criação de links simbólicos e configuração do IIS.
+
+- **Como usar**
+  - Em **Apps RH**, clique em **Subir Ambiente Manual**.
+  - **Card Atualizar Binários**:
+    - Informe a **Branch** (ex.: `prd/09.00`).
+    - Informe o **Nome da Pasta** para o link (ex.: `RH_LOCAL_09`).
+    - Marque **Usar Link** para criar um link simbólico (junção) da pasta binária.
+    - Clique em **Atualizar Binários**.
+  - **Card Configurações WES**:
+    - Funciona de forma similar à página de Automações - WES, permitindo configurar, limpar cache, instalar artefatos e gerar páginas.
+  - **Card Criar Aplicação IIS**:
+    - Preencha o **Site**, **Nome da Aplicação** e selecione a **Pool**.
+    - Clique em **Criar App no IIS**.
+
+#### 8) Criar Aplicação IIS
+
+![1777992111957](images/GUIA_DE_USO2/1777992111957.png)
+
+Objetivo: criar rapidamente uma nova aplicação no IIS apontando para uma pasta WES.
+
+- **Como usar**
+  - Em **Apps RH**, clique em **Criar Aplicação IIS**.
+  - Selecione o **Projeto** (isso preenche o caminho físico automaticamente).
+  - Informe o **Site** (ex.: `Default Web Site`).
+  - Informe o **Nome da Aplicação** (ex.: `prod`).
+  - Selecione a **Pool** de aplicativos.
+  - Clique em **Criar App no IIS**.
 
 ### Buildar Projetos
 
