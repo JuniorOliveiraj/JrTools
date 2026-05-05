@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace JrTools.Dto
 {
-    public class PageEspesificosDataObject
+    public class PageEspecificosDataObject
     {
         /// <summary>
         /// Projeto específico selecionado na ComboBox

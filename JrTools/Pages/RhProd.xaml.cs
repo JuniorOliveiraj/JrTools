@@ -1,4 +1,4 @@
-﻿using JrTools.Dto;
+using JrTools.Dto;
 using JrTools.Negocios;
 using JrTools.Services;
 using Microsoft.UI.Xaml;
@@ -97,7 +97,7 @@ namespace JrTools.Pages
             dto = null;
             var selectedProjeto = ProjetoComboBox.SelectedItem?.ToString();
 
-            if (selectedProjeto == "Outro" && string.IsNullOrWhiteSpace(breachEspecifica.Text))
+            if (selectedProjeto == "Outro" && string.IsNullOrWhiteSpace(branchEspecifica.Text))
             {
                 ShowError("Informe um valor para o campo 'Branch' quando selecionar 'Outro'.");
                 return false;
@@ -105,17 +105,17 @@ namespace JrTools.Pages
 
             dto = new PageProdutoDataObject
             {
-                Breach                     = selectedProjeto,
+                Branch                     = selectedProjeto,
                 AtualizarBinarios          = BaixarBinarioToggle.IsOn,
                 BuildarProjeto             = CompilarEspecificosToggle.IsOn,
-                AtualizarBreach            = GitPull.IsOn,
-                BreachEspecificaDeTrabalho = selectedProjeto == "Outro" ? breachEspecifica.Text : string.Empty,
+                AtualizarBranch            = GitPull.IsOn,
+                BranchEspecificaDeTrabalho = selectedProjeto == "Outro" ? branchEspecifica.Text : string.Empty,
                 TagEspecificaDeTrabalho    = selectedProjeto == "Outro"
                     ? (tagEspecifica.Text == "Nenhum" ? string.Empty : tagEspecifica.Text)
                     : string.Empty,
                 RunnerFechado  = false,
                 BuilderFechado = false,
-                PrividerFechado = false
+                ProviderFechado = false
             };
 
             return true;
@@ -171,12 +171,12 @@ namespace JrTools.Pages
             var isOutro    = ProjetoComboBox.SelectedItem?.ToString() == "Outro";
             var visibility = isOutro ? Visibility.Visible : Visibility.Collapsed;
 
-            breachEspecifica.Visibility = visibility;
+            branchEspecifica.Visibility = visibility;
             tagEspecifica.Visibility    = visibility;
 
             if (!isOutro)
             {
-                breachEspecifica.Text = string.Empty;
+                branchEspecifica.Text = string.Empty;
                 tagEspecifica.Text    = string.Empty;
             }
             else

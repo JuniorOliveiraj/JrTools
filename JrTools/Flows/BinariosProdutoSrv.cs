@@ -19,9 +19,9 @@ namespace JrTools.Flows
 
         public async Task ExecutarBuscarBinarios(IProgress<string> progresso, string destino )
         {
-            var branch = string.IsNullOrWhiteSpace(_param.BreachEspecificaDeTrabalho)
-                ? _param.Breach
-                : _param.BreachEspecificaDeTrabalho;
+            var branch = string.IsNullOrWhiteSpace(_param.BranchEspecificaDeTrabalho)
+                ? _param.Branch
+                : _param.BranchEspecificaDeTrabalho;
 
             var binarios = new BinarioService();
             var branchInfo = BuscarBranchDeTrabalho(branch);

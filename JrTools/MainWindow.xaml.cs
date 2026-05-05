@@ -18,7 +18,7 @@ namespace JrTools
     public sealed partial class MainWindow : Window
     {
         private Pages.HomePage _homePage = new Pages.HomePage();
-        private Pages.EspesificosPage _espesificosPage = new Pages.EspesificosPage();
+        private Pages.EspecificosPage _especificosPage = new Pages.EspecificosPage();
         private Pages.AppsRh _appsRhPage = new Pages.AppsRh();
         private Pages.BuildarProjeto _buildarProjeto = new Pages.BuildarProjeto();
         private Pages.Copy _CopyPage = new Pages.Copy();
@@ -31,7 +31,7 @@ namespace JrTools
         {
             InitializeComponent();
             ContentFrame.NavigateToType(_homePage.GetType(), null, new FrameNavigationOptions() { IsNavigationStackEnabled = false });
-            ContentFrame.Content = _homePage; // força usar a instância criada
+            ContentFrame.Content = _homePage; // forï¿½a usar a instï¿½ncia criada
 
 
             // Obtenha o HWND da janela
@@ -43,7 +43,7 @@ namespace JrTools
             // Agora pegue o AppWindow de forma correta
             AppWindow appWindow = AppWindow.GetFromWindowId(windowId);
 
-            // Personalize a barra de título
+            // Personalize a barra de tï¿½tulo
             var titleBar = appWindow.TitleBar;
             titleBar.ExtendsContentIntoTitleBar = true;
             titleBar.ButtonBackgroundColor = Colors.Transparent;

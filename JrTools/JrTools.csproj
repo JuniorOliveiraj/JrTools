@@ -99,7 +99,7 @@
 		</Page>
 	</ItemGroup>
 	<ItemGroup>
-		<Page Update="Pages\EspesificosPage.xaml">
+		<Page Update="Pages\EspecificosPage.xaml">
 			<Generator>MSBuild:Compile</Generator>
 		</Page>
 	</ItemGroup>

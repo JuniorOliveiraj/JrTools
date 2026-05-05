@@ -17,13 +17,13 @@ using Windows.Foundation.Collections;
 
 namespace JrTools.Pages
 {
-    public sealed partial class EspesificosPage : Page
+    public sealed partial class EspecificosPage : Page
     {
         private ConfiguracoesdataObject _config;
         public List<PastaInformacoesDto> ListaDeProjetos { get; set; }
         private const int MAX_TERMINAL_LENGTH = 15000;
 
-        public EspesificosPage()
+        public EspecificosPage()
         {
             this.InitializeComponent();
             this.NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Required;
@@ -84,7 +84,7 @@ namespace JrTools.Pages
                 return;
             }
 
-            var config = new PageEspesificosDataObject
+            var config = new PageEspecificosDataObject
             {
                 Projeto = ProjetoComboBox.SelectedItem as string,
                 BaixarBinario = BaixarBinarioToggle.IsOn,

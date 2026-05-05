@@ -42,9 +42,9 @@
                                  Text="D:\Benner\bin" TextChanged="DiretorioBinarios_TextChanged"/>
                         <TextBox x:Name="DiretorioProducao" Header="Diretório de produção"
                                  Text="D:\Benner\fontes\rh\prod" TextChanged="DiretorioProducao_TextChanged"/>
-                        <TextBox x:Name="DiretorioEspesificos" Header="Diretórios específicos"
-                                 Text="D:\Benner\fontes\rh" TextChanged="DiretorioEspesificos_TextChanged"/>
-                        <ComboBox x:Name="MsBuildVersionComboBox" Header="MsBuild Padrão" DisplayMemberPath="DisplayName" SelectionChanged="MsBuildVersionComboBox_SelectionChanged"/>
+                        <TextBox x:Name="DiretorioEspecificos" Header="Diretórios específicos"
+                                 Text="D:\Benner\fontes\rh" TextChanged="DiretorioEspecificos_TextChanged"/>
+                        <ComboBox x:Name="MsBuildVersionComboBox" Header="MSBuild Padrão" DisplayMemberPath="DisplayName" SelectionChanged="MsBuildVersionComboBox_SelectionChanged"/>
                         <TextBox x:Name="CaminhoCSReportImport"
                                  Header="Caminho CSReportImport.exe"
                                  PlaceholderText="D:\Benner\Servicos\ReportKeeper.V1\CSReportImport.exe"
@@ -76,11 +76,11 @@
                             </Button>
                         </Grid>
 
-                        <TextBox x:Name="UrlRhWeb" Header="Url Rhweb " TextChanged="DadosPessoais_TextChanged" Text="https://rh.portalbenner.com.br/RHWEB"/>
+                        <TextBox x:Name="UrlRhWeb" Header="URL RHWeb" TextChanged="DadosPessoais_TextChanged" Text="https://rh.portalbenner.com.br/RHWEB"/>
                         <!-- Token API Gemini -->
                         <Grid>
-                            <PasswordBox x:Name="ApiGeminiPasswordBox" Header="Token Api Gemini"  PasswordChanged="ApiTokenGemini_PasswordChanged"/>
-                            <TextBox x:Name="ApiGeminiVisible" Visibility="Collapsed" Header="Token Api Gemini" TextChanged="ApiTokenGemini_PasswordChanged"/>
+                            <PasswordBox x:Name="ApiGeminiPasswordBox" Header="Token API Gemini"  PasswordChanged="ApiTokenGemini_PasswordChanged"/>
+                            <TextBox x:Name="ApiGeminiVisible" Visibility="Collapsed" Header="Token API Gemini" TextChanged="ApiTokenGemini_PasswordChanged"/>
                             <Button 
                                     HorizontalAlignment="Right"
                                     VerticalAlignment="Center"
@@ -92,8 +92,8 @@
 
                         <!-- Token API Toggl -->
                         <Grid>
-                            <PasswordBox x:Name="ApiTogglPasswordBox" Header="Token Api Toggl" PasswordChanged="ApiToggl_PasswordChanged"/>
-                            <TextBox x:Name="ApiTogglVisible" Visibility="Collapsed" Header="Token Api Toggl"  TextChanged="ApiToggl_PasswordChanged"/>
+                            <PasswordBox x:Name="ApiTogglPasswordBox" Header="Token API Toggl" PasswordChanged="ApiToggl_PasswordChanged"/>
+                            <TextBox x:Name="ApiTogglVisible" Visibility="Collapsed" Header="Token API Toggl"  TextChanged="ApiToggl_PasswordChanged"/>
                             <Button 
                                     HorizontalAlignment="Right"
                                     VerticalAlignment="Center"

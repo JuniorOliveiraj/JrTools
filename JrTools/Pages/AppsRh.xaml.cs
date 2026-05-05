@@ -19,11 +19,11 @@ namespace JrTools.Pages
             // Lista de op��es de sistema
             var items = new List<SystemSettingItem>
             {
-                new("Projetos Rh", "Altere a vers�o do sistema de forma r�pida.", "\uE912", typeof(RhProdPage)),
-                new("Cria", "Ta Afim mesmo de levar uns esculachos?", "\uE99A", typeof(Cria)),
-                new("Cria Fix", "Corrigir a formata��o UTF8-BOM dos arquivs", "\uE99A", typeof(CriaFix)),
-                new("ambiente espec�fico", "Subir ambiente espec�fico completo.", "\uE716", typeof(EspesificosPage)),
-                new("Altomações - WES", "Instalar artefatos e gerar p�ginas via wes.exe.", "\uE896", typeof(InstalarArtefatosPage)),
+                new("Projetos RH", "Altere a versão do sistema de forma rápida.", "\uE912", typeof(RhProdPage)),
+                new("Cria", "Ta afim mesmo de levar uns esculachos?", "\uE99A", typeof(Cria)),
+                new("Cria Fix", "Corrigir a formatação UTF8-BOM dos arquivos", "\uE99A", typeof(CriaFix)),
+                new("Ambiente Específico", "Subir ambiente específico completo.", "\uE716", typeof(EspecificosPage)),
+                new("Automações - WES", "Instalar artefatos e gerar páginas via wes.exe.", "\uE896", typeof(InstalarArtefatosPage)),
                 new("Importador de Relatórios", "Importar relatórios .rpt para o servidor Benner.", "\uE8A5", typeof(ImportadorRelatoriosPage)),
                 new("Subir Ambiente Manual", "Sobe o ambiente manualmente, passo a passo.", "\uE8B7", typeof(SubirAmbienteManualPage)),
                 new("Criar Aplicação IIS", "Cria uma nova aplicação no IIS com pool existente.", "\uE774", typeof(CriarAplicacaoIisPage)),
@@ -66,7 +66,7 @@ namespace JrTools.Pages
                 ContentDialog dialog = new()
                 {
                     Title = item.Title,
-                    Content = "P�gina ainda n�o implementada.",
+                    Content = "Página ainda não implementada.",
                     CloseButtonText = "OK",
                     XamlRoot = this.XamlRoot
                 };

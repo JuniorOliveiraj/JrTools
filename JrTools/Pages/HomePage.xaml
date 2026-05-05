@@ -77,7 +77,7 @@
                     <!-- 3. Economia Mensal -->
                     <Border Grid.Column="2" Style="{StaticResource DashboardTileStyle}">
                         <StackPanel Spacing="8">
-                            <TextBlock Text="Horas lançadas hoje (toggl)" Style="{ThemeResource CaptionTextBlockStyle}" Opacity="0.8"/>
+                            <TextBlock Text="Horas lançadas hoje (Toggl)" Style="{ThemeResource CaptionTextBlockStyle}" Opacity="0.8"/>
                             <TextBlock x:Name="TotalHorasLancadas" Text="0h" Style="{ThemeResource HeaderTextBlockStyle}"/>
                         </StackPanel>
                     </Border>

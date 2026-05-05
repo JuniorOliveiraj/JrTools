@@ -64,7 +64,7 @@ namespace JrTools.Pages
                 _config = await ConfigHelper.LerConfiguracoesAsync() ?? new ConfiguracoesdataObject();
                 DiretorioBinarios.Text    = _config.DiretorioBinarios    ?? string.Empty;
                 DiretorioProducao.Text    = _config.DiretorioProducao    ?? string.Empty;
-                DiretorioEspesificos.Text = _config.DiretorioEspecificos ?? string.Empty;
+                DiretorioEspecificos.Text = _config.DiretorioEspecificos ?? string.Empty;
                 CaminhoCSReportImport.Text = _config.CaminhoCSReportImport ?? string.Empty;
                 WesExePath.Text           = _config.WesExePath           ?? string.Empty;
 
@@ -97,10 +97,10 @@ namespace JrTools.Pages
             await ConfigHelper.SalvarConfiguracoesAsync(_config);
         }
 
-        private async void DiretorioEspesificos_TextChanged(object sender, TextChangedEventArgs e)
+        private async void DiretorioEspecificos_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (_config == null) return;
-            _config.DiretorioEspecificos = DiretorioEspesificos.Text;
+            _config.DiretorioEspecificos = DiretorioEspecificos.Text;
             await ConfigHelper.SalvarConfiguracoesAsync(_config);
         }
 

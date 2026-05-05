@@ -42,7 +42,7 @@ namespace JrTools.Negocios
                 await GerenciarProcessosAnterioresAsync(dto);
 
                 CancellationTokenSource? ctsGuardian = null;
-                if (dto.PrividerFechado)
+                if (dto.ProviderFechado)
                 {
                     ctsGuardian = new CancellationTokenSource();
                     _ = IniciarGuardianBPrv230Async(ctsGuardian.Token, CreateProgressForGuardian());
@@ -68,7 +68,7 @@ namespace JrTools.Negocios
                 }
 
                 // Mata provider e w3wp após o build
-                if (dto.PrividerFechado)
+                if (dto.ProviderFechado)
                 {
                     Log("[INFO] Encerrando BPrv230 e w3wp pós-build...");
                     await ProcessKiller.KillBPrv230Async(_progresso);
@@ -76,7 +76,7 @@ namespace JrTools.Negocios
                 }
 
                 // Inicia rastreamento de recovery dos providers pós-build
-                if (dto.PrividerFechado)
+                if (dto.ProviderFechado)
                 {
                     JrTools.ViewModels.FecharProcessosViewModel.Instance
                         .IniciarRastreamentoPosDeployAsync(new[] { "BPrv230" });
@@ -96,9 +96,9 @@ namespace JrTools.Negocios
 
         private string ObterBranchAlvo(PageProdutoDataObject dto)
         {
-            return string.IsNullOrWhiteSpace(dto.BreachEspecificaDeTrabalho)
-                ? dto.Breach
-                : dto.BreachEspecificaDeTrabalho;
+            return string.IsNullOrWhiteSpace(dto.BranchEspecificaDeTrabalho)
+                ? dto.Branch
+                : dto.BranchEspecificaDeTrabalho;
         }
 
         private async Task GerenciarGitAsync(PageProdutoDataObject dto, string branch, string diretorioProducao)
@@ -128,7 +128,7 @@ namespace JrTools.Negocios
                 await gitHandler.ExecutarCheckOutAsync(_progresso, diretorioProducao);
             }
 
-            if (dto.AtualizarBreach)
+            if (dto.AtualizarBranch)
             {
                 Log($"[INFO] Atualizando branch {branch}...");
                 await gitHandler.ExecutarPullAsync(_progresso, diretorioProducao);

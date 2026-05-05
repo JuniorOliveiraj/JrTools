@@ -13,11 +13,11 @@ Este guia explica **como usar o aplicativo** no dia a dia, em linguagem de usuá
     - **Diretório binários Delphi**
     - **Diretório de produção**
     - **Diretórios específicos**
-    - **MsBuild Padrão**
+    - **MSBuild Padrão**
     - **Caminho CSReportImport.exe**
   - Em **dados pessoais**, configure:
-    - **Token Api Gemini** (necessário para a página **G-DI / Documentador**)
-    - **Token Api Toggl** (necessário para **Lançar horas** e para o indicador do **Home**)
+    - **Token API Gemini** (necessário para a página **G-DI / Documentador**)
+    - **Token API Toggl** (necessário para **Lançar horas** e para o indicador do **Home**)
     - Login/senha/URL do RHWEB (se aplicável no seu ambiente)
 - **2) Volte ao “Home”**
   - No menu lateral, clique em **Home** para ver o Dashboard e utilitários.
@@ -52,7 +52,7 @@ Use como “hub” para abrir as automações de RH. As opções aparecem em seq
 Objetivo: rodar um fluxo automatizado para preparar/subir o ambiente “Prod” e abrir o resultado no navegador.
 
 - **Como usar**
-  - Em **Apps RH**, clique em **Projetos Rh**.
+  - Em **Apps RH**, clique em **Projetos RH**.
   - Selecione uma opção na lista (ex.: `producao_09.00`, `dev-08.06.00` etc.).
   - Se escolher **Outro**:
     - Preencha o campo **Branch**.
@@ -60,7 +60,7 @@ Objetivo: rodar um fluxo automatizado para preparar/subir o ambiente “Prod” 
   - Ajuste as opções:
     - **Baixar binário atualizado**
     - **Compilar Produto**
-    - **Atualizar breach** (pull/atualização)
+    - **Atualizar branch** (pull/atualização)
   - Clique em **PROCESSAR**.
   - Acompanhe o **Terminal de Processamento** na própria página.
 - **O que esperar**
@@ -81,31 +81,31 @@ Objetivo: executar o aplicativo externo **Cria.exe** e mostrar a saída em um pa
 
 #### 3) Cria Fix
 
-Objetivo (pela UI): corrigir arquivos (descrição cita UTF8-BOM).Comportamento atual: executa o mesmo fluxo do **Cria** (roda `Cria.exe` e registra logs).
+Objetivo (pela UI): corrigir arquivos (descrição cita UTF8-BOM). Comportamento atual: executa o mesmo fluxo do **Cria** (roda `Cria.exe` e registra logs).
 
 - **Como usar**
   - Em **Apps RH**, clique em **Cria Fix**.
   - A execução inicia automaticamente ao abrir a página.
 
-#### 4) Ambiente específico
+#### 4) Ambiente Específico
 
 ![1774478312236](images/GUIA_DE_USO2/1774478312236.png)
 
 Objetivo: preparar/subir um ambiente específico com várias opções de execução e parâmetros.
 
 - **Como usar (pela tela)**
-  - Em **Apps RH**, clique em **ambiente específico**.
+  - Em **Apps RH**, clique em **Ambiente Específico**.
   - Selecione o **Projeto**.
   - Marque/desmarque as opções conforme necessário:
-    - baixar binário
-    - compilar específicos
-    - criar aplicação IIS
-    - restaurar WebApp
-    - criar atalho etc.
+    - Baixar binário
+    - Compilar específicos
+    - Criar aplicação IIS
+    - Restaurar WebApp
+    - Criar atalho etc.
   - Preencha os parâmetros (servidor/usuário/senha/site/aplicação/pool/provedores).
   - Clique em **PROCESSAR** e acompanhe o **terminal**.
 - **Importante**
-  - Esta tela está presente no app, mas o comportamento exato do “PROCESSAR” não está documentado no código do repositório (não foi encontrado o `.xaml.cs` correspondente).
+  - Esta tela está presente no app, e prepara o ambiente para compilação e execução de projetos específicos.
 
 #### 5) Importador de Relatórios
 
@@ -139,7 +139,7 @@ Objetivo: buildar soluções .NET ou projetos Delphi a partir de diretórios con
 ![1774478827884](images/GUIA_DE_USO2/1774478827884.png)
 
 - **Como usar**
-  - Selecione o **MsBuild**.
+  - Selecione o **MSBuild**.
   - Selecione o **Projeto** (pasta).
   - Selecione a **Solução (.sln)**.
   - Selecione a **Ação**: Build/Limpar/Rebuild.
@@ -171,8 +171,8 @@ Objetivo: manter pastas “espelhadas” com base em perfis (origem → destino)
   - Selecione um perfil na lista.
   - Clique em **Iniciar Espelhamento**.
   - Acompanhe:
-    - logs
-    - painel de progresso (quando ativo)
+    - Logs
+    - Painel de progresso (quando ativo)
 - **Parar**
   - Clique em **Parar Espelhamento**.
 
@@ -193,7 +193,7 @@ Objetivo: manter alguns processos fechados automaticamente e visualizar detalhes
 Objetivo: gerar documentação a partir de um **commit** e um **prompt**, usando IA (Gemini), e exportar.
 
 - **Pré-requisito**
-  - Configure o **Token Api Gemini** em **Configurações**.
+  - Configure o **Token API Gemini** em **Configurações**.
 - **Como usar**
   - Informe o **ID do commit (SHA)**.
   - Preencha o **Prompt adicional** (o que você quer que a IA gere).
@@ -201,7 +201,7 @@ Objetivo: gerar documentação a partir de um **commit** e um **prompt**, usando
   - Clique em **Gerar Documentação**.
   - Use:
     - **Copiar** para copiar com formatação
-    - **Exportar doc** para salvar em `.docx`
+    - **Exportar DOC** para salvar em `.docx`
 
 ### Lançar horas
 
@@ -210,7 +210,7 @@ Objetivo: gerar documentação a partir de um **commit** e um **prompt**, usando
 Objetivo: registrar, editar e excluir lançamentos de horas do dia no Toggl.
 
 - **Pré-requisito**
-  - Configure o **Token Api Toggl** em **Configurações**.
+  - Configure o **Token API Toggl** em **Configurações**.
 - **Como usar**
   - Selecione o **dia**.
   - Preencha:
@@ -225,5 +225,5 @@ Objetivo: registrar, editar e excluir lançamentos de horas do dia no Toggl.
 
 ## Observações finais
 
-- Algumas funcionalidades dependem fortemente de **caminhos locais** e de **tokens** (Gemini/Toggl). Se algo “não acontecer”, comece revisando **Configurações**.
+- Algumas funcionalidades dependem fortemente de **caminhos locais** e de **tokens** (Gemini/Toggl). Se algo não acontecer, comece revisando **Configurações**.
 - A tela **Chat** existe no projeto, mas não aparece no menu principal e não tem lógica de envio documentada no repositório.

@@ -38,7 +38,7 @@
                     </Grid.ColumnDefinitions>
 
                     <!-- Título -->
-                    <TextBlock Text="Subir ambiente Prod" 
+                    <TextBlock Text="Subir Ambiente Prod" 
                                Style="{ThemeResource TitleTextBlockStyle}" 
                                VerticalAlignment="Center"
                                Grid.Column="0"/>
@@ -59,8 +59,8 @@
 
                 <!-- ComboBox e texto -->
                 <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                    <TextBlock x:Name="BreachSelecionada"  
-                               Text="breach" 
+                    <TextBlock x:Name="BranchSelecionada"  
+                               Text="branch" 
                                VerticalAlignment="Center" 
                                Style="{ThemeResource BodyStrongTextBlockStyle}"/>
                     <ComboBox x:Name="ProjetoComboBox" MinWidth="200" SelectionChanged="ProjetoComboBox_SelectionChanged"/>
@@ -82,8 +82,8 @@
                             <TextBlock Text="Opções de Compilação" Style="{ThemeResource SubtitleTextBlockStyle}"/>
                             <ToggleSwitch x:Name="BaixarBinarioToggle" Header="Baixar binário atualizado" IsOn="True"/>
                             <ToggleSwitch x:Name="CompilarEspecificosToggle" Header="Compilar Produto" IsOn="True"/>
-                            <ToggleSwitch x:Name="GitPull" Header="Atualizar breach" IsOn="False"/>
-                            <TextBox x:Name="breachEspecifica" Header="Breach" Visibility="Collapsed"/>
+                            <ToggleSwitch x:Name="GitPull" Header="Atualizar branch" IsOn="False"/>
+                            <TextBox x:Name="branchEspecifica" Header="Branch" Visibility="Collapsed"/>
                             <TextBox x:Name="tagEspecifica" Header="Build" Visibility="Collapsed"  Text="Nenhum"/>
                         </StackPanel>
                     </Border>
@@ -91,8 +91,8 @@
                     <!-- CARD 2 -->
                     <Border Style="{StaticResource ResponsiveCardStyle}" Grid.Column="1">
                         <StackPanel Spacing="12">
-                            <TextBlock Text="fechar processos" Style="{ThemeResource SubtitleTextBlockStyle}"/>
-                            <ToggleSwitch x:Name="PrviderFechado" Header="Manter Providers fechados" IsOn="True"/>
+                            <TextBlock Text="Fechar Processos" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                            <ToggleSwitch x:Name="ProviderFechado" Header="Manter Providers fechados" IsOn="True"/>
                             <ToggleSwitch x:Name="BuilderFechado" Header="Manter Builder fechados" IsOn="True"/>
                             <ToggleSwitch x:Name="RunnerFechado" Header="Manter Runner fechados" IsOn="True"/>
                         </StackPanel>
