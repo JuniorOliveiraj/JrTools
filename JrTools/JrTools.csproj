@@ -107,6 +107,11 @@
 	  <Folder Include="Flows\Home\" />
 	</ItemGroup>
 	<ItemGroup>
+	  <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+	    <_Parameter1>JrTools.Tests</_Parameter1>
+	  </AssemblyAttribute>
+	</ItemGroup>
+	<ItemGroup>
 	  <Page Update="Pages\Apps\CriaFix.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </Page>
@@ -166,6 +171,14 @@
 	</ItemGroup>
 	<ItemGroup>
 	  <Page Update="Pages\Apps\CriarAplicacaoIisPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </Page>
+	</ItemGroup>
+	<ItemGroup>
+	  <Page Update="Pages\BinarioDelphiExplorerPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </Page>
+	  <Page Update="Pages\ViewPathExplorerPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </Page>
 	</ItemGroup>

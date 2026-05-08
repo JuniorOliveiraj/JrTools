@@ -14,6 +14,8 @@ namespace JrTools.Dto
         public string WesExePath { get; set; }
             = @"D:\Benner\fontes\rh\prod\WES\WebApp\Bin\wes.exe";
 
+        public bool NotificarHorasToggl { get; set; } = true;
+
         // Subir Ambiente Manual
         public string? UltimaPastaAmbiente { get; set; }
         public List<string> HistoricoPastasAmbiente { get; set; } = new();

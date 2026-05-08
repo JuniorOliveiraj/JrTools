@@ -9,185 +9,200 @@
     mc:Ignorable="d">
 
     <Page.Resources>
-        <!-- Estilo base dos cards -->
-        <Style x:Key="ResponsiveCardStyle" TargetType="Border">
+        <Style x:Key="CardStyle" TargetType="Border">
             <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}"/>
             <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius" Value="8"/>
             <Setter Property="Padding" Value="16"/>
-            <Setter Property="Margin" Value="8"/>
-            <Setter Property="MinWidth" Value="320"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        </Style>
+
+        <Style x:Key="FullWidthExpanderStyle" TargetType="Expander">
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Padding" Value="0"/>
         </Style>
     </Page.Resources>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16">
         <StackPanel Spacing="16">
-            <!-- Cabeçalho -->
             <TextBlock Text="Configurações" Style="{ThemeResource TitleTextBlockStyle}" />
             <InfoBar x:Name="ValidationInfoBar" IsOpen="False" Severity="Error" Margin="0,0,8,0"/>
 
-            <!-- GRID RESPONSIVO -->
-            <Grid x:Name="ResponsiveGrid" ColumnSpacing="16" RowSpacing="16">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
+            <Expander Style="{StaticResource FullWidthExpanderStyle}" IsExpanded="False">
+                <Expander.Header>
+                    <TextBlock Text="Diretórios do ambiente" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                </Expander.Header>
+                <Expander.Content>
+                    <Border Style="{StaticResource CardStyle}" Margin="0,8,0,0">
+                        <StackPanel Spacing="16">
+                            <TextBox x:Name="DiretorioBinarios" Header="Diretório binários Delphi"
+                                     Text="D:\Benner\bin" TextChanged="DiretorioBinarios_TextChanged"/>
+                            <TextBox x:Name="DiretorioProducao" Header="Diretório de produção"
+                                     Text="D:\Benner\fontes\rh\prod" TextChanged="DiretorioProducao_TextChanged"/>
+                            <TextBox x:Name="DiretorioEspecificos" Header="Diretórios específicos"
+                                     Text="D:\Benner\fontes\rh" TextChanged="DiretorioEspecificos_TextChanged"/>
+                        </StackPanel>
+                    </Border>
+                </Expander.Content>
+            </Expander>
 
-                <!-- Primeiro card -->
-                <Border Style="{StaticResource ResponsiveCardStyle}" Grid.Column="0">
-                    <StackPanel Spacing="20">
-                        <TextBlock Text="Parametrizações" Style="{ThemeResource SubtitleTextBlockStyle}"/>
-                        <TextBox x:Name="DiretorioBinarios" Header="Diretório binários Delphi"
-                                 Text="D:\Benner\bin" TextChanged="DiretorioBinarios_TextChanged"/>
-                        <TextBox x:Name="DiretorioProducao" Header="Diretório de produção"
-                                 Text="D:\Benner\fontes\rh\prod" TextChanged="DiretorioProducao_TextChanged"/>
-                        <TextBox x:Name="DiretorioEspecificos" Header="Diretórios específicos"
-                                 Text="D:\Benner\fontes\rh" TextChanged="DiretorioEspecificos_TextChanged"/>
-                        <ComboBox x:Name="MsBuildVersionComboBox" Header="MSBuild Padrão" DisplayMemberPath="DisplayName" SelectionChanged="MsBuildVersionComboBox_SelectionChanged"/>
-                        <TextBox x:Name="CaminhoCSReportImport"
-                                 Header="Caminho CSReportImport.exe"
-                                 PlaceholderText="D:\Benner\Servicos\ReportKeeper.V1\CSReportImport.exe"
-                                 TextChanged="CaminhoCSReportImport_TextChanged"/>
-                        <TextBox x:Name="WesExePath"
-                                 Header="Caminho wes.exe"
-                                 PlaceholderText="D:\Benner\fontes\rh\prod\WES\WebApp\Bin\wes.exe"
-                                 TextChanged="WesExePath_TextChanged"/>
-                    </StackPanel>
-                </Border>
+            <Expander Style="{StaticResource FullWidthExpanderStyle}" IsExpanded="False">
+                <Expander.Header>
+                    <TextBlock Text="Ferramentas e executáveis" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                </Expander.Header>
+                <Expander.Content>
+                    <Border Style="{StaticResource CardStyle}" Margin="0,8,0,0">
+                        <StackPanel Spacing="16">
+                            <ComboBox x:Name="MsBuildVersionComboBox"
+                                      Header="MSBuild padrão"
+                                      DisplayMemberPath="DisplayName"
+                                      SelectionChanged="MsBuildVersionComboBox_SelectionChanged"/>
+                            <TextBox x:Name="CaminhoCSReportImport"
+                                     Header="Caminho CSReportImport.exe"
+                                     PlaceholderText="D:\Benner\Servicos\ReportKeeper.V1\CSReportImport.exe"
+                                     TextChanged="CaminhoCSReportImport_TextChanged"/>
+                            <TextBox x:Name="WesExePath"
+                                     Header="Caminho wes.exe"
+                                     PlaceholderText="D:\Benner\fontes\rh\prod\WES\WebApp\Bin\wes.exe"
+                                     TextChanged="WesExePath_TextChanged"/>
+                        </StackPanel>
+                    </Border>
+                </Expander.Content>
+            </Expander>
 
-                <!-- Segundo card -->
-                <Border Style="{StaticResource ResponsiveCardStyle}" Grid.Column="1">
-                    <StackPanel Spacing="20">
+            <Expander Style="{StaticResource FullWidthExpanderStyle}" IsExpanded="False">
+                <Expander.Header>
+                    <TextBlock Text="Acesso RHWeb e MyPlace" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                </Expander.Header>
+                <Expander.Content>
+                    <Border Style="{StaticResource CardStyle}" Margin="0,8,0,0">
+                        <StackPanel Spacing="16">
+                            <TextBox x:Name="LoginRhWeb" Header="Login MyPlace" TextChanged="DadosPessoais_TextChanged"/>
 
-                        <!-- Login normal -->
-                        <TextBox x:Name="LoginRhWeb" Header="Login MyPlace" TextChanged="DadosPessoais_TextChanged"/>
+                            <Grid>
+                                <PasswordBox x:Name="SenhaRhWeb" Header="Senha MyPlace" PasswordChanged="SenhaSiteJR_PasswordChanged"/>
+                                <TextBox x:Name="SenhaRhWebVisible" Visibility="Collapsed" Header="Senha MyPlace" TextChanged="SenhaSiteJR_PasswordChanged"/>
+                                <Button HorizontalAlignment="Right"
+                                        VerticalAlignment="Center"
+                                        Width="40"
+                                        Click="ToggleSenhaVisibility_Click">
+                                    <FontIcon Glyph="&#xE890;" />
+                                </Button>
+                            </Grid>
 
-                        <!-- Senha MyPlace -->
-                        <Grid>
-                            <PasswordBox x:Name="SenhaRhWeb" Header="Senha MyPlace" PasswordChanged="SenhaSiteJR_PasswordChanged"/>
-                            <TextBox x:Name="SenhaRhWebVisible" Visibility="Collapsed" Header="Senha MyPlace" TextChanged="SenhaSiteJR_PasswordChanged"/>
-                            <Button
-                                    HorizontalAlignment="Right"
-                                    VerticalAlignment="Center"
-                                    Width="40"
-                                    Click="ToggleSenhaVisibility_Click">
-                                <FontIcon Glyph="&#xE890;" />
-                            </Button>
-                        </Grid>
+                            <TextBox x:Name="UrlRhWeb"
+                                     Header="URL RHWeb"
+                                     TextChanged="DadosPessoais_TextChanged"
+                                     Text="https://rh.portalbenner.com.br/RHWEB"/>
+                        </StackPanel>
+                    </Border>
+                </Expander.Content>
+            </Expander>
 
-                        <TextBox x:Name="UrlRhWeb" Header="URL RHWeb" TextChanged="DadosPessoais_TextChanged" Text="https://rh.portalbenner.com.br/RHWEB"/>
-                        <!-- Token API Gemini -->
-                        <Grid>
-                            <PasswordBox x:Name="ApiGeminiPasswordBox" Header="Token API Gemini"  PasswordChanged="ApiTokenGemini_PasswordChanged"/>
-                            <TextBox x:Name="ApiGeminiVisible" Visibility="Collapsed" Header="Token API Gemini" TextChanged="ApiTokenGemini_PasswordChanged"/>
-                            <Button 
-                                    HorizontalAlignment="Right"
-                                    VerticalAlignment="Center"
-                                    Width="40"
-                                    Click="ToggleApiGeminiVisibility_Click">
-                                <FontIcon Glyph="&#xE890;" />
-                            </Button>
-                        </Grid>
-
-                        <!-- Token API Toggl -->
-                        <Grid>
-                            <PasswordBox x:Name="ApiTogglPasswordBox" Header="Token API Toggl" PasswordChanged="ApiToggl_PasswordChanged"/>
-                            <TextBox x:Name="ApiTogglVisible" Visibility="Collapsed" Header="Token API Toggl"  TextChanged="ApiToggl_PasswordChanged"/>
-                            <Button 
-                                    HorizontalAlignment="Right"
-                                    VerticalAlignment="Center"
-                                    Width="40"
-                                    Click="ToggleApiTogglVisibility_Click">
-                                <FontIcon Glyph="&#xE890;" />
-                            </Button>
-                        </Grid>
-
-                    </StackPanel>
-                </Border>
-            </Grid>
-            <!-- Card Branches -->
-            <Border Style="{StaticResource ResponsiveCardStyle}" Margin="8,0,8,8">
-                <StackPanel Spacing="12">
-                    <TextBlock Text="Branches disponíveis" Style="{ThemeResource SubtitleTextBlockStyle}"/>
-                    <TextBlock Text="Lista usada no Subir Ambiente Manual e Projetos RH. Você pode adicionar, editar ou excluir qualquer branch."
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontSize="12"/>
-
-                    <ListView x:Name="ListViewBranches" MaxHeight="260" SelectionMode="None">
-                        <ListView.ItemContainerStyle>
-                            <Style TargetType="ListViewItem">
-                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                                <Setter Property="Padding" Value="0"/>
-                            </Style>
-                        </ListView.ItemContainerStyle>
-                        <ListView.ItemTemplate>
-                            <DataTemplate x:DataType="x:String">
-                                <Grid Padding="4,6" ColumnSpacing="8">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="{x:Bind}" VerticalAlignment="Center" Grid.Column="0"/>
-                                    <Button Grid.Column="1"
-                                            Tag="{x:Bind}"
-                                            Click="BtnExcluirBranch_Click"
-                                            Padding="6,4"
-                                            Background="Transparent">
-                                        <FontIcon Glyph="&#xE74D;" FontSize="12"
-                                                  Foreground="{ThemeResource SystemFillColorCriticalBrush}"/>
+            <Expander Style="{StaticResource FullWidthExpanderStyle}" IsExpanded="False">
+                <Expander.Header>
+                    <TextBlock Text="APIs e notificações" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                </Expander.Header>
+                <Expander.Content>
+                    <StackPanel Spacing="12" Margin="0,8,0,0">
+                        <Border Style="{StaticResource CardStyle}">
+                            <StackPanel Spacing="16">
+                                <Grid>
+                                    <PasswordBox x:Name="ApiGeminiPasswordBox" Header="Token API Gemini" PasswordChanged="ApiTokenGemini_PasswordChanged"/>
+                                    <TextBox x:Name="ApiGeminiVisible" Visibility="Collapsed" Header="Token API Gemini" TextChanged="ApiTokenGemini_PasswordChanged"/>
+                                    <Button HorizontalAlignment="Right"
+                                            VerticalAlignment="Center"
+                                            Width="40"
+                                            Click="ToggleApiGeminiVisibility_Click">
+                                        <FontIcon Glyph="&#xE890;" />
                                     </Button>
                                 </Grid>
-                            </DataTemplate>
-                        </ListView.ItemTemplate>
-                    </ListView>
 
-                    <Grid ColumnSpacing="8">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBox x:Name="TxtNovaBranch"
-                                 Grid.Column="0"
-                                 PlaceholderText="Ex: dev/09.05.00"
-                                 KeyDown="TxtNovaBranch_KeyDown"/>
-                        <Button Grid.Column="1" Content="Adicionar" Click="BtnAdicionarBranch_Click"/>
-                    </Grid>
-                </StackPanel>
-            </Border>
+                                <Grid>
+                                    <PasswordBox x:Name="ApiTogglPasswordBox" Header="Token API Toggl" PasswordChanged="ApiToggl_PasswordChanged"/>
+                                    <TextBox x:Name="ApiTogglVisible" Visibility="Collapsed" Header="Token API Toggl" TextChanged="ApiToggl_PasswordChanged"/>
+                                    <Button HorizontalAlignment="Right"
+                                            VerticalAlignment="Center"
+                                            Width="40"
+                                            Click="ToggleApiTogglVisibility_Click">
+                                        <FontIcon Glyph="&#xE890;" />
+                                    </Button>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
 
+                        <Border Style="{StaticResource CardStyle}">
+                            <StackPanel Spacing="4">
+                                <ToggleSwitch x:Name="TglNotificarHoras"
+                                              Header="Notificar lançamento de horas (Toggl)"
+                                              OnContent="Ativado"
+                                              OffContent="Desativado"
+                                              Toggled="TglNotificarHoras_Toggled"/>
+                                <TextBlock Text="Avisa às 13h (se &lt; 4h) e às 17h (se &lt; 8h)"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           FontSize="12"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Expander.Content>
+            </Expander>
+
+            <Expander Style="{StaticResource FullWidthExpanderStyle}" IsExpanded="False">
+                <Expander.Header>
+                    <TextBlock Text="Branches disponíveis" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                </Expander.Header>
+                <Expander.Content>
+                    <Border Style="{StaticResource CardStyle}" Margin="0,8,0,0">
+                        <StackPanel Spacing="12">
+                            <TextBlock Text="Lista usada no Subir Ambiente Manual e Projetos RH. Você pode adicionar, editar ou excluir qualquer branch."
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       FontSize="12"/>
+
+                            <ListView x:Name="ListViewBranches" MaxHeight="260" SelectionMode="None">
+                                <ListView.ItemContainerStyle>
+                                    <Style TargetType="ListViewItem">
+                                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                        <Setter Property="Padding" Value="0"/>
+                                    </Style>
+                                </ListView.ItemContainerStyle>
+                                <ListView.ItemTemplate>
+                                    <DataTemplate x:DataType="x:String">
+                                        <Grid Padding="4,6" ColumnSpacing="8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{x:Bind}" VerticalAlignment="Center" Grid.Column="0"/>
+                                            <Button Grid.Column="1"
+                                                    Tag="{x:Bind}"
+                                                    Click="BtnExcluirBranch_Click"
+                                                    Padding="6,4"
+                                                    Background="Transparent">
+                                                <FontIcon Glyph="&#xE74D;" FontSize="12"
+                                                          Foreground="{ThemeResource SystemFillColorCriticalBrush}"/>
+                                            </Button>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+
+                            <Grid ColumnSpacing="8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="TxtNovaBranch"
+                                         Grid.Column="0"
+                                         PlaceholderText="Ex: dev/09.05.00"
+                                         KeyDown="TxtNovaBranch_KeyDown"/>
+                                <Button Grid.Column="1" Content="Adicionar" Click="BtnAdicionarBranch_Click"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </Expander.Content>
+            </Expander>
         </StackPanel>
     </ScrollViewer>
-
-    <!-- ESTADOS RESPONSIVOS -->
-    <VisualStateManager.VisualStateGroups>
-        <VisualStateGroup x:Name="WindowStates">
-            <VisualState x:Name="WideState">
-                <VisualState.StateTriggers>
-                    <AdaptiveTrigger MinWindowWidth="700" />
-                </VisualState.StateTriggers>
-                <VisualState.Setters>
-                    <Setter Target="ResponsiveGrid.(Grid.RowDefinitions)" Value="Auto" />
-                    <Setter Target="ResponsiveGrid.(Grid.ColumnDefinitions)" Value="*,*" />
-                    <Setter Target="ResponsiveGrid.Children[0].(Grid.Row)" Value="0" />
-                    <Setter Target="ResponsiveGrid.Children[0].(Grid.Column)" Value="0" />
-                    <Setter Target="ResponsiveGrid.Children[1].(Grid.Row)" Value="0" />
-                    <Setter Target="ResponsiveGrid.Children[1].(Grid.Column)" Value="1" />
-                </VisualState.Setters>
-            </VisualState>
-
-            <VisualState x:Name="NarrowState">
-                <VisualState.StateTriggers>
-                    <AdaptiveTrigger MinWindowWidth="0" />
-                </VisualState.StateTriggers>
-                <VisualState.Setters>
-                    <Setter Target="ResponsiveGrid.(Grid.ColumnDefinitions)" Value="*" />
-                    <Setter Target="ResponsiveGrid.Children[0].(Grid.Row)" Value="0" />
-                    <Setter Target="ResponsiveGrid.Children[0].(Grid.Column)" Value="0" />
-                    <Setter Target="ResponsiveGrid.Children[1].(Grid.Row)" Value="1" />
-                    <Setter Target="ResponsiveGrid.Children[1].(Grid.Column)" Value="0" />
-                </VisualState.Setters>
-            </VisualState>
-
-        </VisualStateGroup>
-    </VisualStateManager.VisualStateGroups>
 </Page>

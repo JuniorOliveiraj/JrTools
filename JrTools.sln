@@ -5,6 +5,8 @@ VisualStudioVersion = 17.14.36203.30 d17.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JrTools", "JrTools\JrTools.csproj", "{942191D8-8AB8-4DDE-9D3E-E9CE809F2658}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JrTools.Tests", "JrTools.Tests\JrTools.Tests.csproj", "{B1C2D3E4-F5A6-7890-ABCD-EF1234567890}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|ARM64 = Debug|ARM64
@@ -33,6 +35,18 @@ Global
 		{942191D8-8AB8-4DDE-9D3E-E9CE809F2658}.Release|x86.ActiveCfg = Release|x86
 		{942191D8-8AB8-4DDE-9D3E-E9CE809F2658}.Release|x86.Build.0 = Release|x86
 		{942191D8-8AB8-4DDE-9D3E-E9CE809F2658}.Release|x86.Deploy.0 = Release|x86
+		{B1C2D3E4-F5A6-7890-ABCD-EF1234567890}.Debug|ARM64.ActiveCfg = Debug|Any CPU
+		{B1C2D3E4-F5A6-7890-ABCD-EF1234567890}.Debug|ARM64.Build.0 = Debug|Any CPU
+		{B1C2D3E4-F5A6-7890-ABCD-EF1234567890}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B1C2D3E4-F5A6-7890-ABCD-EF1234567890}.Debug|x64.Build.0 = Debug|Any CPU
+		{B1C2D3E4-F5A6-7890-ABCD-EF1234567890}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B1C2D3E4-F5A6-7890-ABCD-EF1234567890}.Debug|x86.Build.0 = Debug|Any CPU
+		{B1C2D3E4-F5A6-7890-ABCD-EF1234567890}.Release|ARM64.ActiveCfg = Release|Any CPU
+		{B1C2D3E4-F5A6-7890-ABCD-EF1234567890}.Release|ARM64.Build.0 = Release|Any CPU
+		{B1C2D3E4-F5A6-7890-ABCD-EF1234567890}.Release|x64.ActiveCfg = Release|Any CPU
+		{B1C2D3E4-F5A6-7890-ABCD-EF1234567890}.Release|x64.Build.0 = Release|Any CPU
+		{B1C2D3E4-F5A6-7890-ABCD-EF1234567890}.Release|x86.ActiveCfg = Release|Any CPU
+		{B1C2D3E4-F5A6-7890-ABCD-EF1234567890}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

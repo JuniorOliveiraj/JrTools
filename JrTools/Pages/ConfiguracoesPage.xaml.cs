@@ -67,6 +67,7 @@ namespace JrTools.Pages
                 DiretorioEspecificos.Text = _config.DiretorioEspecificos ?? string.Empty;
                 CaminhoCSReportImport.Text = _config.CaminhoCSReportImport ?? string.Empty;
                 WesExePath.Text           = _config.WesExePath           ?? string.Empty;
+                TglNotificarHoras.IsOn    = _config.NotificarHorasToggl;
 
                 AtualizarListViewBranches();
             }
@@ -119,6 +120,13 @@ namespace JrTools.Pages
         {
             if (_config == null) return;
             _config.WesExePath = WesExePath.Text;
+            await ConfigHelper.SalvarConfiguracoesAsync(_config);
+        }
+
+        private async void TglNotificarHoras_Toggled(object sender, RoutedEventArgs e)
+        {
+            if (_config == null) return;
+            _config.NotificarHorasToggl = TglNotificarHoras.IsOn;
             await ConfigHelper.SalvarConfiguracoesAsync(_config);
         }
 

@@ -27,6 +27,7 @@ namespace JrTools.Pages
                 new("Importador de Relatórios", "Importar relatórios .rpt para o servidor Benner.", "\uE8A5", typeof(ImportadorRelatoriosPage)),
                 new("Subir Ambiente Manual", "Sobe o ambiente manualmente, passo a passo.", "\uE8B7", typeof(SubirAmbienteManualPage)),
                 new("Criar Aplicação IIS", "Cria uma nova aplicação no IIS com pool existente.", "\uE774", typeof(CriarAplicacaoIisPage)),
+                new("View Path Explorer", "Encontrar caminhos de navegação para views em páginas WES.", "\uE721", typeof(ViewPathExplorerPage)),
             };
 
             // Limpa o painel e adiciona dinamicamente
