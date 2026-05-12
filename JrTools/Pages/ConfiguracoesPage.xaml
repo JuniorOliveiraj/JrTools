@@ -67,6 +67,10 @@
                                      Header="Caminho wes.exe"
                                      PlaceholderText="D:\Benner\fontes\rh\prod\WES\WebApp\Bin\wes.exe"
                                      TextChanged="WesExePath_TextChanged"/>
+                            <ComboBox x:Name="IisPoolComboBox"
+                                      Header="Pool do IIS padrão (Reiniciar ao fechar processos)"
+                                      HorizontalAlignment="Stretch"
+                                      SelectionChanged="IisPoolComboBox_SelectionChanged"/>
                         </StackPanel>
                     </Border>
                 </Expander.Content>
@@ -96,6 +100,37 @@
                                      Header="URL RHWeb"
                                      TextChanged="DadosPessoais_TextChanged"
                                      Text="https://rh.portalbenner.com.br/RHWEB"/>
+                        </StackPanel>
+                    </Border>
+                </Expander.Content>
+            </Expander>
+
+            <Expander Style="{StaticResource FullWidthExpanderStyle}" IsExpanded="False">
+                <Expander.Header>
+                    <TextBlock Text="Acesso Siscon" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                </Expander.Header>
+                <Expander.Content>
+                    <Border Style="{StaticResource CardStyle}" Margin="0,8,0,0">
+                        <StackPanel Spacing="16">
+                            <TextBox x:Name="LoginSiscon"
+                                     Header="Login Siscon"
+                                     TextChanged="SisconDadosPessoais_TextChanged"/>
+
+                            <Grid>
+                                <PasswordBox x:Name="SenhaSiscon"
+                                             Header="Senha Siscon"
+                                             PasswordChanged="SisconSenha_PasswordChanged"/>
+                                <TextBox x:Name="SenhaSisconVisible"
+                                         Visibility="Collapsed"
+                                         Header="Senha Siscon"
+                                         TextChanged="SisconSenha_PasswordChanged"/>
+                                <Button HorizontalAlignment="Right"
+                                        VerticalAlignment="Center"
+                                        Width="40"
+                                        Click="ToggleSenhaSisconVisibility_Click">
+                                    <FontIcon Glyph="&#xE890;" />
+                                </Button>
+                            </Grid>
                         </StackPanel>
                     </Border>
                 </Expander.Content>

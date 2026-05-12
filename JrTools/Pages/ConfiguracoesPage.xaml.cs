@@ -16,6 +16,7 @@ namespace JrTools.Pages
         private bool _senhaVisible = false;
         private bool _geminiVisible = false;
         private bool _togglVisible = false;
+        private bool _senhaSisconVisible = false;
 
         public ConfiguracoesPage()
         {
@@ -29,9 +30,38 @@ namespace JrTools.Pages
             await CarregarConfiguracoes();
             await CarregarDadosPessoais();
             CarregarMsBuildVersions();
+            await CarregarIisPools();
         }
 
         #region Parametrizações
+
+        private async System.Threading.Tasks.Task CarregarIisPools()
+        {
+            try
+            {
+                var iisService = new IisService();
+                var pools = await iisService.ListarPoolsAsync();
+                IisPoolComboBox.ItemsSource = pools;
+
+                if (!string.IsNullOrEmpty(_config?.PoolIisPadrao))
+                {
+                    IisPoolComboBox.SelectedItem = pools.FirstOrDefault(p => p == _config.PoolIisPadrao);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Silencioso se der erro (IIS não instalado, etc)
+            }
+        }
+
+        private async void IisPoolComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_config != null && IisPoolComboBox.SelectedItem is string selectedPool)
+            {
+                _config.PoolIisPadrao = selectedPool;
+                await ConfigHelper.SalvarConfiguracoesAsync(_config);
+            }
+        }
 
         private void CarregarMsBuildVersions()
         {
@@ -149,6 +179,11 @@ namespace JrTools.Pages
 
                 ApiTogglPasswordBox.Password = _dadosPessoais.ApiToggl ?? string.Empty;
                 ApiTogglVisible.Text = new string('*', ApiTogglPasswordBox.Password.Length);
+
+                // Siscon
+                LoginSiscon.Text = _dadosPessoais.LoginSiscon ?? string.Empty;
+                SenhaSiscon.Password = _dadosPessoais.SenhaSiscon ?? string.Empty;
+                SenhaSisconVisible.Text = new string('*', SenhaSiscon.Password.Length);
             }
             catch (Exception ex)
             {
@@ -307,6 +342,45 @@ namespace JrTools.Pages
                 ApiTogglVisible.Text = new string('*', ApiTogglPasswordBox.Password.Length);
             }
         }
+
+        #region Siscon
+
+        private async void SisconDadosPessoais_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_dadosPessoais == null) return;
+            _dadosPessoais.LoginSiscon = LoginSiscon.Text;
+            await PerfilPessoalHelper.SalvarConfiguracoesAsync(_dadosPessoais);
+        }
+
+        private async void SisconSenha_PasswordChanged(object sender, RoutedEventArgs e)
+        {
+            if (_dadosPessoais == null) return;
+            string valor = _senhaSisconVisible ? SenhaSisconVisible.Text : SenhaSiscon.Password;
+            _dadosPessoais.SenhaSiscon = valor;
+            if (!_senhaSisconVisible)
+                SenhaSisconVisible.Text = new string('*', valor.Length);
+            await PerfilPessoalHelper.SalvarConfiguracoesAsync(_dadosPessoais);
+        }
+
+        private void ToggleSenhaSisconVisibility_Click(object sender, RoutedEventArgs e)
+        {
+            _senhaSisconVisible = !_senhaSisconVisible;
+            if (_senhaSisconVisible)
+            {
+                SenhaSisconVisible.Visibility = Visibility.Visible;
+                SenhaSiscon.Visibility = Visibility.Collapsed;
+                SenhaSisconVisible.Text = _dadosPessoais.SenhaSiscon ?? "";
+            }
+            else
+            {
+                SenhaSisconVisible.Visibility = Visibility.Collapsed;
+                SenhaSiscon.Visibility = Visibility.Visible;
+                SenhaSiscon.Password = _dadosPessoais.SenhaSiscon ?? "";
+                SenhaSisconVisible.Text = new string('*', SenhaSiscon.Password.Length);
+            }
+        }
+
+        #endregion
 
     }
 }

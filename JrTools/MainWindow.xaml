@@ -85,6 +85,12 @@
                         </NavigationViewItem.Icon>
                     </NavigationViewItem>
 
+                    <NavigationViewItem Content="Siscon" Tag="Siscon">
+                        <NavigationViewItem.Icon>
+                            <FontIcon Glyph="&#xE9D5;" />
+                        </NavigationViewItem.Icon>
+                    </NavigationViewItem>
+
                     <NavigationViewItem Content="Configurações" Tag="config">
                         <NavigationViewItem.Icon>
                             <SymbolIcon Symbol="Setting"/>

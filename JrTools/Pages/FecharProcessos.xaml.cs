@@ -58,6 +58,11 @@ namespace JrTools.Pages
             ViewModel.DeployRecovery = null;
         }
 
+        private async void ReiniciarPoolButton_Click(object sender, RoutedEventArgs e)
+        {
+            await ViewModel.RestartPoolManualAsync();
+        }
+
         private void MatarProcessoButton_Click(object sender, RoutedEventArgs e)
         {
             if (ViewModel.SelectedProvider != null)

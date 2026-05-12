@@ -15,6 +15,7 @@ namespace JrTools.Dto
             = @"D:\Benner\fontes\rh\prod\WES\WebApp\Bin\wes.exe";
 
         public bool NotificarHorasToggl { get; set; } = true;
+        public string? PoolIisPadrao { get; set; }
 
         // Subir Ambiente Manual
         public string? UltimaPastaAmbiente { get; set; }

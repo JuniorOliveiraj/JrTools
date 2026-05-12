@@ -22,5 +22,11 @@ namespace JrTools.Dto
 
         public string? ApiGemini { get; set; }
         public string? ApiToggl { get; set; }
+
+        // Siscon
+        public string? LoginSiscon { get; set; }
+        public string? SenhaSiscon { get; set; }
+        public string? TokenSiscon { get; set; }
+        public DateTime? TokenSisconExpiraEm { get; set; }
     }
 }

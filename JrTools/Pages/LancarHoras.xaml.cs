@@ -118,32 +118,7 @@ namespace JrTools.Pages
                 // define o início após o último lançamento do dia (ou 08:00 se não houver nenhum)
                 if (!horaInicio.HasValue && !horaFim.HasValue && TotalHorasBox.Value > 0)
                 {
-                    // Início padrão
-                    TimeSpan inicioPadrao = TimeSpan.FromHours(8);
-
-                    // Busca o último lançamento do dia atual, se existir
-                    var ultimoLancamento = Lancamentos
-                        .Where(l => l.HoraInicio.HasValue || l.HoraFim.HasValue)
-                        .OrderBy(l =>
-                        {
-                            // Define um "fim" calculado para ordenar corretamente
-                            if (l.HoraFim.HasValue)
-                                return l.HoraFim.Value;
-                            if (l.HoraInicio.HasValue && l.TotalHoras.HasValue)
-                                return l.HoraInicio.Value + TimeSpan.FromHours(l.TotalHoras.Value);
-                            return l.HoraInicio ?? TimeSpan.Zero;
-                        })
-                        .LastOrDefault();
-
-                    if (ultimoLancamento != null)
-                    {
-                        if (ultimoLancamento.HoraFim.HasValue)
-                            inicioPadrao = ultimoLancamento.HoraFim.Value;
-                        else if (ultimoLancamento.HoraInicio.HasValue && ultimoLancamento.TotalHoras.HasValue)
-                            inicioPadrao = ultimoLancamento.HoraInicio.Value + TimeSpan.FromHours(ultimoLancamento.TotalHoras.Value);
-                    }
-
-                    horaInicio = inicioPadrao;
+                    horaInicio = _horasService.SugerirProximoHorarioInicio(Lancamentos);
                     horaFim = horaInicio.Value.Add(TimeSpan.FromHours(TotalHorasBox.Value));
 
                     // Reflete o padrão também na interface

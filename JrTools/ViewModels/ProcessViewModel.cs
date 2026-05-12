@@ -8,8 +8,13 @@ namespace JrTools.ViewModels
         private int _count;
         private bool _isEnabled;
 
+        private string _nameDisplay = "";
         public string Name { get; }
-        public string NameDisplay { get; set; } = "";
+        public string NameDisplay
+        {
+            get => _nameDisplay;
+            set { _nameDisplay = value; OnPropertyChanged(); }
+        }
         public bool DefaultEnabled { get; }
 
         public int Count

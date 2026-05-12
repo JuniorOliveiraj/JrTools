@@ -113,8 +113,29 @@ namespace JrTools.ViewModels
                     
                     if (wasActive)
                     {
-                        _ = RestartRhAppPoolAsync(); // Só executa se estava realmente ligado
+                        _ = HandleIisRestartFeedbackAsync(); // Só executa se estava realmente ligado
                     }
+                }
+            }
+        }
+
+        public async Task RestartPoolManualAsync()
+        {
+            await HandleIisRestartFeedbackAsync();
+        }
+
+        private async Task HandleIisRestartFeedbackAsync()
+        {
+            bool success = await RestartRhAppPoolAsync();
+            if (success)
+            {
+                var masterVm = MonitoredProcesses.FirstOrDefault(p => p.Name == "MASTER_CONTROL");
+                if (masterVm != null)
+                {
+                    string originalText = masterVm.NameDisplay;
+                    masterVm.NameDisplay = "IIS Reiniciado ✅";
+                    await Task.Delay(5000);
+                    masterVm.NameDisplay = originalText;
                 }
             }
         }
@@ -341,13 +362,15 @@ namespace JrTools.ViewModels
             DeployRecovery = recovery;
         }
 
-        private async Task RestartRhAppPoolAsync()
+        private async Task<bool> RestartRhAppPoolAsync()
         {
-            AddLog("🌐 Reiniciando AppPool 'Rh' via PowerShell...");
-            string namePull =  "Rh";
+            var config = await ConfigHelper.LerConfiguracoesAsync();
+            string namePull = config?.PoolIisPadrao ?? "Rh";
+
+            AddLog($"🌐 Reiniciando AppPool '{namePull}' via PowerShell...");
             try
             {
-                await Task.Run(() =>
+                bool success = await Task.Run(() =>
                 {
                     var startInfo = new System.Diagnostics.ProcessStartInfo
                     {
@@ -362,12 +385,23 @@ namespace JrTools.ViewModels
 
                     using var process = System.Diagnostics.Process.Start(startInfo);
                     process?.WaitForExit();
+                    return process?.ExitCode == 0;
                 });
-                AddLog("✅ Comando PowerShell concluído (Restart-WebAppPool Rh).");
+
+                if (success)
+                {
+                    AddLog($"✅ Comando PowerShell concluído (Restart-WebAppPool {namePull}).");
+                }
+                else
+                {
+                    AddLog($"❌ Falha ao executar comando PowerShell (Restart-WebAppPool {namePull}).");
+                }
+                return success;
             }
             catch (Exception ex)
             {
-                AddLog($"❌ Erro ao reiniciar AppPool Rh: {ex.Message}");
+                AddLog($"❌ Erro ao reiniciar AppPool {namePull}: {ex.Message}");
+                return false;
             }
         }
 

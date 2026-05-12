@@ -26,6 +26,7 @@ namespace JrTools
         private Pages.Documentador _documentador = new Pages.Documentador();
         private Pages.LancarHoras _lancarHoras = new Pages.LancarHoras();
         private Pages.ConfiguracoesPage _configuracoesPage = new Pages.ConfiguracoesPage();
+        private Pages.SisconDashboardPage _sisconDashboardPage = new Pages.SisconDashboardPage();
 
         public MainWindow()
         {
@@ -85,6 +86,10 @@ namespace JrTools
                         break;
                     case "LancarHoras":
                         ContentFrame.NavigateToType(_lancarHoras.GetType(), null, new FrameNavigationOptions() { IsNavigationStackEnabled = false });
+                        break;
+                    case "Siscon":
+                        ContentFrame.NavigateToType(_sisconDashboardPage.GetType(), null, new FrameNavigationOptions() { IsNavigationStackEnabled = false });
+                        ContentFrame.Content = _sisconDashboardPage;
                         break;
                     case "config":
                         ContentFrame.NavigateToType(_configuracoesPage.GetType(), null, new FrameNavigationOptions() { IsNavigationStackEnabled = false });
