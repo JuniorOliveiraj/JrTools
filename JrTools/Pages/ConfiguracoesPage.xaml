@@ -186,6 +186,44 @@
 
             <Expander Style="{StaticResource FullWidthExpanderStyle}" IsExpanded="False">
                 <Expander.Header>
+                    <TextBlock Text="WES - Servidor BServer" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                </Expander.Header>
+                <Expander.Content>
+                    <Border Style="{StaticResource CardStyle}" Margin="0,8,0,0">
+                        <StackPanel Spacing="12">
+                            <InfoBar x:Name="BServerDllInfoBar"
+                                     IsOpen="True"
+                                     IsClosable="False"
+                                     Severity="Informational"
+                                     Message="Verificando disponibilidade da DLL..."/>
+
+                            <TextBox x:Name="BServerServidor"
+                                     Header="Endereço do servidor BServer"
+                                     PlaceholderText="192.168.1.100 ou servidor.empresa.com"
+                                     TextChanged="BServerServidor_TextChanged"/>
+
+                            <Button x:Name="BtnTestarBServer"
+                                    Content="Verificar sistemas disponíveis"
+                                    Click="BtnTestarBServer_Click"
+                                    HorizontalAlignment="Left"/>
+
+                            <InfoBar x:Name="BServerStatusInfoBar"
+                                     IsOpen="False"
+                                     IsClosable="False"/>
+
+                            <ComboBox x:Name="BServerSistemaComboBox"
+                                      Header="Sistema padrão"
+                                      HorizontalAlignment="Stretch"
+                                      PlaceholderText="Clique em &quot;Verificar&quot; para listar os sistemas"
+                                      SelectionChanged="BServerSistemaComboBox_SelectionChanged"
+                                      Visibility="Collapsed"/>
+                        </StackPanel>
+                    </Border>
+                </Expander.Content>
+            </Expander>
+
+            <Expander Style="{StaticResource FullWidthExpanderStyle}" IsExpanded="False">
+                <Expander.Header>
                     <TextBlock Text="Branches disponíveis" Style="{ThemeResource SubtitleTextBlockStyle}"/>
                 </Expander.Header>
                 <Expander.Content>

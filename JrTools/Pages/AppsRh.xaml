@@ -9,95 +9,86 @@
 
     <Page.Resources>
 
-        <!-- Card padrão -->
         <Style x:Key="FancyCardStyle" TargetType="Border">
             <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
             <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="12" />
-            <Setter Property="Padding" Value="24" />
-            <Setter Property="Margin" Value="0,0,0,24" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0,0,0,16" />
         </Style>
 
-        <!-- Botão do item de menu -->
-        <!-- Botão do item de configuração -->
         <Style x:Key="SettingItemStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
-            <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorSecondaryBrush}" />
+            <Setter Property="Background" Value="Transparent" />
             <Setter Property="Foreground" Value="{ThemeResource TextFillColorPrimaryBrush}" />
             <Setter Property="HorizontalAlignment" Value="Stretch" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-
-            <!-- AQUI está o ajuste -->
-            <Setter Property="Padding" Value="24,18" />
-            <!-- antes: 16,12 -->
-            <Setter Property="Margin" Value="0,12,0,0" />
-            <!-- antes: 0,6,0,0 -->
-
-            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="20,0" />
+            <Setter Property="Height" Value="72" />
+            <Setter Property="CornerRadius" Value="0" />
+            <Setter Property="BorderThickness" Value="0" />
 
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="RootBorder"
-                        Background="{TemplateBinding Background}"
-                        CornerRadius="{TemplateBinding CornerRadius}">
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="{TemplateBinding CornerRadius}"
+                                Padding="{TemplateBinding Padding}">
                             <Grid>
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="44" />
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
 
-                                <!-- Ícone -->
-                                <FontIcon FontFamily="Segoe Fluent Icons"
-                                  Glyph="{TemplateBinding Tag}"
-                                  FontSize="20"
-                                  Margin="5,5,20,5"
-                                  VerticalAlignment="Center" />
+                                <FontIcon Grid.Column="0"
+                                          FontFamily="Segoe Fluent Icons"
+                                          Glyph="{TemplateBinding Tag}"
+                                          FontSize="18"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center" />
 
-                                <!-- Título e descrição -->
-                                <StackPanel Grid.Column="1" Margin="2,5,2,2">
-                                    <!-- pequeno ajuste de alinhamento -->
+                                <StackPanel Grid.Column="1"
+                                            VerticalAlignment="Center"
+                                            Margin="12,0,16,0">
                                     <TextBlock Text="{TemplateBinding Content}"
-                                       FontWeight="SemiBold"
-                                       FontSize="14"
-                                       Foreground="{TemplateBinding Foreground}" />
+                                               FontWeight="SemiBold"
+                                               FontSize="14"
+                                               Foreground="{TemplateBinding Foreground}" />
                                     <TextBlock Text="{TemplateBinding AccessKey}"
-                                       FontSize="12"
-                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                       TextWrapping="Wrap"
-                                       MaxLines="1" />
+                                               FontSize="12"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                               TextTrimming="CharacterEllipsis" />
                                 </StackPanel>
 
-                                <!-- Seta -->
                                 <FontIcon Grid.Column="2"
-                                  Glyph="&#xE72A;"
-                                  FontFamily="Segoe Fluent Icons"
-                                  FontSize="14"
-                                  Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                  VerticalAlignment="Center" />
+                                          Glyph="&#xE76C;"
+                                          FontFamily="Segoe Fluent Icons"
+                                          FontSize="12"
+                                          Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                          VerticalAlignment="Center" />
                             </Grid>
                         </Border>
 
-                        <!-- Estados visuais -->
                         <VisualStateManager.VisualStateGroups>
                             <VisualStateGroup x:Name="CommonStates">
-                                <VisualState x:Name="Normal"/>
+                                <VisualState x:Name="Normal" />
                                 <VisualState x:Name="PointerOver">
                                     <Storyboard>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="RootBorder"
-                                                               Storyboard.TargetProperty="Background">
+                                                                       Storyboard.TargetProperty="Background">
                                             <DiscreteObjectKeyFrame KeyTime="0"
-                                        Value="{ThemeResource CardBackgroundFillColorTertiaryBrush}" />
+                                                                    Value="{ThemeResource SubtleFillColorSecondaryBrush}" />
                                         </ObjectAnimationUsingKeyFrames>
                                     </Storyboard>
                                 </VisualState>
                                 <VisualState x:Name="Pressed">
                                     <Storyboard>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="RootBorder"
-                                                               Storyboard.TargetProperty="Background">
+                                                                       Storyboard.TargetProperty="Background">
                                             <DiscreteObjectKeyFrame KeyTime="0"
-                                        Value="{ThemeResource CardBackgroundFillColorQuarternaryBrush}" />
+                                                                    Value="{ThemeResource SubtleFillColorTertiaryBrush}" />
                                         </ObjectAnimationUsingKeyFrames>
                                     </Storyboard>
                                 </VisualState>
@@ -163,7 +154,7 @@
 
                 <!-- Card de menu -->
                 <Border Style="{StaticResource FancyCardStyle}">
-                    <StackPanel x:Name="SettingsItemsPanel" Spacing="8"/>
+                    <StackPanel x:Name="SettingsItemsPanel"/>
                 </Border>
 
             </StackPanel>

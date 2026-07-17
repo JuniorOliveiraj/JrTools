@@ -10,6 +10,7 @@
 		<PublishProfile>win-$(Platform).pubxml</PublishProfile>
 		<UseWinUI>true</UseWinUI>
 		<EnableMsixTooling>true</EnableMsixTooling>
+		<DefineConstants>DISABLE_XAML_GENERATED_MAIN</DefineConstants>
 		<Nullable>enable</Nullable>
 		<WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
 		<ApplicationIcon>Assets\PERFIL.ico</ApplicationIcon>

@@ -25,7 +25,8 @@ namespace JrTools.Pages.Apps
         private ConfiguracoesdataObject  _cfg;
         private string _wesExePath   = string.Empty;
         private string _webConfigPath = string.Empty;
-        private bool _carregandoConfig = false;
+        private bool _carregandoConfig   = false;
+        private bool _carregandoSistema  = false;
 
         private readonly IisService _iis = new();
 
@@ -52,9 +53,17 @@ namespace JrTools.Pages.Apps
             _wesExePath = _cfg?.WesExePath ?? @"D:\Benner\fontes\rh\prod\WES\WebApp\Bin\wes.exe";
 
             TxtServidor.Text  = _cfgRh.Servidor;
-            TxtSistema.Text   = _cfgRh.Sistema;
             TxtUsuario.Text   = _cfgRh.Usuario;
             TxtSenha.Password = _cfgRh.Senha;
+
+            // Restaura sistema salvo no ComboBox
+            if (!string.IsNullOrWhiteSpace(_cfgRh.Sistema))
+            {
+                _carregandoSistema = true;
+                CmbSistema.ItemsSource = new[] { _cfgRh.Sistema };
+                CmbSistema.SelectedIndex = 0;
+                _carregandoSistema = false;
+            }
 
             if (!string.IsNullOrWhiteSpace(_cfg?.UltimaPastaAmbiente))
                 AutoPasta.Text = _cfg.UltimaPastaAmbiente;
@@ -97,7 +106,6 @@ namespace JrTools.Pages.Apps
         {
             if (_carregandoConfig || _cfgRh == null) return;
             _cfgRh.Servidor = TxtServidor.Text;
-            _cfgRh.Sistema  = TxtSistema.Text;
             _cfgRh.Usuario  = TxtUsuario.Text;
             await ConfiguracaoRelatoriosHelper.SalvarAsync(_cfgRh);
         }
@@ -118,8 +126,11 @@ namespace JrTools.Pages.Apps
             BtnSetarConfiguracoes.IsEnabled = false;
             try
             {
-                var wes = new WesService(_wesExePath);
-                await wes.ConfigSetAsync(TxtServidor.Text, TxtSistema.Text, TxtUsuario.Text, TxtSenha.Password, CriarProgresso());
+                var wes     = new WesService(_wesExePath);
+                var sistema = CmbSistema.SelectedItem as string ?? string.Empty;
+                AppendLog($"[WES CONFIG SET] Configurando: {sistema}");
+                await wes.ConfigSetAsync(TxtServidor.Text, sistema, TxtUsuario.Text, TxtSenha.Password, CriarProgresso());
+
                 await Task.Run(() => InjetarUseCOMFree());
             }
             catch (Exception ex) { MostrarErro(ex.Message); }
@@ -128,6 +139,66 @@ namespace JrTools.Pages.Apps
                 LoadingConfigSet.IsActive = false;
                 BtnSetarConfiguracoes.IsEnabled = true;
             }
+        }
+
+        private async void BtnCarregarSistemas_Click(object sender, RoutedEventArgs e)
+        {
+            var servidor = TxtServidor.Text.Trim();
+            if (string.IsNullOrWhiteSpace(servidor))
+            {
+                InfoBarSistemas.Severity = InfoBarSeverity.Error;
+                InfoBarSistemas.Message  = "Informe o endereço do servidor antes de carregar os sistemas.";
+                InfoBarSistemas.IsOpen   = true;
+                return;
+            }
+
+            BtnCarregarSistemas.IsEnabled = false;
+            LoadingSistemas.IsActive      = true;
+            InfoBarSistemas.IsOpen        = false;
+
+            try
+            {
+                AppendLog($"[BSERVER] Conectando em {servidor}:2000...");
+                var resultado = await BServerQueryService.ConsultarAsync(servidor, _cfg?.DiretorioBinarios ?? string.Empty);
+
+                if (resultado.IsSuccess)
+                {
+                    AppendLog($"[BSERVER] Conectado! {resultado.AvailableSystems.Length} sistema(s) encontrado(s): {string.Join(", ", resultado.AvailableSystems)}");
+
+                    _carregandoSistema      = true;
+                    CmbSistema.ItemsSource  = resultado.AvailableSystems;
+                    CmbSistema.SelectedItem = _cfgRh?.Sistema is string s
+                        && Array.IndexOf(resultado.AvailableSystems, s) >= 0 ? s : null;
+                    _carregandoSistema = false;
+                }
+                else
+                {
+                    var msg = resultado.ErrorMessage;
+                    InfoBarSistemas.Severity = InfoBarSeverity.Error;
+                    InfoBarSistemas.Message  = msg;
+                    InfoBarSistemas.IsOpen   = true;
+                    AppendLog($"[BSERVER ERRO] {msg}");
+                }
+            }
+            catch (Exception ex)
+            {
+                InfoBarSistemas.Severity = InfoBarSeverity.Error;
+                InfoBarSistemas.Message  = ex.Message;
+                InfoBarSistemas.IsOpen   = true;
+                AppendLog($"[BSERVER ERRO] {ex.Message}");
+            }
+            finally
+            {
+                BtnCarregarSistemas.IsEnabled = true;
+                LoadingSistemas.IsActive      = false;
+            }
+        }
+
+        private async void CmbSistema_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_carregandoSistema || _cfgRh == null) return;
+            _cfgRh.Sistema = CmbSistema.SelectedItem as string ?? string.Empty;
+            await ConfiguracaoRelatoriosHelper.SalvarAsync(_cfgRh);
         }
 
         private async void BtnLimparCache_Click(object sender, RoutedEventArgs e)
@@ -455,11 +526,11 @@ namespace JrTools.Pages.Apps
         private bool ValidarCamposWes()
         {
             if (string.IsNullOrWhiteSpace(TxtServidor.Text) ||
-                string.IsNullOrWhiteSpace(TxtSistema.Text)  ||
+                CmbSistema.SelectedItem == null              ||
                 string.IsNullOrWhiteSpace(TxtUsuario.Text)  ||
                 string.IsNullOrWhiteSpace(TxtSenha.Password))
             {
-                MostrarErro("Preencha todos os campos de configuração antes de executar.");
+                MostrarErro("Preencha servidor, selecione o sistema, usuário e senha.");
                 return false;
             }
             return true;

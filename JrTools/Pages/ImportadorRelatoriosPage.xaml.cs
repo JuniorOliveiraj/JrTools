@@ -27,7 +27,9 @@ namespace JrTools.Pages
         private const int GrauParalelismo = 4;
         private bool _importando = false;
         private bool _carregandoConfig = false;
+        private bool _carregandoSistema = false;
         private bool _inicializado = false;
+        private string _diretorioBinarios = string.Empty;
         private CancellationTokenSource _cts;
 
         public ImportadorRelatoriosPage()
@@ -55,12 +57,19 @@ namespace JrTools.Pages
             var cfg = await ConfigHelper.LerConfiguracoesAsync();
             _caminhoExe = cfg?.CaminhoCSReportImport
                           ?? @"D:\Benner\Servicos\ReportKeeper.V1\CSReportImport.exe";
+            _diretorioBinarios = cfg?.DiretorioBinarios ?? string.Empty;
 
             TxtCaminhoRelatorios.Text = _cfgRh.CaminhoRelatorios;
             TxtServidor.Text          = _cfgRh.Servidor;
-            TxtSistema.Text           = _cfgRh.Sistema;
             TxtUsuario.Text           = _cfgRh.Usuario;
             TxtSenha.Password         = _cfgRh.Senha;
+
+            if (!string.IsNullOrWhiteSpace(_cfgRh.Sistema))
+            {
+                CmbSistema.ItemsSource = new[] { _cfgRh.Sistema };
+                CmbSistema.SelectedIndex = 0;
+            }
+
             _carregandoConfig = false;
         }
 
@@ -69,7 +78,6 @@ namespace JrTools.Pages
             if (_carregandoConfig || _cfgRh == null) return;
             _cfgRh.CaminhoRelatorios = TxtCaminhoRelatorios.Text;
             _cfgRh.Servidor          = TxtServidor.Text;
-            _cfgRh.Sistema           = TxtSistema.Text;
             _cfgRh.Usuario           = TxtUsuario.Text;
             await ConfiguracaoRelatoriosHelper.SalvarAsync(_cfgRh);
         }
@@ -79,6 +87,46 @@ namespace JrTools.Pages
             if (_carregandoConfig || _cfgRh == null) return;
             _cfgRh.Senha = TxtSenha.Password;
             await ConfiguracaoRelatoriosHelper.SalvarAsync(_cfgRh);
+        }
+
+        private async void BtnCarregarSistemas_Click(object sender, RoutedEventArgs e)
+        {
+            if (_carregandoSistema) return;
+            _carregandoSistema = true;
+            LoadingSistemas.IsActive = true;
+            BtnCarregarSistemas.IsEnabled = false;
+
+            var sistemaAtual = CmbSistema.SelectedItem as string ?? _cfgRh?.Sistema;
+            AppendLog($"[BSERVER] Conectando em {TxtServidor.Text}...");
+
+            var resultado = await BServerQueryService.ConsultarAsync(TxtServidor.Text, _diretorioBinarios);
+
+            if (resultado.IsSuccess)
+            {
+                CmbSistema.ItemsSource = resultado.AvailableSystems;
+                var idx = Array.FindIndex(resultado.AvailableSystems,
+                    s => string.Equals(s, sistemaAtual, StringComparison.OrdinalIgnoreCase));
+                CmbSistema.SelectedIndex = idx >= 0 ? idx : (resultado.AvailableSystems.Length > 0 ? 0 : -1);
+                AppendLog($"[BSERVER] {resultado.AvailableSystems.Length} sistema(s) encontrado(s). {resultado.ErrorMessage}");
+            }
+            else
+            {
+                AppendLog($"[BSERVER ERRO] {resultado.ErrorMessage}");
+            }
+
+            LoadingSistemas.IsActive = false;
+            BtnCarregarSistemas.IsEnabled = true;
+            _carregandoSistema = false;
+        }
+
+        private async void CmbSistema_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_carregandoConfig || _carregandoSistema || _cfgRh == null) return;
+            if (CmbSistema.SelectedItem is string sistema)
+            {
+                _cfgRh.Sistema = sistema;
+                await ConfiguracaoRelatoriosHelper.SalvarAsync(_cfgRh);
+            }
         }
 
         private async Task CarregarRelatorios()

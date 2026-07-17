@@ -34,6 +34,12 @@ namespace JrTools.Dto
     }
 
 
+    public enum ModoEspelhamento
+    {
+        Espelhar,    // Destino fica idêntico: copia novos/alterados E apaga extras
+        Sincronizar  // Apenas copia novos/alterados; não apaga arquivos extras no destino
+    }
+
     /// <summary>
     /// Representa um perfil de espelhamento de diretórios
     /// </summary>
@@ -42,6 +48,9 @@ namespace JrTools.Dto
         public string Nome { get; set; } = "";
         public string DiretorioOrigem { get; set; } = "";
         public string DiretorioDestino { get; set; } = "";
+        public ModoEspelhamento Modo { get; set; } = ModoEspelhamento.Espelhar;
+
+        public string ModoDisplay => Modo == ModoEspelhamento.Sincronizar ? "Sincronizar" : "Espelhar";
     }
 
     /// <summary>

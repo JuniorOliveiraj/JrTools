@@ -20,6 +20,8 @@ namespace JrTools.Pages
 
         private ConfiguracaoRelatoriosRh _cfgRh;
         private bool _carregandoConfig = false;
+        private bool _carregandoSistema = false;
+        private string _diretorioBinarios = string.Empty;
 
         // Caminho derivado do projeto selecionado
         private string _wesExePath   = string.Empty;
@@ -37,11 +39,18 @@ namespace JrTools.Pages
             _carregandoConfig = true;
 
             _cfgRh = await ConfiguracaoRelatoriosHelper.LerAsync();
+            var cfg = await ConfigHelper.LerConfiguracoesAsync();
+            _diretorioBinarios = cfg?.DiretorioBinarios ?? string.Empty;
 
             TxtServidor.Text  = _cfgRh.Servidor;
-            TxtSistema.Text   = _cfgRh.Sistema;
             TxtUsuario.Text   = _cfgRh.Usuario;
             TxtSenha.Password = _cfgRh.Senha;
+
+            if (!string.IsNullOrWhiteSpace(_cfgRh.Sistema))
+            {
+                CmbSistema.ItemsSource = new[] { _cfgRh.Sistema };
+                CmbSistema.SelectedIndex = 0;
+            }
 
             _carregandoConfig = false;
 
@@ -77,7 +86,6 @@ namespace JrTools.Pages
         {
             if (_carregandoConfig || _cfgRh == null) return;
             _cfgRh.Servidor = TxtServidor.Text;
-            _cfgRh.Sistema  = TxtSistema.Text;
             _cfgRh.Usuario  = TxtUsuario.Text;
             await ConfiguracaoRelatoriosHelper.SalvarAsync(_cfgRh);
         }
@@ -89,6 +97,48 @@ namespace JrTools.Pages
             await ConfiguracaoRelatoriosHelper.SalvarAsync(_cfgRh);
         }
 
+        // ── BServer ──────────────────────────────────────────────────────────
+
+        private async void BtnCarregarSistemas_Click(object sender, RoutedEventArgs e)
+        {
+            if (_carregandoSistema) return;
+            _carregandoSistema = true;
+            LoadingSistemas.IsActive = true;
+            BtnCarregarSistemas.IsEnabled = false;
+
+            var sistemaAtual = CmbSistema.SelectedItem as string ?? _cfgRh?.Sistema;
+            AppendLog($"[BSERVER] Conectando em {TxtServidor.Text}...");
+
+            var resultado = await BServerQueryService.ConsultarAsync(TxtServidor.Text, _diretorioBinarios);
+
+            if (resultado.IsSuccess)
+            {
+                CmbSistema.ItemsSource = resultado.AvailableSystems;
+                var idx = Array.FindIndex(resultado.AvailableSystems,
+                    s => string.Equals(s, sistemaAtual, StringComparison.OrdinalIgnoreCase));
+                CmbSistema.SelectedIndex = idx >= 0 ? idx : (resultado.AvailableSystems.Length > 0 ? 0 : -1);
+                AppendLog($"[BSERVER] {resultado.AvailableSystems.Length} sistema(s) encontrado(s). {resultado.ErrorMessage}");
+            }
+            else
+            {
+                AppendLog($"[BSERVER ERRO] {resultado.ErrorMessage}");
+            }
+
+            LoadingSistemas.IsActive = false;
+            BtnCarregarSistemas.IsEnabled = true;
+            _carregandoSistema = false;
+        }
+
+        private async void CmbSistema_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_carregandoConfig || _carregandoSistema || _cfgRh == null) return;
+            if (CmbSistema.SelectedItem is string sistema)
+            {
+                _cfgRh.Sistema = sistema;
+                await ConfiguracaoRelatoriosHelper.SalvarAsync(_cfgRh);
+            }
+        }
+
         // ── Comandos WES ─────────────────────────────────────────────────────
 
         private async void BtnConfigSet_Click(object sender, RoutedEventArgs e)
@@ -96,7 +146,7 @@ namespace JrTools.Pages
             if (!ValidarCampos()) return;
             await ExecutarComando(LoadingConfigSet, BtnConfigSet, async wes =>
             {
-                await wes.ConfigSetAsync(TxtServidor.Text, TxtSistema.Text, TxtUsuario.Text, TxtSenha.Password, CriarProgresso());
+                await wes.ConfigSetAsync(TxtServidor.Text, CmbSistema.SelectedItem as string ?? string.Empty, TxtUsuario.Text, TxtSenha.Password, CriarProgresso());
                 InjetarUseCOMFree();
             });
         }
@@ -172,7 +222,7 @@ namespace JrTools.Pages
         private bool ValidarCampos()
         {
             if (string.IsNullOrWhiteSpace(TxtServidor.Text) ||
-                string.IsNullOrWhiteSpace(TxtSistema.Text)  ||
+                CmbSistema.SelectedItem is not string s || string.IsNullOrWhiteSpace(s) ||
                 string.IsNullOrWhiteSpace(TxtUsuario.Text)  ||
                 string.IsNullOrWhiteSpace(TxtSenha.Password))
             {

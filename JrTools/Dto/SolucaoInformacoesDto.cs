@@ -17,4 +17,12 @@ namespace JrTools.Dto
         public string Nome { get; set; }
         public string Caminho { get; set; }
     }
+
+    public class PastaBinariosDto
+    {
+        public string Nome { get; set; } = string.Empty;
+        public string Caminho { get; set; } = string.Empty;
+        public string Versao { get; set; } = string.Empty;
+        public string NomeDisplay => string.IsNullOrWhiteSpace(Versao) ? Nome : $"{Versao}  —  {Nome}";
+    }
 }

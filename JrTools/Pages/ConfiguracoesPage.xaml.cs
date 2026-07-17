@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace JrTools.Pages
 {
@@ -17,6 +18,8 @@ namespace JrTools.Pages
         private bool _geminiVisible = false;
         private bool _togglVisible = false;
         private bool _senhaSisconVisible = false;
+
+        private bool _bserverSistemaChanging = false;
 
         public ConfiguracoesPage()
         {
@@ -99,6 +102,9 @@ namespace JrTools.Pages
                 WesExePath.Text           = _config.WesExePath           ?? string.Empty;
                 TglNotificarHoras.IsOn    = _config.NotificarHorasToggl;
 
+                BServerServidor.Text = _config.BServerServidor ?? string.Empty;
+                AtualizarStatusDll();
+
                 AtualizarListViewBranches();
             }
             catch (Exception ex)
@@ -119,6 +125,7 @@ namespace JrTools.Pages
             if (_config == null) return;
             _config.DiretorioBinarios = DiretorioBinarios.Text;
             await ConfigHelper.SalvarConfiguracoesAsync(_config);
+            AtualizarStatusDll();
         }
 
         private async void DiretorioProducao_TextChanged(object sender, TextChangedEventArgs e)
@@ -239,6 +246,87 @@ namespace JrTools.Pages
             if (!_togglVisible)
                 ApiTogglVisible.Text = new string('*', valor.Length);
             await PerfilPessoalHelper.SalvarConfiguracoesAsync(_dadosPessoais);
+        }
+
+        #endregion
+
+        #region WES - BServer
+
+        private void AtualizarStatusDll()
+        {
+            var dllPath = System.IO.Path.Combine(
+                _config?.DiretorioBinarios ?? string.Empty,
+                "delphi", "Benner.Tecnologia.BServer.Clients.dll");
+            var existe = System.IO.File.Exists(dllPath);
+
+            BServerDllInfoBar.Severity = existe ? InfoBarSeverity.Success : InfoBarSeverity.Warning;
+            BServerDllInfoBar.Message  = existe ? "DLL disponível" : $"DLL não encontrada em: {dllPath}";
+            BtnTestarBServer.IsEnabled = existe;
+
+            if (!existe)
+                BServerSistemaComboBox.Visibility = Visibility.Collapsed;
+        }
+
+        private async void BServerServidor_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_config == null) return;
+            _config.BServerServidor = BServerServidor.Text;
+            await ConfigHelper.SalvarConfiguracoesAsync(_config);
+        }
+
+        private async void BtnTestarBServer_Click(object sender, RoutedEventArgs e)
+        {
+            var servidor = BServerServidor.Text.Trim();
+            if (string.IsNullOrWhiteSpace(servidor))
+            {
+                BServerStatusInfoBar.Severity = InfoBarSeverity.Error;
+                BServerStatusInfoBar.Message = "Informe o endereço do servidor antes de testar.";
+                BServerStatusInfoBar.IsOpen = true;
+                return;
+            }
+
+            BtnTestarBServer.IsEnabled = false;
+            BServerStatusInfoBar.Severity = InfoBarSeverity.Informational;
+            BServerStatusInfoBar.Message = $"Conectando em {servidor}:2000...";
+            BServerStatusInfoBar.IsOpen = true;
+            BServerSistemaComboBox.Visibility = Visibility.Collapsed;
+
+            try
+            {
+                var resultado = await BServerQueryService.ConsultarAsync(servidor, _config?.DiretorioBinarios ?? string.Empty);
+
+                if (resultado.IsSuccess)
+                {
+                    BServerStatusInfoBar.Severity = InfoBarSeverity.Success;
+                    BServerStatusInfoBar.Message =
+                        $"Conectado! {resultado.AvailableSystems.Length} sistema(s) encontrado(s). " +
+                        $"({resultado.ConnectionTime.TotalMilliseconds:0}ms)";
+
+                    _bserverSistemaChanging = true;
+                    BServerSistemaComboBox.ItemsSource = resultado.AvailableSystems;
+                    BServerSistemaComboBox.SelectedItem = _config?.BServerSistema is string s
+                        && resultado.AvailableSystems.Contains(s) ? s : null;
+                    _bserverSistemaChanging = false;
+
+                    BServerSistemaComboBox.Visibility = Visibility.Visible;
+                }
+                else
+                {
+                    BServerStatusInfoBar.Severity = InfoBarSeverity.Error;
+                    BServerStatusInfoBar.Message = resultado.ErrorMessage;
+                }
+            }
+            finally
+            {
+                BtnTestarBServer.IsEnabled = true;
+            }
+        }
+
+        private async void BServerSistemaComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_bserverSistemaChanging || _config == null) return;
+            _config.BServerSistema = BServerSistemaComboBox.SelectedItem as string;
+            await ConfigHelper.SalvarConfiguracoesAsync(_config);
         }
 
         #endregion

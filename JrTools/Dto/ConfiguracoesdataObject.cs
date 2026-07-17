@@ -22,6 +22,10 @@ namespace JrTools.Dto
         public List<string> HistoricoPastasAmbiente { get; set; } = new();
         public string? UltimaBranchAmbiente { get; set; }
 
+        // WES - BServer
+        public string? BServerServidor { get; set; }
+        public string? BServerSistema { get; set; }
+
         // Branches editáveis (compartilhado entre RhProd e SubirAmbienteManual)
         public List<string> ListaBranches { get; set; } = new()
         {
