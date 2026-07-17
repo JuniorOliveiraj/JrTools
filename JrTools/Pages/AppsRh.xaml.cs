@@ -1,4 +1,4 @@
-using JrTools.Pages.Apps;
+﻿using JrTools.Pages.Apps;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
@@ -21,6 +21,7 @@ namespace JrTools.Pages
             var items = new List<SystemSettingItem>
             {
                 new("Projetos RH", "Altere a versão do sistema de forma rápida.", "\uE912", typeof(RhProdPage)),
+                new("Notas", "Anotações e documentação pessoal com suporte a Markdown.", "", typeof(NotasPage)),
                 new("Cria", "Ta afim mesmo de levar uns esculachos?", "\uE99A", typeof(Cria)),
                 new("Cria Fix", "Corrigir a formatação UTF8-BOM dos arquivos", "\uE99A", typeof(CriaFix)),
                 new("Ambiente Específico", "Subir ambiente específico completo.", "\uE716", typeof(EspecificosPage)),
@@ -110,3 +111,4 @@ namespace JrTools.Pages
         }
     }
 }
+

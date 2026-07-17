@@ -49,6 +49,7 @@
 
                 <NavigationView.MenuItems>
                     <NavigationViewItem Icon="Home" Content="Home" Tag="Home"/>
+
                     <NavigationViewItem Icon="Play" Content="Apps Rh" Tag="Rhprod"/>
                     
                     <NavigationViewItem Content="Buildar Projetos" Tag="BuildarProjeto">

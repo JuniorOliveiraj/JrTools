@@ -86,15 +86,9 @@ namespace JrTools.Services
 
         public void ShowNotification(string title, string message)
         {
-            var toastXml = $@"
-                <toast>
-                    <visual>
-                        <binding template='ToastGeneric'>
-                            <text>{title}</text>
-                            <text>{message}</text>
-                        </binding>
-                    </visual>
-                </toast>";
+            var safeTitle = System.Security.SecurityElement.Escape(title);
+            var safeMessage = System.Security.SecurityElement.Escape(message);
+            var toastXml = $@"<toast><visual><binding template='ToastGeneric'><text>{safeTitle}</text><text>{safeMessage}</text></binding></visual></toast>";
 
             var notification = new AppNotification(toastXml);
             AppNotificationManager.Default.Show(notification);

@@ -3,6 +3,7 @@ using JrTools.Services;
 using JrTools.Services.Db;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.Windows.AppNotifications;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -102,6 +103,8 @@ namespace JrTools.Pages
                 WesExePath.Text           = _config.WesExePath           ?? string.Empty;
                 TglNotificarHoras.IsOn    = _config.NotificarHorasToggl;
 
+                VerificarStatusNotificacoes();
+
                 BServerServidor.Text = _config.BServerServidor ?? string.Empty;
                 AtualizarStatusDll();
 
@@ -165,6 +168,48 @@ namespace JrTools.Pages
             if (_config == null) return;
             _config.NotificarHorasToggl = TglNotificarHoras.IsOn;
             await ConfigHelper.SalvarConfiguracoesAsync(_config);
+            VerificarStatusNotificacoes();
+        }
+
+        private void VerificarStatusNotificacoes()
+        {
+            var setting = AppNotificationManager.Default.Setting;
+            if (setting != AppNotificationSetting.Enabled)
+            {
+                NotificacaoStatusInfoBar.Severity = InfoBarSeverity.Warning;
+                NotificacaoStatusInfoBar.Message = "Notificações bloqueadas pelo Windows. Acesse Configurações > Sistema > Notificações e ative para este app.";
+                NotificacaoStatusInfoBar.IsOpen = true;
+            }
+            else
+            {
+                NotificacaoStatusInfoBar.IsOpen = false;
+            }
+        }
+
+        private void BtnTestarNotificacao_Click(object sender, RoutedEventArgs e)
+        {
+            var setting = AppNotificationManager.Default.Setting;
+            if (setting != AppNotificationSetting.Enabled)
+            {
+                NotificacaoStatusInfoBar.Severity = InfoBarSeverity.Error;
+                NotificacaoStatusInfoBar.Message = $"Notificações bloqueadas ({setting}). Acesse Configurações do Windows > Sistema > Notificações e ative para este app.";
+                NotificacaoStatusInfoBar.IsOpen = true;
+                return;
+            }
+
+            try
+            {
+                NotificationService.Instance.ShowNotification("Teste JrTools", "Notificações estão funcionando!");
+                NotificacaoStatusInfoBar.Severity = InfoBarSeverity.Success;
+                NotificacaoStatusInfoBar.Message = "Notificação enviada com sucesso!";
+                NotificacaoStatusInfoBar.IsOpen = true;
+            }
+            catch (Exception ex)
+            {
+                NotificacaoStatusInfoBar.Severity = InfoBarSeverity.Error;
+                NotificacaoStatusInfoBar.Message = $"Erro ao enviar notificação: {ex.Message}";
+                NotificacaoStatusInfoBar.IsOpen = true;
+            }
         }
 
         #endregion

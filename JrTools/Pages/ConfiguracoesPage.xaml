@@ -169,7 +169,7 @@
                         </Border>
 
                         <Border Style="{StaticResource CardStyle}">
-                            <StackPanel Spacing="4">
+                            <StackPanel Spacing="8">
                                 <ToggleSwitch x:Name="TglNotificarHoras"
                                               Header="Notificar lançamento de horas (Toggl)"
                                               OnContent="Ativado"
@@ -178,6 +178,13 @@
                                 <TextBlock Text="Avisa às 13h (se &lt; 4h) e às 17h (se &lt; 8h)"
                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                            FontSize="12"/>
+                                <InfoBar x:Name="NotificacaoStatusInfoBar"
+                                         IsOpen="False"
+                                         IsClosable="False"/>
+                                <Button x:Name="BtnTestarNotificacao"
+                                        Content="Testar notificação"
+                                        Click="BtnTestarNotificacao_Click"
+                                        HorizontalAlignment="Left"/>
                             </StackPanel>
                         </Border>
                     </StackPanel>
