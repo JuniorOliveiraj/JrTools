@@ -1,5 +1,7 @@
 ﻿using JrTools.Dto;
+using JrTools.Enums;
 using JrTools.Services;
+using JrTools.Services.Db;
 using JrTools.Utils;
 using System;
 using System.Collections.Generic;
@@ -23,25 +25,35 @@ namespace JrTools.Flows
                 ? _param.Branch
                 : _param.BranchEspecificaDeTrabalho;
 
-            var binarios = new BinarioService();
-            var branchInfo = BuscarBranchDeTrabalho(branch);
+            var cfg = await ConfigHelper.LerConfiguracoesAsync();
+            var branchLimpo = BuscarBranchDeTrabalho(branch);
 
-            progresso.Report($"[INFO] Buscando binário para {branchInfo}...");
-            progresso.Report($"[INFO] Buscando binário para {branchInfo}...");
-            progresso.Report($"[INFO] Buscando binário para {branchInfo}...");
+            IBinarioSourceProvider provider;
+            if (cfg.FonteBinarios == FonteBinarios.Jenkins)
+            {
+                var dados = await PerfilPessoalHelper.LerConfiguracoesAsync();
+                provider = new JenkinsBinarioProvider(cfg.JenkinsBaseUrl, cfg.JenkinsJobPath, dados.JenkinsUsuario, dados.JenkinsApiToken);
+            }
+            else
+            {
+                provider = new ServidorBinarioProvider(cfg.CaminhoServidorBinarios);
+            }
 
-            BinarioInfoDataObject devBin = await binarios.ObterBinarioAsync(branchInfo);
+            progresso.Report($"[INFO] Buscando binário para {branchLimpo}...");
+
+            BinarioInfoDataObject devBin = await provider.ObterBinarioAsync(branchLimpo, progresso);
             if (devBin == null)
             {
-                progresso.Report($"[ERRO] Não foi possível localizar o binário para a branch '{branchInfo}'.");
-                throw new FluxoException($"Binário não encontrado: {branchInfo}");
-                 
+                progresso.Report($"[ERRO] Não foi possível localizar o binário para a branch '{branchLimpo}'.");
+                throw new FluxoException($"Binário não encontrado: {branchLimpo}");
+
             }
 
             devBin.destino = destino;
 
             progresso.Report($"[INFO] Extraindo binário para {devBin.destino}...");
-            await binarios.ExtrairBinarioAsync(devBin, progresso);
+            var extrator = new BinarioService();
+            await extrator.ExtrairBinarioAsync(devBin, progresso);
 
             progresso.Report($"[INFO] Binário {devBin.NomeOriginal} processado com sucesso!");
         }
@@ -49,10 +61,9 @@ namespace JrTools.Flows
         private string BuscarBranchDeTrabalho(string branch)
         {
             var service = new BranchNameHelper();
-            // Ex: sms/dev/09.00.00 → dev/09.00.00 → dev-09.00.00 (nome do zip no servidor)
-            // Ex: sms/prd/09.00    → prd/09.00    → prd-09.00
-            var branchNormalizada = service.ObterBranchInfo(branch).Branch;
-            return branchNormalizada.Replace("/", "-");
+            // Ex: sms/dev/09.00.00 → dev/09.00.00
+            // Ex: sms/prd/09.00    → prd/09.00
+            return service.ObterBranchInfo(branch).Branch;
         }
     }
 }

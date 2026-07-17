@@ -21,6 +21,8 @@ namespace JrTools.Pages
         private bool _senhaSisconVisible = false;
 
         private bool _bserverSistemaChanging = false;
+        private bool _fonteBinariosChanging = false;
+        private bool _jenkinsTokenVisible = false;
 
         public ConfiguracoesPage()
         {
@@ -107,6 +109,16 @@ namespace JrTools.Pages
 
                 BServerServidor.Text = _config.BServerServidor ?? string.Empty;
                 AtualizarStatusDll();
+
+                _fonteBinariosChanging = true;
+                FonteBinariosRadioButtons.SelectedItem = _config.FonteBinarios == JrTools.Enums.FonteBinarios.Jenkins
+                    ? FonteBinariosJenkinsOption
+                    : FonteBinariosServidorOption;
+                _fonteBinariosChanging = false;
+                CaminhoServidorBinarios.Text = _config.CaminhoServidorBinarios ?? string.Empty;
+                JenkinsBaseUrl.Text = _config.JenkinsBaseUrl ?? string.Empty;
+                JenkinsJobPath.Text = _config.JenkinsJobPath ?? string.Empty;
+                AtualizarVisibilidadeFonteBinarios();
 
                 AtualizarListViewBranches();
             }
@@ -236,6 +248,11 @@ namespace JrTools.Pages
                 LoginSiscon.Text = _dadosPessoais.LoginSiscon ?? string.Empty;
                 SenhaSiscon.Password = _dadosPessoais.SenhaSiscon ?? string.Empty;
                 SenhaSisconVisible.Text = new string('*', SenhaSiscon.Password.Length);
+
+                // Jenkins
+                JenkinsUsuario.Text = _dadosPessoais.JenkinsUsuario ?? string.Empty;
+                JenkinsApiTokenPasswordBox.Password = _dadosPessoais.JenkinsApiToken ?? string.Empty;
+                JenkinsApiTokenVisible.Text = new string('*', JenkinsApiTokenPasswordBox.Password.Length);
             }
             catch (Exception ex)
             {
@@ -372,6 +389,127 @@ namespace JrTools.Pages
             if (_bserverSistemaChanging || _config == null) return;
             _config.BServerSistema = BServerSistemaComboBox.SelectedItem as string;
             await ConfigHelper.SalvarConfiguracoesAsync(_config);
+        }
+
+        #endregion
+
+        #region Fonte de binários
+
+        private void AtualizarVisibilidadeFonteBinarios()
+        {
+            var jenkinsAtivo = ReferenceEquals(FonteBinariosRadioButtons.SelectedItem, FonteBinariosJenkinsOption);
+            CaminhoServidorBinarios.Visibility = jenkinsAtivo ? Visibility.Collapsed : Visibility.Visible;
+            JenkinsConfigPanel.Visibility = jenkinsAtivo ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private async void FonteBinariosRadioButtons_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            AtualizarVisibilidadeFonteBinarios();
+
+            if (_fonteBinariosChanging || _config == null) return;
+            _config.FonteBinarios = ReferenceEquals(FonteBinariosRadioButtons.SelectedItem, FonteBinariosJenkinsOption)
+                ? JrTools.Enums.FonteBinarios.Jenkins
+                : JrTools.Enums.FonteBinarios.Servidor;
+            await ConfigHelper.SalvarConfiguracoesAsync(_config);
+        }
+
+        private async void CaminhoServidorBinarios_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_config == null) return;
+            _config.CaminhoServidorBinarios = CaminhoServidorBinarios.Text;
+            await ConfigHelper.SalvarConfiguracoesAsync(_config);
+        }
+
+        private async void JenkinsBaseUrl_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_config == null) return;
+            _config.JenkinsBaseUrl = JenkinsBaseUrl.Text;
+            await ConfigHelper.SalvarConfiguracoesAsync(_config);
+        }
+
+        private async void JenkinsJobPath_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_config == null) return;
+            _config.JenkinsJobPath = JenkinsJobPath.Text;
+            await ConfigHelper.SalvarConfiguracoesAsync(_config);
+        }
+
+        private async void JenkinsUsuario_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_dadosPessoais == null) return;
+            _dadosPessoais.JenkinsUsuario = JenkinsUsuario.Text;
+            await PerfilPessoalHelper.SalvarConfiguracoesAsync(_dadosPessoais);
+        }
+
+        private async void JenkinsApiToken_PasswordChanged(object sender, RoutedEventArgs e)
+        {
+            if (_dadosPessoais == null) return;
+
+            string valor = _jenkinsTokenVisible ? JenkinsApiTokenVisible.Text : JenkinsApiTokenPasswordBox.Password;
+            _dadosPessoais.JenkinsApiToken = valor;
+            if (!_jenkinsTokenVisible)
+                JenkinsApiTokenVisible.Text = new string('*', valor.Length);
+            await PerfilPessoalHelper.SalvarConfiguracoesAsync(_dadosPessoais);
+        }
+
+        private void ToggleJenkinsApiTokenVisibility_Click(object sender, RoutedEventArgs e)
+        {
+            _jenkinsTokenVisible = !_jenkinsTokenVisible;
+            if (_jenkinsTokenVisible)
+            {
+                JenkinsApiTokenVisible.Visibility = Visibility.Visible;
+                JenkinsApiTokenPasswordBox.Visibility = Visibility.Collapsed;
+                JenkinsApiTokenVisible.Text = _dadosPessoais.JenkinsApiToken ?? "";
+            }
+            else
+            {
+                JenkinsApiTokenVisible.Visibility = Visibility.Collapsed;
+                JenkinsApiTokenPasswordBox.Visibility = Visibility.Visible;
+                JenkinsApiTokenPasswordBox.Password = _dadosPessoais.JenkinsApiToken ?? "";
+                JenkinsApiTokenVisible.Text = new string('*', JenkinsApiTokenPasswordBox.Password.Length);
+            }
+        }
+
+        private async void BtnTestarJenkins_Click(object sender, RoutedEventArgs e)
+        {
+            var baseUrl = JenkinsBaseUrl.Text.Trim();
+            var jobPath = JenkinsJobPath.Text.Trim();
+            var usuario = JenkinsUsuario.Text.Trim();
+            var token   = _jenkinsTokenVisible ? JenkinsApiTokenVisible.Text : JenkinsApiTokenPasswordBox.Password;
+
+            if (string.IsNullOrWhiteSpace(baseUrl) || string.IsNullOrWhiteSpace(jobPath) ||
+                string.IsNullOrWhiteSpace(usuario) || string.IsNullOrWhiteSpace(token))
+            {
+                JenkinsStatusInfoBar.Severity = InfoBarSeverity.Error;
+                JenkinsStatusInfoBar.Message = "Preencha URL, caminho do job, usuário e token antes de testar.";
+                JenkinsStatusInfoBar.IsOpen = true;
+                return;
+            }
+
+            BtnTestarJenkins.IsEnabled = false;
+            JenkinsStatusInfoBar.Severity = InfoBarSeverity.Informational;
+            JenkinsStatusInfoBar.Message = "Conectando...";
+            JenkinsStatusInfoBar.IsOpen = true;
+
+            try
+            {
+                var provider = new JenkinsBinarioProvider(baseUrl, jobPath, usuario, token);
+                var ok = await provider.TestarConexaoAsync();
+
+                JenkinsStatusInfoBar.Severity = ok ? InfoBarSeverity.Success : InfoBarSeverity.Error;
+                JenkinsStatusInfoBar.Message = ok
+                    ? "Conectado com sucesso!"
+                    : "Não foi possível autenticar. Confira usuário, token e o caminho do job.";
+            }
+            catch (Exception ex)
+            {
+                JenkinsStatusInfoBar.Severity = InfoBarSeverity.Error;
+                JenkinsStatusInfoBar.Message = $"Erro ao conectar: {ex.Message}";
+            }
+            finally
+            {
+                BtnTestarJenkins.IsEnabled = true;
+            }
         }
 
         #endregion

@@ -23,6 +23,10 @@ namespace JrTools.Dto
         public string? ApiGemini { get; set; }
         public string? ApiToggl { get; set; }
 
+        // Jenkins (fonte de binários alternativa)
+        public string? JenkinsUsuario { get; set; }
+        public string? JenkinsApiToken { get; set; }
+
         // Siscon
         public string? LoginSiscon { get; set; }
         public string? SenhaSiscon { get; set; }

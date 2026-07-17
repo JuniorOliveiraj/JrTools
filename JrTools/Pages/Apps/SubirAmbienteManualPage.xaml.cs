@@ -356,22 +356,27 @@ namespace JrTools.Pages.Apps
         private async Task BaixarEExtrairBinariosAsync(string branch, bool reutilizar, bool usarLink, string nomePasta)
         {
             var progresso = CriarProgresso();
-            var svc       = new BinarioService();
 
-            var branchNorm = new JrTools.Utils.BranchNameHelper()
-                .ObterBranchInfo(branch).Branch
-                .Replace("/", "-");
+            var branchLimpo = new JrTools.Utils.BranchNameHelper()
+                .ObterBranchInfo(branch).Branch;
 
-            progresso.Report($"[INFO] Buscando binário para '{branchNorm}'...");
-            var binInfo = await svc.ObterBinarioAsync(branchNorm);
-            if (binInfo == null)
-                throw new InvalidOperationException($"Binário não encontrado para '{branchNorm}' no servidor.");
+            IBinarioSourceProvider provider;
+            if (_cfg.FonteBinarios == JrTools.Enums.FonteBinarios.Jenkins)
+            {
+                var dados = await PerfilPessoalHelper.LerConfiguracoesAsync();
+                provider = new JenkinsBinarioProvider(_cfg.JenkinsBaseUrl, _cfg.JenkinsJobPath, dados.JenkinsUsuario, dados.JenkinsApiToken);
+            }
+            else
+            {
+                provider = new ServidorBinarioProvider(_cfg.CaminhoServidorBinarios);
+            }
 
-            // Se não reutilizar, apaga o zip da pasta temp para forçar novo download
+            // Se não reutilizar, apaga o zip da pasta temp ANTES de obter o binário, senão o
+            // provedor (Jenkins) reaproveitaria um zip já baixado e o download nunca aconteceria.
             if (!reutilizar)
             {
-                var pastaTemp = Path.Combine(Path.GetTempPath(), "BinariosTemp");
-                var zipExist  = Path.Combine(pastaTemp, binInfo.NomeOriginal + ".zip");
+                var nomeEsperado = "Bin_" + branchLimpo.Replace("/", "-");
+                var zipExist = Path.Combine(BinarioService.PastaTemporaria, nomeEsperado + ".zip");
                 if (File.Exists(zipExist))
                 {
                     progresso.Report($"[INFO] Removendo zip existente: {zipExist}");
@@ -379,7 +384,14 @@ namespace JrTools.Pages.Apps
                 }
             }
 
+            progresso.Report($"[INFO] Buscando binário para '{branchLimpo}'...");
+            var binInfo = await provider.ObterBinarioAsync(branchLimpo, progresso);
+            if (binInfo == null)
+                throw new InvalidOperationException($"Binário não encontrado para '{branchLimpo}'.");
+
             binInfo.destino = @"D:\Benner\bin";
+
+            var svc = new BinarioService();
 
             if (usarLink)
             {

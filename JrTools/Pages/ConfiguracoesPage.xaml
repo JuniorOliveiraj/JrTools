@@ -231,6 +231,68 @@
 
             <Expander Style="{StaticResource FullWidthExpanderStyle}" IsExpanded="False">
                 <Expander.Header>
+                    <TextBlock Text="Fonte de binários (Delphi)" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                </Expander.Header>
+                <Expander.Content>
+                    <Border Style="{StaticResource CardStyle}" Margin="0,8,0,0">
+                        <StackPanel Spacing="16">
+                            <TextBlock Text="Define de onde os binários são baixados ao atualizar um ambiente."
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       FontSize="12"/>
+
+                            <RadioButtons x:Name="FonteBinariosRadioButtons"
+                                          Header="Fonte"
+                                          MaxColumns="2"
+                                          SelectionChanged="FonteBinariosRadioButtons_SelectionChanged">
+                                <RadioButton x:Name="FonteBinariosServidorOption" Content="Servidor"/>
+                                <RadioButton x:Name="FonteBinariosJenkinsOption" Content="Jenkins"/>
+                            </RadioButtons>
+
+                            <TextBox x:Name="CaminhoServidorBinarios"
+                                     Header="Caminho do servidor"
+                                     PlaceholderText="\\bnu-rhslave001\public"
+                                     TextChanged="CaminhoServidorBinarios_TextChanged"/>
+
+                            <StackPanel x:Name="JenkinsConfigPanel" Spacing="16" Visibility="Collapsed">
+                                <TextBox x:Name="JenkinsBaseUrl"
+                                         Header="URL base do Jenkins"
+                                         PlaceholderText="https://jenkins.benner.com.br"
+                                         TextChanged="JenkinsBaseUrl_TextChanged"/>
+                                <TextBox x:Name="JenkinsJobPath"
+                                         Header="Caminho do job"
+                                         PlaceholderText="job/RH/job/AzureDevops/job/DeployE9"
+                                         TextChanged="JenkinsJobPath_TextChanged"/>
+                                <TextBox x:Name="JenkinsUsuario"
+                                         Header="Usuário Jenkins"
+                                         TextChanged="JenkinsUsuario_TextChanged"/>
+
+                                <Grid>
+                                    <PasswordBox x:Name="JenkinsApiTokenPasswordBox" Header="API Token Jenkins" PasswordChanged="JenkinsApiToken_PasswordChanged"/>
+                                    <TextBox x:Name="JenkinsApiTokenVisible" Visibility="Collapsed" Header="API Token Jenkins" TextChanged="JenkinsApiToken_PasswordChanged"/>
+                                    <Button HorizontalAlignment="Right"
+                                            VerticalAlignment="Center"
+                                            Width="40"
+                                            Click="ToggleJenkinsApiTokenVisibility_Click">
+                                        <FontIcon Glyph="&#xE890;" />
+                                    </Button>
+                                </Grid>
+
+                                <Button x:Name="BtnTestarJenkins"
+                                        Content="Testar Jenkins"
+                                        Click="BtnTestarJenkins_Click"
+                                        HorizontalAlignment="Left"/>
+
+                                <InfoBar x:Name="JenkinsStatusInfoBar"
+                                         IsOpen="False"
+                                         IsClosable="False"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </Expander.Content>
+            </Expander>
+
+            <Expander Style="{StaticResource FullWidthExpanderStyle}" IsExpanded="False">
+                <Expander.Header>
                     <TextBlock Text="Branches disponíveis" Style="{ThemeResource SubtitleTextBlockStyle}"/>
                 </Expander.Header>
                 <Expander.Content>
