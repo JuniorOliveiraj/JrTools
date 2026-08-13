@@ -3,17 +3,17 @@
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
-    <ProjectGuid>{A349F210-9831-4A82-841A-94B6E1F9A201}</ProjectGuid>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{A3D72B84-3C1E-4E90-9B21-7B1A6E771912}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>BennerSmartInstaller</RootNamespace>
     <AssemblyName>BennerSmartInstaller</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <OutputPath>bin\$(Configuration)\</OutputPath>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x64' ">
-    <PlatformTarget>x64</PlatformTarget>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -22,8 +22,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
-    <PlatformTarget>x64</PlatformTarget>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
@@ -39,55 +38,10 @@
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
-    <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AppServerHelper.cs" />
-    <Compile Include="CLIConfiguration.cs" />
     <Compile Include="Program.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Verbs\BaseVerb.cs" />
-    <Compile Include="Verbs\SmartInstallVerb.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="Benner.Tecnologia.BServer.Clients">
-      <HintPath>..\..\prod\WES\WebApp\Bin\Benner.Tecnologia.BServer.Clients.dll</HintPath>
-    </Reference>
-    <Reference Include="Benner.Tecnologia.Bas.AppServer.BusinessLogic">
-      <HintPath>..\..\prod\WES\WebApp\Bin\Benner.Tecnologia.Bas.AppServer.BusinessLogic.dll</HintPath>
-    </Reference>
-    <Reference Include="Benner.Tecnologia.Bas.AppServer.Pools">
-      <HintPath>..\..\prod\WES\WebApp\Bin\Benner.Tecnologia.Bas.AppServer.Pools.dll</HintPath>
-    </Reference>
-    <Reference Include="Benner.Tecnologia.Business">
-      <HintPath>..\..\prod\WES\WebApp\Bin\Benner.Tecnologia.Business.dll</HintPath>
-    </Reference>
-    <Reference Include="Benner.Tecnologia.Common2">
-      <HintPath>..\..\prod\WES\WebApp\Bin\Benner.Tecnologia.Common2.dll</HintPath>
-    </Reference>
-    <Reference Include="Benner.Tecnologia.Metadata">
-      <HintPath>..\..\prod\WES\WebApp\Bin\Benner.Tecnologia.Metadata.dll</HintPath>
-    </Reference>
-    <Reference Include="Benner.Tecnologia.Wes.Components">
-      <HintPath>..\..\prod\WES\WebApp\Bin\Benner.Tecnologia.Wes.Components.dll</HintPath>
-    </Reference>
-    <Reference Include="Benner.Tecnologia.Wes.Components.WebApp">
-      <HintPath>..\..\prod\WES\WebApp\Bin\Benner.Tecnologia.Wes.Components.WebApp.dll</HintPath>
-    </Reference>
-    <Reference Include="Benner.Tecnologia.Wes.IoC">
-      <HintPath>..\..\prod\WES\WebApp\Bin\Benner.Tecnologia.Wes.IoC.dll</HintPath>
-    </Reference>
-    <Reference Include="CommandLine">
-      <HintPath>..\..\prod\WES\WebApp\Bin\CommandLine.dll</HintPath>
-    </Reference>
-    <Reference Include="Ninject">
-      <HintPath>..\..\prod\WES\WebApp\Bin\Ninject.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup>
-    <PostBuildEvent>copy /Y "$(TargetPath)" "$(ProjectDir)..\..\prod\WES\WebApp\Bin\$(TargetFileName)"
-copy /Y "$(TargetPath).config" "$(ProjectDir)..\..\prod\WES\WebApp\Bin\$(TargetFileName).config"</PostBuildEvent>
-  </PropertyGroup>
 </Project>

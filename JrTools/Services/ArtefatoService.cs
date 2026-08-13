@@ -61,10 +61,21 @@ namespace JrTools.Services
 
         public List<ArtefatoDto> ResolverDependencias(ArtefatoDto principal, List<ArtefatoDto> todosArtefatos)
         {
+            return ResolverDependencias(new[] { principal }, todosArtefatos);
+        }
+
+        public List<ArtefatoDto> ResolverDependencias(IEnumerable<ArtefatoDto> principais, List<ArtefatoDto> todosArtefatos)
+        {
             var ordenados = new List<ArtefatoDto>();
             var visitados = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            ResolverRecursivo(principal, todosArtefatos, ordenados, visitados);
+            foreach (var principal in principais)
+            {
+                if (principal != null)
+                {
+                    ResolverRecursivo(principal, todosArtefatos, ordenados, visitados);
+                }
+            }
 
             return ordenados;
         }

@@ -278,6 +278,20 @@ namespace JrTools.Pages
         {
             if (string.IsNullOrWhiteSpace(_webAppPath)) return;
 
+            // Popula ComboBox de Status se não populado
+            if (CmbStatusArtefato.ItemsSource == null)
+            {
+                CmbStatusArtefato.ItemsSource = new System.Collections.Generic.List<string>
+                {
+                    "Somente Pendentes (Novos/Modificados)",
+                    "Todos os Artefatos",
+                    "Apenas Novos (FileOnly)",
+                    "Apenas Modificados (Diferent)",
+                    "Apenas Instalados (Equal)"
+                };
+                CmbStatusArtefato.SelectedIndex = 0;
+            }
+
             _todosArtefatos = _artefatoService.CarregarArtefatos(_webAppPath);
 
             // Popula ComboBox de Guias
@@ -293,17 +307,85 @@ namespace JrTools.Pages
             CmbCamadaArtefato.SelectedIndex = 0;
 
             FiltrarArtefatos();
+            
+            // Dispara comparação assíncrona com o Banco de Dados em segundo plano
+            _ = CompararComBancoDadosAsync();
+        }
+
+        private async Task CompararComBancoDadosAsync()
+        {
+            if (string.IsNullOrWhiteSpace(_webAppPath) || _todosArtefatos == null || _todosArtefatos.Count == 0) return;
+
+            try
+            {
+                InfoBarAviso.IsOpen = true;
+                InfoBarAviso.Severity = InfoBarSeverity.Informational;
+                InfoBarAviso.Title = "Comparando artefatos...";
+                InfoBarAviso.Message = "Consultando status no Banco de Dados via BennerSmartInstaller...";
+
+                var wes = new WesService(_wesExePath);
+                var statusDict = await wes.ArtifactsCompareAsync(_webAppPath, CriarProgresso());
+
+                if (statusDict != null && statusDict.Count > 0)
+                {
+                    int pendentesCount = 0;
+                    foreach (var art in _todosArtefatos)
+                    {
+                        if (statusDict.TryGetValue(art.NomeArquivo, out string st) ||
+                            statusDict.TryGetValue(art.Identificador, out st))
+                        {
+                            art.Status = st;
+                        }
+                        else
+                        {
+                            art.Status = "Equal";
+                        }
+
+                        if (art.IsPendente) pendentesCount++;
+                    }
+
+                    InfoBarAviso.Severity = InfoBarSeverity.Success;
+                    InfoBarAviso.Title = "Comparação concluída";
+                    InfoBarAviso.Message = $"Foram encontrados {pendentesCount} artefato(s) pendente(s) de instalação.";
+                }
+                else
+                {
+                    InfoBarAviso.Severity = InfoBarSeverity.Warning;
+                    InfoBarAviso.Title = "Comparação concluída sem dados";
+                    InfoBarAviso.Message = "Não foi possível obter a comparação do banco de dados ou todos estão atualizados.";
+                }
+            }
+            catch (Exception ex)
+            {
+                InfoBarAviso.Severity = InfoBarSeverity.Error;
+                InfoBarAviso.Title = "Erro na comparação";
+                InfoBarAviso.Message = ex.Message;
+            }
+            finally
+            {
+                FiltrarArtefatos();
+            }
         }
 
         private void FiltrarArtefatos()
         {
             if (_todosArtefatos == null) return;
 
+            string statusSel = CmbStatusArtefato.SelectedItem as string ?? "Somente Pendentes (Novos/Modificados)";
             string guiaSel = CmbGuiaArtefato.SelectedItem as string ?? "Todas";
             string camadaSel = CmbCamadaArtefato.SelectedItem as string ?? "Todas";
             string busca = TxtBuscaArtefato.Text?.Trim() ?? string.Empty;
 
             var filtrados = _todosArtefatos.AsEnumerable();
+
+            if (statusSel.StartsWith("Somente Pendentes"))
+                filtrados = filtrados.Where(a => a.IsPendente);
+            else if (statusSel.StartsWith("Apenas Novos"))
+                filtrados = filtrados.Where(a => a.Status.Equals("FileOnly", StringComparison.OrdinalIgnoreCase) || a.Status.Equals("Novo", StringComparison.OrdinalIgnoreCase));
+            else if (statusSel.StartsWith("Apenas Modificados"))
+                filtrados = filtrados.Where(a => a.Status.Equals("Diferent", StringComparison.OrdinalIgnoreCase) || a.Status.Equals("Modificado", StringComparison.OrdinalIgnoreCase));
+            else if (statusSel.StartsWith("Apenas Instalados"))
+                filtrados = filtrados.Where(a => a.Status.Equals("Equal", StringComparison.OrdinalIgnoreCase));
 
             if (guiaSel != "Todas")
                 filtrados = filtrados.Where(a => a.Guia.Equals(guiaSel, StringComparison.OrdinalIgnoreCase));
@@ -327,58 +409,91 @@ namespace JrTools.Pages
         private void BtnCarregarArtefatos_Click(object sender, RoutedEventArgs e)
             => CarregarArtefatosDoProjeto();
 
+        private async void BtnCompararDB_Click(object sender, RoutedEventArgs e)
+            => await CompararComBancoDadosAsync();
+
+        private void BtnMarcarTodos_Click(object sender, RoutedEventArgs e)
+        {
+            if (LstArtefatos.ItemsSource is System.Collections.Generic.IEnumerable<ArtefatoDto> visiveis)
+            {
+                var listaVisiveis = visiveis.ToList();
+                foreach (var item in listaVisiveis)
+                {
+                    item.IsSelecionado = true;
+                }
+                LstArtefatos.ItemsSource = listaVisiveis;
+            }
+        }
+
+        private void BtnDesmarcarTodos_Click(object sender, RoutedEventArgs e)
+        {
+            if (_todosArtefatos != null)
+            {
+                foreach (var item in _todosArtefatos)
+                {
+                    item.IsSelecionado = false;
+                }
+                if (LstArtefatos.ItemsSource is System.Collections.Generic.IEnumerable<ArtefatoDto> visiveis)
+                {
+                    LstArtefatos.ItemsSource = visiveis.ToList();
+                }
+            }
+        }
+
         private void LstArtefatos_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (LstArtefatos.SelectedItem is ArtefatoDto artefato)
             {
-                TxtInfoDependencia.Text = $"Selecionado: {artefato.Identificador} ({artefato.Guia} - Camada {artefato.Camada})";
+                TxtInfoDependencia.Text = $"Selecionado na lista: {artefato.Identificador} ({artefato.Guia} - Camada {artefato.Camada})";
             }
         }
 
         private void BtnInspecionarDep_Click(object sender, RoutedEventArgs e)
         {
-            if (LstArtefatos.SelectedItem is not ArtefatoDto selecionado)
+            var selecionados = _todosArtefatos.Where(a => a.IsSelecionado).ToList();
+            if (selecionados.Count == 0 && LstArtefatos.SelectedItem is ArtefatoDto itemUnico)
             {
-                TxtInfoDependencia.Text = "Aviso: Selecione um artefato na lista acima para inspecionar dependências.";
+                selecionados.Add(itemUnico);
+            }
+
+            if (selecionados.Count == 0)
+            {
+                TxtInfoDependencia.Text = "Aviso: Marque com a Checkbox ou selecione um artefato na lista acima para inspecionar dependências.";
                 return;
             }
 
-            var dependencias = _artefatoService.ResolverDependencias(selecionado, _todosArtefatos);
+            var dependencias = _artefatoService.ResolverDependencias(selecionados, _todosArtefatos);
 
-            if (dependencias.Count <= 1)
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine($"🔎 Ordem de Instalação Calculada para {selecionados.Count} artefato(s) selecionado(s) (Total com dependências: {dependencias.Count}):");
+            for (int i = 0; i < dependencias.Count; i++)
             {
-                TxtInfoDependencia.Text = $"Nenhuma dependência extra encontrada no XML de [{selecionado.Identificador}]. Ele pode ser instalado diretamente.";
+                var item = dependencias[i];
+                sb.AppendLine($"  {i + 1}. {item.Guia} -> {item.Identificador} (Camada {item.Camada})");
             }
-            else
-            {
-                var sb = new System.Text.StringBuilder();
-                sb.AppendLine($"🔎 Ordem de Instalação Calculada para [{selecionado.Identificador}]:");
-                for (int i = 0; i < dependencias.Count; i++)
-                {
-                    var item = dependencias[i];
-                    sb.AppendLine($"  {i + 1}. {item.Guia} -> {item.Identificador} (Camada {item.Camada})");
-                }
-                TxtInfoDependencia.Text = sb.ToString();
-            }
+            TxtInfoDependencia.Text = sb.ToString();
         }
 
         private async void BtnInstalarSmart_Click(object sender, RoutedEventArgs e)
         {
-            if (LstArtefatos.SelectedItem is not ArtefatoDto selecionado)
+            var selecionados = _todosArtefatos.Where(a => a.IsSelecionado).ToList();
+            if (selecionados.Count == 0 && LstArtefatos.SelectedItem is ArtefatoDto itemUnico)
             {
-                InfoBarAviso.Message = "Selecione um artefato na lista antes de executar o Smart Install.";
+                selecionados.Add(itemUnico);
+            }
+
+            if (selecionados.Count == 0)
+            {
+                InfoBarAviso.Message = "Marque ao menos um artefato utilizando a Checkbox (ou selecione na lista) antes de executar o Smart Install.";
                 InfoBarAviso.Severity = InfoBarSeverity.Warning;
                 InfoBarAviso.IsOpen = true;
                 return;
             }
 
-            var dependencias = _artefatoService.ResolverDependencias(selecionado, _todosArtefatos);
+            var dependencias = _artefatoService.ResolverDependencias(selecionados, _todosArtefatos);
 
-            // Coleta todas as camadas únicas necessárias para instalar o artefato + suas dependências
-            var camadasNecessarias = dependencias.Select(d => d.Camada).Distinct().ToList();
-
-            AppendLog($"[SMART INSTALL] Iniciando instalação para [{selecionado.Identificador}] e {dependencias.Count - 1} dependências encontradas.");
-            foreach(var dep in dependencias)
+            AppendLog($"[SMART INSTALL] Iniciando instalação para {selecionados.Count} artefato(s) selecionado(s) e {dependencias.Count - selecionados.Count} dependência(s) encontrada(s).");
+            foreach (var dep in dependencias)
             {
                 AppendLog($"  -> Requer: {dep.Guia} / {dep.Identificador} (Camada {dep.Camada})");
             }
