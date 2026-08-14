@@ -161,7 +161,16 @@ namespace BennerSmartInstaller
             var artifactsList = Activator.CreateInstance(listType);
             var addMethod = listType.GetMethod("Add");
 
-            string[] relativeFiles = filesArg.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries);
+            string[] relativeFiles;
+            if (File.Exists(filesArg) && (filesArg.EndsWith(".txt", StringComparison.OrdinalIgnoreCase) || filesArg.EndsWith(".lst", StringComparison.OrdinalIgnoreCase)))
+            {
+                string fileContent = File.ReadAllText(filesArg);
+                relativeFiles = fileContent.Split(new[] { ';', ',', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            }
+            else
+            {
+                relativeFiles = filesArg.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries);
+            }
             int count = 0;
 
             foreach (var relFile in relativeFiles)

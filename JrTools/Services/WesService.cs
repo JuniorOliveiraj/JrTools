@@ -64,9 +64,34 @@ namespace JrTools.Services
 
             if (System.IO.File.Exists(installerExe))
             {
-                string artifactsArg = string.Join(";", relativeFiles);
+                string tempFile = null;
+                string artifactsArg;
+                if (relativeFiles.Count > 5 || string.Join(";", relativeFiles).Length > 1000)
+                {
+                    tempFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"smart_install_files_{Guid.NewGuid():N}.txt");
+                    System.IO.File.WriteAllLines(tempFile, relativeFiles);
+                    artifactsArg = tempFile;
+                }
+                else
+                {
+                    artifactsArg = string.Join(";", relativeFiles);
+                }
+
                 string args = $"install -a \"{webAppPath}\" -f \"{artifactsArg}\"";
-                return RunProcessAsync(installerExe, args, progresso, "[SMART INSTALL SELETIVO]");
+                return Task.Run(async () =>
+                {
+                    try
+                    {
+                        return await RunProcessAsync(installerExe, args, progresso, "[SMART INSTALL SELETIVO]");
+                    }
+                    finally
+                    {
+                        if (!string.IsNullOrEmpty(tempFile) && System.IO.File.Exists(tempFile))
+                        {
+                            try { System.IO.File.Delete(tempFile); } catch { }
+                        }
+                    }
+                });
             }
 
             // Fallback para wes.exe nativo caso o utilitário externo não esteja presente

@@ -283,8 +283,8 @@ namespace JrTools.Pages
             {
                 CmbStatusArtefato.ItemsSource = new System.Collections.Generic.List<string>
                 {
-                    "Somente Pendentes (Novos/Modificados)",
                     "Todos os Artefatos",
+                    "Somente Pendentes (Novos/Modificados)",
                     "Apenas Novos (FileOnly)",
                     "Apenas Modificados (Diferent)",
                     "Apenas Instalados (Equal)"
@@ -307,9 +307,6 @@ namespace JrTools.Pages
             CmbCamadaArtefato.SelectedIndex = 0;
 
             FiltrarArtefatos();
-            
-            // Dispara comparação assíncrona com o Banco de Dados em segundo plano
-            _ = CompararComBancoDadosAsync();
         }
 
         private async Task CompararComBancoDadosAsync()
@@ -318,6 +315,7 @@ namespace JrTools.Pages
 
             try
             {
+                BtnCompararDB.IsEnabled = false;
                 InfoBarAviso.IsOpen = true;
                 InfoBarAviso.Severity = InfoBarSeverity.Informational;
                 InfoBarAviso.Title = "Comparando artefatos...";
@@ -363,6 +361,7 @@ namespace JrTools.Pages
             }
             finally
             {
+                BtnCompararDB.IsEnabled = true;
                 FiltrarArtefatos();
             }
         }
@@ -371,7 +370,7 @@ namespace JrTools.Pages
         {
             if (_todosArtefatos == null) return;
 
-            string statusSel = CmbStatusArtefato.SelectedItem as string ?? "Somente Pendentes (Novos/Modificados)";
+            string statusSel = CmbStatusArtefato.SelectedItem as string ?? "Todos os Artefatos";
             string guiaSel = CmbGuiaArtefato.SelectedItem as string ?? "Todas";
             string camadaSel = CmbCamadaArtefato.SelectedItem as string ?? "Todas";
             string busca = TxtBuscaArtefato.Text?.Trim() ?? string.Empty;

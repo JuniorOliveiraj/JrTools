@@ -209,7 +209,18 @@ namespace JrTools.Pages
                 if (config.BaixarBinario)
                 {
                     AppendTerminalLog("\n[ETAPA 1/5] Baixando/extraindo binário atualizado...");
-                    var svcBin = new BinarioService();
+                    var cfgBin = await ConfigHelper.LerConfiguracoesAsync();
+                    IBinarioSourceProvider provider;
+                    if (cfgBin.FonteBinarios == FonteBinarios.Jenkins)
+                    {
+                        var dados = await PerfilPessoalHelper.LerConfiguracoesAsync();
+                        provider = new JenkinsBinarioProvider(cfgBin.JenkinsBaseUrl, cfgBin.JenkinsJobPath, dados.JenkinsUsuario, dados.JenkinsApiToken);
+                    }
+                    else
+                    {
+                        provider = new ServidorBinarioProvider(cfgBin.CaminhoServidorBinarios);
+                    }
+
                     var branchNorm = "prd-09.00";
                     if (!string.IsNullOrWhiteSpace(_config?.UltimaBranchAmbiente))
                     {
@@ -218,10 +229,11 @@ namespace JrTools.Pages
                             .Replace("/", "-");
                     }
 
-                    var binInfo = await svcBin.ObterBinarioAsync(branchNorm);
+                    var binInfo = await provider.ObterBinarioAsync(branchNorm, progresso);
                     if (binInfo != null)
                     {
                         binInfo.destino = @"D:\Benner\bin";
+                        var svcBin = new BinarioService();
                         await svcBin.ExtrairBinarioAsync(binInfo, progresso);
                     }
                     else

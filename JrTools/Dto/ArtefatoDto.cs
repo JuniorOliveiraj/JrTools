@@ -7,7 +7,7 @@ namespace JrTools.Dto
         public string Guia { get; set; } = string.Empty; // ex: Menus, Pages, Views
         public string Camada { get; set; } = string.Empty; // ex: 20, 30, 40, 50
         public string CaminhoCompleto { get; set; } = string.Empty;
-        public string Status { get; set; } = "Equal"; // "FileOnly" (Novo), "Diferent" (Modificado), "Equal" (Instalado)
+        public string Status { get; set; } = "Não Verificado"; // "FileOnly" (Novo), "Diferent" (Modificado), "Equal" (Instalado), "Não Verificado"
         public bool IsSelecionado { get; set; }
 
         public bool IsPendente => Status.Equals("FileOnly", System.StringComparison.OrdinalIgnoreCase) ||
@@ -20,6 +20,7 @@ namespace JrTools.Dto
         {
             get
             {
+                if (string.IsNullOrEmpty(Status) || Status.Equals("Não Verificado", System.StringComparison.OrdinalIgnoreCase)) return "Não Verificado";
                 if (Status.Equals("FileOnly", System.StringComparison.OrdinalIgnoreCase)) return "Novo";
                 if (Status.Equals("Diferent", System.StringComparison.OrdinalIgnoreCase)) return "Modificado";
                 if (Status.Equals("Equal", System.StringComparison.OrdinalIgnoreCase)) return "Instalado";
