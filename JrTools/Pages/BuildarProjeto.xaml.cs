@@ -189,7 +189,7 @@ namespace JrTools.Pages
                     var guardian = new ProcessGuardianService();
                     await guardian.ExecutarComProcessosFechadosAsync(
                         processos,
-                        async _ => await ExecutarBuildDotnetAsync(solucaoSelecionada, msBuildInfo, acaoSelecionada, progresso),
+                        async _ => { await ExecutarBuildDotnetAsync(solucaoSelecionada, msBuildInfo, acaoSelecionada, progresso); },
                         progresso);
                 }
                 else
@@ -209,7 +209,7 @@ namespace JrTools.Pages
             }
         }
 
-        private async Task ExecutarBuildDotnetAsync(SolucaoInformacoesDto solucaoSelecionada, MsBuildInfo msBuildInfo, AcaoBuild acaoSelecionada, IProgress<string> progresso)
+        private async Task<bool> ExecutarBuildDotnetAsync(SolucaoInformacoesDto solucaoSelecionada, MsBuildInfo msBuildInfo, AcaoBuild acaoSelecionada, IProgress<string> progresso, bool abrirUrl = true)
         {
             AppendTerminalLog($"Iniciando {acaoSelecionada.ToString().ToLower()} da solução: {solucaoSelecionada.Nome}");
 
@@ -219,27 +219,28 @@ namespace JrTools.Pages
                 await buildHandler.BuildarProjetoAsync(solucaoSelecionada.Caminho, msBuildInfo.Path, acaoSelecionada, progresso);
                 AppendTerminalLog($"{acaoSelecionada.ToString()} concluído com sucesso!");
 
-                if (acaoSelecionada == AcaoBuild.Build || acaoSelecionada == AcaoBuild.Rebuild)
+                if (abrirUrl && (acaoSelecionada == AcaoBuild.Build || acaoSelecionada == AcaoBuild.Rebuild))
                 {
                     try
                     {
-                        var psi = new System.Diagnostics.ProcessStartInfo
+                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
                         {
                             FileName = "http://localhost/prod",
                             UseShellExecute = true
-                        };
-                        System.Diagnostics.Process.Start(psi);
+                        });
                     }
                     catch (Exception ex)
                     {
                         progresso.Report($"[WARN] Não foi possível abrir o navegador: {ex.Message}");
                     }
                 }
+
+                return true;
             }
             catch (Exception ex)
             {
                 progresso.Report($"[ERRO] {acaoSelecionada.ToString()} falhou: {ex.Message}");
-                throw;
+                return false;
             }
         }
 
@@ -260,47 +261,143 @@ namespace JrTools.Pages
 
         private async void ProcessarDelphiButton_Click(object sender, RoutedEventArgs e)
         {
-            if (SolucaoDelphiSelecionadoComboBox.SelectedItem is not SolucaoInformacoesDto solucaoSelecionada)
+            if (SolucaoDelphiSelecionadoComboBox.SelectedItem is not SolucaoInformacoesDto solucao)
             {
                 ShowValidationError("Selecione uma solução Delphi antes de processar.");
                 return;
             }
-            
-            if (MsBuildVersionComboBox.SelectedItem is not MsBuildInfo msBuildInfo)
+            if (MsBuildVersionComboBox.SelectedItem is not MsBuildInfo msBuild)
             {
                 ShowValidationError("Selecione uma versão do MSBuild.");
                 return;
             }
 
-            var acaoSelecionada = (AcaoBuild)AcaoBuildDelphiComboBox.SelectedIndex;
-
             BuildarDelphiButton.IsEnabled = false;
             LoadingDelphiRing.IsActive = true;
-
             var progresso = (IProgress<string>)new Progress<string>(msg => AppendTerminalLogDelphi(msg));
-
             try
             {
-                // Localiza o rsvars.bat do Delphi de forma semelhante a como buscamos o MsBuildPadraoPath,
-                // porém restrito à tela de build Delphi (não fica na tela de configurações geral).
-                var rsvarsBatPath = ObterRsvarsBatPadrao();
-                if (string.IsNullOrWhiteSpace(rsvarsBatPath))
-                {
-                    ShowValidationError("Arquivo rsvars.bat do Delphi não encontrado em caminhos padrão. Ajuste o método ObterRsvarsBatPadrao.");
-                    return;
-                }
-
-                var buildHandler = new BuildarDelphiSrv();
-                await buildHandler.BuildarAsync(solucaoSelecionada.Caminho, msBuildInfo.Path, rsvarsBatPath, acaoSelecionada, progresso);
-            }
-            catch (Exception ex)
-            {
-                progresso.Report($"[ERRO] Falha inesperada: {ex.Message}");
+                await ExecutarBuildDelphiAsync(solucao, msBuild, (AcaoBuild)AcaoBuildDelphiComboBox.SelectedIndex, progresso);
             }
             finally
             {
                 BuildarDelphiButton.IsEnabled = true;
                 LoadingDelphiRing.IsActive = false;
+            }
+        }
+
+        private async Task<bool> ExecutarBuildDelphiAsync(SolucaoInformacoesDto solucao, MsBuildInfo msBuild, AcaoBuild acao, IProgress<string> progresso)
+        {
+            var rsvarsBat = ObterRsvarsBatPadrao();
+            if (string.IsNullOrWhiteSpace(rsvarsBat))
+            {
+                ShowValidationError("Arquivo rsvars.bat do Delphi não encontrado em caminhos padrão.");
+                return false;
+            }
+            try
+            {
+                var srv = new BuildarDelphiSrv();
+                await srv.BuildarAsync(solucao.Caminho, msBuild.Path, rsvarsBat, acao, progresso);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                progresso.Report($"[ERRO] Falha inesperada: {ex.Message}");
+                return false;
+            }
+        }
+
+        private async void ProcessarAmbosButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (SolucaoDelphiSelecionadoComboBox.SelectedItem is not SolucaoInformacoesDto solucaoDelphi)
+            {
+                ShowValidationError("Selecione uma solução Delphi.");
+                return;
+            }
+            if (SolucaoDotnetSelecionadoComboBox.SelectedItem is not SolucaoInformacoesDto solucaoDotnet)
+            {
+                ShowValidationError("Selecione uma solução .Net.");
+                return;
+            }
+            if (MsBuildVersionComboBox.SelectedItem is not MsBuildInfo msBuild)
+            {
+                ShowValidationError("Selecione uma versão do MSBuild.");
+                return;
+            }
+
+            BuildarAmbosButton.IsEnabled  = false;
+            BuildarDelphiButton.IsEnabled = false;
+            BuildarDotnetButton.IsEnabled = false;
+            LoadingAmbosRing.IsActive     = true;
+
+            var acaoDelphi      = (AcaoBuild)AcaoBuildDelphiComboBox.SelectedIndex;
+            var acaoDotnet      = (AcaoBuild)AcaoBuildDotnetComboBox.SelectedIndex;
+            var progressoDelphi = (IProgress<string>)new Progress<string>(msg => AppendTerminalLogDelphi(msg));
+            var progressoDotnet = (IProgress<string>)new Progress<string>(msg => AppendTerminalLog(msg));
+
+            try
+            {
+                // 1. Delphi primeiro
+                ExpanderDelphi.IsExpanded = true;
+                bool delphiOk = await ExecutarBuildDelphiAsync(solucaoDelphi, msBuild, acaoDelphi, progressoDelphi);
+                if (!delphiOk)
+                {
+                    progressoDelphi.Report("[ERRO] Build Delphi falhou — build .Net cancelado.");
+                    return;
+                }
+
+                // 2. .Net depois (sem abrir URL ainda)
+                ExpanderDotNet.IsExpanded = true;
+
+                string[] processos = { "BPrv230", "CS1" };
+                bool precisaGuardian = false;
+                foreach (var p in processos)
+                {
+                    if (await ProcessKiller.QuantidadeDeProcessos(p, progressoDotnet) > 0)
+                    { precisaGuardian = true; break; }
+                }
+
+                bool dotnetOk = false;
+                if (precisaGuardian)
+                {
+                    var guardian = new ProcessGuardianService();
+                    await guardian.ExecutarComProcessosFechadosAsync(
+                        processos,
+                        async _ => { dotnetOk = await ExecutarBuildDotnetAsync(solucaoDotnet, msBuild, acaoDotnet, progressoDotnet, abrirUrl: false); },
+                        progressoDotnet);
+                }
+                else
+                {
+                    dotnetOk = await ExecutarBuildDotnetAsync(solucaoDotnet, msBuild, acaoDotnet, progressoDotnet, abrirUrl: false);
+                }
+
+                // 3. URL só após os dois builds concluídos
+                if (dotnetOk && (acaoDotnet == AcaoBuild.Build || acaoDotnet == AcaoBuild.Rebuild))
+                {
+                    try
+                    {
+                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = "http://localhost/prod",
+                            UseShellExecute = true
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        progressoDotnet.Report($"[WARN] Não foi possível abrir o navegador: {ex.Message}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                progressoDotnet.Report($"[ERRO] Falha inesperada: {ex.Message}");
+            }
+            finally
+            {
+                BuildarAmbosButton.IsEnabled  = true;
+                BuildarDelphiButton.IsEnabled = true;
+                BuildarDotnetButton.IsEnabled = true;
+                LoadingAmbosRing.IsActive     = false;
             }
         }
 

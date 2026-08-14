@@ -21,6 +21,7 @@ namespace JrTools.Workflows
         #region Campos Privados
         private FileSystemWatcher? _watcher;
         private volatile bool _executando;
+        private ModoEspelhamento _modo;
         private readonly object _lock = new();
         private readonly SemaphoreSlim _semaphore = new(1, 1);
         private CancellationTokenSource? _cancellationTokenSource;
@@ -38,6 +39,7 @@ namespace JrTools.Workflows
         public async Task IniciarEspelhamentoAsync(
             string origem,
             string destino,
+            ModoEspelhamento modo = ModoEspelhamento.Espelhar,
             IProgress<ProgressoEspelhamento>? progresso = null,
             CancellationToken cancellationToken = default)
         {
@@ -50,6 +52,7 @@ namespace JrTools.Workflows
             }
 
             ValidarDiretorios(origem, destino);
+            _modo = modo;
 
             try
             {
@@ -143,16 +146,19 @@ namespace JrTools.Workflows
                 return;
             }
 
+            var extrasMsg = _modo == ModoEspelhamento.Sincronizar
+                ? $"📝 Encontrado: {diff.ParaCopiar.Count} a copiar, {diff.ParaDeletar.Count} extras mantidos (modo Sincronizar)."
+                : $"📝 Encontrado: {diff.ParaCopiar.Count} a copiar, {diff.ParaDeletar.Count} a remover.";
             ReportarProgresso(progresso, new ProgressoEspelhamento
             {
                 Fase = FaseEspelhamento.Analise,
                 Percentual = 100,
                 Status = "Análise concluída",
-                Mensagem = $"📝 Encontrado: {diff.ParaCopiar.Count} a copiar, {diff.ParaDeletar.Count} a remover."
+                Mensagem = extrasMsg
             });
 
-            // LIMPEZA
-            if (diff.ParaDeletar.Any())
+            // LIMPEZA — apenas no modo Espelhar
+            if (_modo == ModoEspelhamento.Espelhar && diff.ParaDeletar.Any())
             {
                 ReportarProgresso(progresso, new ProgressoEspelhamento { Fase = FaseEspelhamento.Limpeza, Status = "Limpando...", Mensagem = "🧹 Removendo arquivos obsoletos..." });
                 foreach (var arq in diff.ParaDeletar)
@@ -291,7 +297,8 @@ namespace JrTools.Workflows
                             }
                             break;
                         case "DELETADO":
-                            if (File.Exists(dest)) TentarDeletarArquivo(dest, progresso);
+                            if (_modo == ModoEspelhamento.Espelhar && File.Exists(dest))
+                                TentarDeletarArquivo(dest, progresso);
                             break;
                     }
                     ReportarProgresso(progresso, new ProgressoEspelhamento { Mensagem = $"🔄 {tipo}: {e.Name}" });

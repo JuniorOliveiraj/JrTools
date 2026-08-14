@@ -155,7 +155,7 @@ namespace JrTools.ViewModels
             }
         }
 
-        private async Task SaveProfilesAsync()
+        public async Task SaveProfilesAsync()
         {
             await _profileService.SalvarPerfisAsync(Perfis.ToList());
         }
@@ -207,6 +207,7 @@ namespace JrTools.ViewModels
                     await _espelhador.IniciarEspelhamentoAsync(
                         SelectedPerfil.DiretorioOrigem,
                         SelectedPerfil.DiretorioDestino,
+                        SelectedPerfil.Modo,
                         progresso,
                         _cts.Token);
                 }, _cts.Token);

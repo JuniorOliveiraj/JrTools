@@ -80,7 +80,17 @@
 
                 <Border Style="{StaticResource FullWidthCardStyle}">
                     <StackPanel Spacing="10">
-                        <TextBlock Text="Fechar Processos" FontWeight="Bold" FontSize="18"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Fechar Processos" FontWeight="Bold" FontSize="18" VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" 
+                                    Content="Reiniciar Pool" 
+                                    Click="ReiniciarPoolButton_Click"
+                                    ToolTipService.ToolTip="Reinicia o Pool do IIS padrão configurado"/>
+                        </Grid>
                         
                         <!-- Lista Unificada de Botões -->
                         <ItemsControl x:Name="ProcessosItemsControl" 

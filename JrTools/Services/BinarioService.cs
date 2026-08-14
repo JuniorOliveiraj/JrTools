@@ -11,39 +11,9 @@ namespace JrTools.Services
 {
     public class BinarioService
     {
-        private readonly string _binPath = @"\\bnu-rhslave001\public";
-        private readonly string _pastaTemporaria = Path.Combine(Path.GetTempPath(), "BinariosTemp");
+        public static readonly string PastaTemporaria = Path.Combine(Path.GetTempPath(), "BinariosTemp");
 
-        public async Task<BinarioInfoDataObject?> ObterBinarioAsync(string versao)
-        {
-            return await Task.Run(() =>
-            {
-                var arquivos = Directory.GetFiles(_binPath, "Bin_*.zip");
-
-                foreach (var arquivo in arquivos)
-                {
-                    var nome = Path.GetFileNameWithoutExtension(arquivo);
-                    var match = Regex.Match(nome, @"^Bin_(.+)$");
-
-                    if (match.Success)
-                    {
-                        var branchExtraida = match.Groups[1].Value;
-
-                        if (branchExtraida.Equals(versao, StringComparison.OrdinalIgnoreCase))
-                        {
-                            return new BinarioInfoDataObject
-                            {
-                                NomeOriginal = nome,
-                                Caminho = arquivo,
-                                Branch = branchExtraida
-                            };
-                        }
-                    }
-                }
-
-                return null;
-            });
-        }
+        private readonly string _pastaTemporaria = PastaTemporaria;
 
         /// <summary>
         /// Extrai o binário apenas para a pasta Delphi, sem criar a pasta RH_LOCAL_DESENV.

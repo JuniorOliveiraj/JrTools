@@ -1,11 +1,10 @@
-﻿using JrTools.Dto;
+using JrTools.Dto;
 using JrTools.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using System;
 using System.ComponentModel;
-using System.Linq;
 
 namespace JrTools.Pages
 {
@@ -16,129 +15,162 @@ namespace JrTools.Pages
         public Copy()
         {
             this.InitializeComponent();
-            
-            // CRITICAL: Prevent page from being destroyed on navigation
             this.NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Required;
-            
             ViewModel = CopyViewModel.Instance;
             this.DataContext = ViewModel;
+            this.Loaded += Copy_Loaded;
         }
 
-        protected override void OnNavigatedTo(Microsoft.UI.Xaml.Navigation.NavigationEventArgs e)
+        private async void Copy_Loaded(object sender, RoutedEventArgs e)
         {
-            base.OnNavigatedTo(e);
-            
-            // Initialize dispatcher for current UI thread
             ViewModel.InitializeDispatcher();
 
-            // Load profiles only if empty
             if (ViewModel.Perfis.Count == 0)
-            {
-                _ = ViewModel.LoadProfilesAsync();
-            }
+                await ViewModel.LoadProfilesAsync();
 
-            // Subscribe to property changes
-            ViewModel.PropertyChanged -= ViewModel_PropertyChanged; // Remove first to avoid duplicates
+            ViewModel.PropertyChanged -= ViewModel_PropertyChanged;
             ViewModel.PropertyChanged += ViewModel_PropertyChanged;
-        }
-
-        protected override void OnNavigatedFrom(Microsoft.UI.Xaml.Navigation.NavigationEventArgs e)
-        {
-            base.OnNavigatedFrom(e);
-            
-            // Don't unsubscribe - we want to keep receiving updates even when not visible
-            // The ViewModel is a singleton and should continue working
         }
 
         private void ViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(CopyViewModel.Logs))
-            {
                 RolarLogs();
-            }
-            // Control visibility based on Mirroring state
+
             if (e.PropertyName == nameof(CopyViewModel.IsMirroring))
             {
                 if (ViewModel.IsMirroring)
                 {
-                    ProgressPanel.Visibility = Visibility.Visible;
-                    
-                    // Visual changes for Active State
-                    IniciarButton.Content = "⏹ Parar Espelhamento";
-                    IniciarButton.Background = new SolidColorBrush(Microsoft.UI.Colors.Red);
-
-                    // Disable interactions
-                    PerfisListView.IsEnabled = false;
-                    AdicionarPerfilButton.IsEnabled = false;
-                    RemoverPerfilButton.IsEnabled = false;
+                    ProgressPanel.Visibility            = Visibility.Visible;
+                    IniciarButton.Content               = "Parar Espelhamento";
+                    IniciarButton.Background            = new SolidColorBrush(Microsoft.UI.Colors.Red);
+                    PerfisListView.IsEnabled            = false;
+                    AdicionarPerfilButton.IsEnabled     = false;
+                    EditarPerfilButton.IsEnabled        = false;
+                    RemoverPerfilButton.IsEnabled       = false;
                 }
                 else
                 {
-                    // Visual changes for Idle State
-                    IniciarButton.Content = "▶ Iniciar Espelhamento";
-                    IniciarButton.Background = (SolidColorBrush)Application.Current.Resources["ButtonBackground"];
-
-                    // Enable interactions
-                    PerfisListView.IsEnabled = true;
-                    AdicionarPerfilButton.IsEnabled = true;
-                    RemoverPerfilButton.IsEnabled = true;
+                    ProgressPanel.Visibility            = Visibility.Collapsed;
+                    IniciarButton.Content               = "Iniciar Espelhamento";
+                    IniciarButton.Background            = null;
+                    PerfisListView.IsEnabled            = true;
+                    AdicionarPerfilButton.IsEnabled     = true;
+                    EditarPerfilButton.IsEnabled        = true;
+                    RemoverPerfilButton.IsEnabled       = true;
                 }
             }
         }
 
+        // ── Botões da lista de perfis ─────────────────────────────────────────
+
         private async void AdicionarPerfilButton_Click(object sender, RoutedEventArgs e)
         {
-            NomePerfilInput.Text = "";
-            OrigemInput.Text = "";
-            DestinoInput.Text = "";
+            NomePerfilInput.Text        = string.Empty;
+            OrigemInput.Text            = string.Empty;
+            DestinoInput.Text           = string.Empty;
+            ModoEspelharRadio.IsChecked = true;
+            PerfilDialog.Title          = "Novo Perfil";
 
-            var result = await NovoPerfilDialog.ShowAsync();
+            PerfilDialog.XamlRoot = this.XamlRoot;
+            var resultado = await PerfilDialog.ShowAsync();
+            if (resultado != ContentDialogResult.Primary) return;
 
-            if (result == ContentDialogResult.Primary)
+            await ViewModel.AddProfileAsync(new PerfilEspelhamento
             {
-                var novoPerfil = new PerfilEspelhamento
-                {
-                    Nome = NomePerfilInput.Text,
-                    DiretorioOrigem = OrigemInput.Text,
-                    DiretorioDestino = DestinoInput.Text
-                };
-
-                await ViewModel.AddProfileAsync(novoPerfil);
-            }
+                Nome             = NomePerfilInput.Text.Trim(),
+                DiretorioOrigem  = OrigemInput.Text.Trim(),
+                DiretorioDestino = DestinoInput.Text.Trim(),
+                Modo             = ModoSincronizarRadio.IsChecked == true
+                                    ? ModoEspelhamento.Sincronizar
+                                    : ModoEspelhamento.Espelhar
+            });
         }
-        
+
+        private async void EditarPerfilButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (ViewModel.SelectedPerfil == null) return;
+
+            var perfil               = ViewModel.SelectedPerfil;
+            NomePerfilInput.Text     = perfil.Nome;
+            OrigemInput.Text         = perfil.DiretorioOrigem;
+            DestinoInput.Text        = perfil.DiretorioDestino;
+            PerfilDialog.Title       = "Editar Perfil";
+
+            if (perfil.Modo == ModoEspelhamento.Sincronizar)
+                ModoSincronizarRadio.IsChecked = true;
+            else
+                ModoEspelharRadio.IsChecked = true;
+
+            PerfilDialog.XamlRoot = this.XamlRoot;
+            var resultado = await PerfilDialog.ShowAsync();
+            if (resultado != ContentDialogResult.Primary) return;
+
+            perfil.Nome             = NomePerfilInput.Text.Trim();
+            perfil.DiretorioOrigem  = OrigemInput.Text.Trim();
+            perfil.DiretorioDestino = DestinoInput.Text.Trim();
+            perfil.Modo             = ModoSincronizarRadio.IsChecked == true
+                                        ? ModoEspelhamento.Sincronizar
+                                        : ModoEspelhamento.Espelhar;
+
+            // Força refresh visual da lista
+            var idx = ViewModel.Perfis.IndexOf(perfil);
+            if (idx >= 0)
+            {
+                ViewModel.Perfis.RemoveAt(idx);
+                ViewModel.Perfis.Insert(idx, perfil);
+                ViewModel.SelectedPerfil = perfil;
+            }
+
+            await ViewModel.SaveProfilesAsync();
+        }
+
         private async void RemoverPerfilButton_Click(object sender, RoutedEventArgs e)
         {
-            // This is still needed because the confirmation dialog or logic 
-            // might live here, though the Command is bound in XAML, 
-            // the button Click event is ALSO set in XAML, which is redundant.
-            // I will remove the Click handler in XAML in the next step to be cleaner
-            // OR keep it here if I want to show a Dialog before removing.
-            // For now, let's just let the Command handle it directly in ViewModel if possible,
-            // but the ViewModel doesn't show dialogs. 
-            // So I will keep this Click handler for now, but call the VM method.
-            
             if (ViewModel.SelectedPerfil != null)
-            {
-                 // Confirm dialog could go here
-                 await ViewModel.RemoveProfileAsync(ViewModel.SelectedPerfil);
-            }
+                await ViewModel.RemoveProfileAsync(ViewModel.SelectedPerfil);
         }
+
+        // ── Seletores de pasta (dentro do ContentDialog) ─────────────────────
+
+        private void SelecionarOrigemButton_Click(object sender, RoutedEventArgs e)
+        {
+            var pasta = EscolherPasta();
+            if (pasta != null) OrigemInput.Text = pasta;
+        }
+
+        private void SelecionarDestinoButton_Click(object sender, RoutedEventArgs e)
+        {
+            var pasta = EscolherPasta();
+            if (pasta != null) DestinoInput.Text = pasta;
+        }
+
+        private static string EscolherPasta()
+        {
+            using var dialog = new System.Windows.Forms.FolderBrowserDialog
+            {
+                Description         = "Selecionar pasta",
+                UseDescriptionForTitle = true,
+                ShowNewFolderButton = true
+            };
+            var resultado = dialog.ShowDialog();
+            return resultado == System.Windows.Forms.DialogResult.OK ? dialog.SelectedPath : null;
+        }
+
+        // ── Scroll automático dos logs ────────────────────────────────────────
 
         private void RolarLogs()
         {
-             var grid = (Grid)VisualTreeHelper.GetChild(LogsTextBox, 0);
-             if (grid != null && VisualTreeHelper.GetChildrenCount(grid) > 0)
-             {
-                 for (var i = 0; i < VisualTreeHelper.GetChildrenCount(grid); i++)
-                 {
-                     if (VisualTreeHelper.GetChild(grid, i) is ScrollViewer viewer)
-                     {
-                         viewer.ChangeView(0.0, viewer.ScrollableHeight, 1, true);
-                         break;
-                     }
-                 }
-             }
+            var grid = (Grid)VisualTreeHelper.GetChild(LogsTextBox, 0);
+            if (grid == null) return;
+            for (var i = 0; i < VisualTreeHelper.GetChildrenCount(grid); i++)
+            {
+                if (VisualTreeHelper.GetChild(grid, i) is ScrollViewer sv)
+                {
+                    sv.ChangeView(0.0, sv.ScrollableHeight, 1, true);
+                    break;
+                }
+            }
         }
     }
 }

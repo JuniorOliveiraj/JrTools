@@ -1,3 +1,4 @@
+using JrTools.Enums;
 using System.Collections.Generic;
 
 namespace JrTools.Dto
@@ -14,10 +15,23 @@ namespace JrTools.Dto
         public string WesExePath { get; set; }
             = @"D:\Benner\fontes\rh\prod\WES\WebApp\Bin\wes.exe";
 
+        public bool NotificarHorasToggl { get; set; } = true;
+        public string? PoolIisPadrao { get; set; }
+
         // Subir Ambiente Manual
         public string? UltimaPastaAmbiente { get; set; }
         public List<string> HistoricoPastasAmbiente { get; set; } = new();
         public string? UltimaBranchAmbiente { get; set; }
+
+        // WES - BServer
+        public string? BServerServidor { get; set; }
+        public string? BServerSistema { get; set; }
+
+        // Fonte de binários (Delphi)
+        public FonteBinarios FonteBinarios { get; set; } = FonteBinarios.Servidor;
+        public string CaminhoServidorBinarios { get; set; } = @"\\bnu-rhslave001\public";
+        public string JenkinsBaseUrl { get; set; } = "https://jenkins.benner.com.br";
+        public string JenkinsJobPath { get; set; } = "job/RH/job/AzureDevops/job/DeployE9";
 
         // Branches editáveis (compartilhado entre RhProd e SubirAmbienteManual)
         public List<string> ListaBranches { get; set; } = new()

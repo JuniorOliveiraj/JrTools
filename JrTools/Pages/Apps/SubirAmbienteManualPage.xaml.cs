@@ -25,7 +25,8 @@ namespace JrTools.Pages.Apps
         private ConfiguracoesdataObject  _cfg;
         private string _wesExePath   = string.Empty;
         private string _webConfigPath = string.Empty;
-        private bool _carregandoConfig = false;
+        private bool _carregandoConfig   = false;
+        private bool _carregandoSistema  = false;
 
         private readonly IisService _iis = new();
 
@@ -52,9 +53,17 @@ namespace JrTools.Pages.Apps
             _wesExePath = _cfg?.WesExePath ?? @"D:\Benner\fontes\rh\prod\WES\WebApp\Bin\wes.exe";
 
             TxtServidor.Text  = _cfgRh.Servidor;
-            TxtSistema.Text   = _cfgRh.Sistema;
             TxtUsuario.Text   = _cfgRh.Usuario;
             TxtSenha.Password = _cfgRh.Senha;
+
+            // Restaura sistema salvo no ComboBox
+            if (!string.IsNullOrWhiteSpace(_cfgRh.Sistema))
+            {
+                _carregandoSistema = true;
+                CmbSistema.ItemsSource = new[] { _cfgRh.Sistema };
+                CmbSistema.SelectedIndex = 0;
+                _carregandoSistema = false;
+            }
 
             if (!string.IsNullOrWhiteSpace(_cfg?.UltimaPastaAmbiente))
                 AutoPasta.Text = _cfg.UltimaPastaAmbiente;
@@ -97,7 +106,6 @@ namespace JrTools.Pages.Apps
         {
             if (_carregandoConfig || _cfgRh == null) return;
             _cfgRh.Servidor = TxtServidor.Text;
-            _cfgRh.Sistema  = TxtSistema.Text;
             _cfgRh.Usuario  = TxtUsuario.Text;
             await ConfiguracaoRelatoriosHelper.SalvarAsync(_cfgRh);
         }
@@ -118,14 +126,16 @@ namespace JrTools.Pages.Apps
             BtnSetarConfiguracoes.IsEnabled = false;
             try
             {
-                if (CmbProjetoWes.SelectedItem is PastaInformacoesDto projetoWes)
+                if (CmbProjetoWes?.SelectedItem is PastaInformacoesDto projetoWes)
                 {
                     var linker = new WebAppLinkService();
                     await linker.GarantirLinkWebAppProdAsync(projetoWes.Caminho, _cfg?.DiretorioProducao, CriarProgresso());
                 }
 
-                var wes = new WesService(_wesExePath);
-                await wes.ConfigSetAsync(TxtServidor.Text, TxtSistema.Text, TxtUsuario.Text, TxtSenha.Password, CriarProgresso());
+                var wes     = new WesService(_wesExePath);
+                var sistema = CmbSistema?.SelectedItem as string ?? TxtSistema?.Text ?? string.Empty;
+                AppendLog($"[WES CONFIG SET] Configurando: {sistema}");
+                await wes.ConfigSetAsync(TxtServidor.Text, sistema, TxtUsuario.Text, TxtSenha.Password, CriarProgresso());
                 await Task.Run(() => InjetarUseCOMFree());
             }
             catch (Exception ex) { MostrarErro(ex.Message); }
@@ -138,7 +148,7 @@ namespace JrTools.Pages.Apps
 
         private async void BtnVincularWebAppProd_Click(object sender, RoutedEventArgs e)
         {
-            if (CmbProjetoWes.SelectedItem is not PastaInformacoesDto projeto)
+            if (CmbProjetoWes?.SelectedItem is not PastaInformacoesDto projeto)
             {
                 MostrarErro("Selecione um projeto WES antes de vincular.");
                 return;
@@ -165,6 +175,65 @@ namespace JrTools.Pages.Apps
             }
         }
 
+        private async void BtnCarregarSistemas_Click(object sender, RoutedEventArgs e)
+        {
+            var servidor = TxtServidor.Text.Trim();
+            if (string.IsNullOrWhiteSpace(servidor))
+            {
+                InfoBarSistemas.Severity = InfoBarSeverity.Error;
+                InfoBarSistemas.Message  = "Informe o endereço do servidor antes de carregar os sistemas.";
+                InfoBarSistemas.IsOpen   = true;
+                return;
+            }
+
+            BtnCarregarSistemas.IsEnabled = false;
+            LoadingSistemas.IsActive      = true;
+            InfoBarSistemas.IsOpen        = false;
+
+            try
+            {
+                AppendLog($"[BSERVER] Conectando em {servidor}:2000...");
+                var resultado = await BServerQueryService.ConsultarAsync(servidor, _cfg?.DiretorioBinarios ?? string.Empty);
+
+                if (resultado.IsSuccess)
+                {
+                    AppendLog($"[BSERVER] Conectado! {resultado.AvailableSystems.Length} sistema(s) encontrado(s): {string.Join(", ", resultado.AvailableSystems)}");
+
+                    _carregandoSistema      = true;
+                    CmbSistema.ItemsSource  = resultado.AvailableSystems;
+                    CmbSistema.SelectedItem = _cfgRh?.Sistema is string s
+                        && Array.IndexOf(resultado.AvailableSystems, s) >= 0 ? s : null;
+                    _carregandoSistema = false;
+                }
+                else
+                {
+                    var msg = resultado.ErrorMessage;
+                    InfoBarSistemas.Severity = InfoBarSeverity.Error;
+                    InfoBarSistemas.Message  = msg;
+                    InfoBarSistemas.IsOpen   = true;
+                    AppendLog($"[BSERVER ERRO] {msg}");
+                }
+            }
+            catch (Exception ex)
+            {
+                InfoBarSistemas.Severity = InfoBarSeverity.Error;
+                InfoBarSistemas.Message  = ex.Message;
+                InfoBarSistemas.IsOpen   = true;
+                AppendLog($"[BSERVER ERRO] {ex.Message}");
+            }
+            finally
+            {
+                BtnCarregarSistemas.IsEnabled = true;
+                LoadingSistemas.IsActive      = false;
+            }
+        }
+
+        private async void CmbSistema_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_carregandoSistema || _cfgRh == null) return;
+            _cfgRh.Sistema = CmbSistema.SelectedItem as string ?? string.Empty;
+            await ConfiguracaoRelatoriosHelper.SalvarAsync(_cfgRh);
+        }
         private async void BtnLimparCache_Click(object sender, RoutedEventArgs e)
             => await ExecutarWes(LoadingLimparCache, BtnLimparCache,
                 wes => wes.CacheClearAsync(CriarProgresso()));
@@ -329,22 +398,27 @@ namespace JrTools.Pages.Apps
         private async Task BaixarEExtrairBinariosAsync(string branch, bool reutilizar, bool usarLink, string nomePasta)
         {
             var progresso = CriarProgresso();
-            var svc       = new BinarioService();
 
-            var branchNorm = new JrTools.Utils.BranchNameHelper()
-                .ObterBranchInfo(branch).Branch
-                .Replace("/", "-");
+            var branchLimpo = new JrTools.Utils.BranchNameHelper()
+                .ObterBranchInfo(branch).Branch;
 
-            progresso.Report($"[INFO] Buscando binário para '{branchNorm}'...");
-            var binInfo = await svc.ObterBinarioAsync(branchNorm);
-            if (binInfo == null)
-                throw new InvalidOperationException($"Binário não encontrado para '{branchNorm}' no servidor.");
+            IBinarioSourceProvider provider;
+            if (_cfg.FonteBinarios == JrTools.Enums.FonteBinarios.Jenkins)
+            {
+                var dados = await PerfilPessoalHelper.LerConfiguracoesAsync();
+                provider = new JenkinsBinarioProvider(_cfg.JenkinsBaseUrl, _cfg.JenkinsJobPath, dados.JenkinsUsuario, dados.JenkinsApiToken);
+            }
+            else
+            {
+                provider = new ServidorBinarioProvider(_cfg.CaminhoServidorBinarios);
+            }
 
-            // Se não reutilizar, apaga o zip da pasta temp para forçar novo download
+            // Se não reutilizar, apaga o zip da pasta temp ANTES de obter o binário, senão o
+            // provedor (Jenkins) reaproveitaria um zip já baixado e o download nunca aconteceria.
             if (!reutilizar)
             {
-                var pastaTemp = Path.Combine(Path.GetTempPath(), "BinariosTemp");
-                var zipExist  = Path.Combine(pastaTemp, binInfo.NomeOriginal + ".zip");
+                var nomeEsperado = "Bin_" + branchLimpo.Replace("/", "-");
+                var zipExist = Path.Combine(BinarioService.PastaTemporaria, nomeEsperado + ".zip");
                 if (File.Exists(zipExist))
                 {
                     progresso.Report($"[INFO] Removendo zip existente: {zipExist}");
@@ -352,7 +426,14 @@ namespace JrTools.Pages.Apps
                 }
             }
 
+            progresso.Report($"[INFO] Buscando binário para '{branchLimpo}'...");
+            var binInfo = await provider.ObterBinarioAsync(branchLimpo, progresso);
+            if (binInfo == null)
+                throw new InvalidOperationException($"Binário não encontrado para '{branchLimpo}'.");
+
             binInfo.destino = @"D:\Benner\bin";
+
+            var svc = new BinarioService();
 
             if (usarLink)
             {
@@ -531,11 +612,11 @@ namespace JrTools.Pages.Apps
         private bool ValidarCamposWes()
         {
             if (string.IsNullOrWhiteSpace(TxtServidor.Text) ||
-                string.IsNullOrWhiteSpace(TxtSistema.Text)  ||
+                CmbSistema.SelectedItem == null              ||
                 string.IsNullOrWhiteSpace(TxtUsuario.Text)  ||
                 string.IsNullOrWhiteSpace(TxtSenha.Password))
             {
-                MostrarErro("Preencha todos os campos de configuração antes de executar.");
+                MostrarErro("Preencha servidor, selecione o sistema, usuário e senha.");
                 return false;
             }
             return true;

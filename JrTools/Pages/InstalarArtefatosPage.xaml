@@ -54,16 +54,32 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
-                            <TextBox x:Name="TxtServidor"
-                                     Grid.Row="0" Grid.Column="0"
-                                     Header="Servidor"
-                                     PlaceholderText="Ex: servidor.empresa.com.br"
-                                     TextChanged="TxtConfig_TextChanged"/>
-                            <TextBox x:Name="TxtSistema"
-                                     Grid.Row="0" Grid.Column="1"
-                                     Header="Sistema"
-                                     PlaceholderText="rh"
-                                     TextChanged="TxtConfig_TextChanged"/>
+                            <Grid Grid.Row="0" Grid.Column="0" ColumnSpacing="8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="TxtServidor"
+                                         Header="Servidor"
+                                         PlaceholderText="Ex: servidor.empresa.com.br"
+                                         TextChanged="TxtConfig_TextChanged"/>
+                                <Button x:Name="BtnCarregarSistemas"
+                                        Grid.Column="1"
+                                        VerticalAlignment="Bottom"
+                                        Click="BtnCarregarSistemas_Click"
+                                        ToolTipService.ToolTip="Carregar sistemas do servidor BServer">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <ProgressRing x:Name="LoadingSistemas" IsActive="False" Width="14" Height="14"/>
+                                        <FontIcon Glyph="&#xE72C;" FontSize="14"/>
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+                            <ComboBox x:Name="CmbSistema"
+                                      Grid.Row="0" Grid.Column="1"
+                                      Header="Sistema"
+                                      HorizontalAlignment="Stretch"
+                                      PlaceholderText="Clique em 🔄 para carregar"
+                                      SelectionChanged="CmbSistema_SelectionChanged"/>
                             <TextBox x:Name="TxtUsuario"
                                      Grid.Row="1" Grid.Column="0"
                                      Header="Usuário"

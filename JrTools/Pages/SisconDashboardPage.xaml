@@ -1,0 +1,321 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="JrTools.Pages.SisconDashboardPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:JrTools.Pages"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Page.Resources>
+        <Style x:Key="CardStyle" TargetType="Border">
+            <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}"/>
+            <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="16"/>
+        </Style>
+
+        <Style x:Key="HourCardStyle" TargetType="Border">
+            <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}"/>
+            <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="12"/>
+            <Setter Property="MinWidth" Value="90"/>
+        </Style>
+
+        <Style x:Key="FullWidthExpanderStyle" TargetType="Expander">
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Padding" Value="0"/>
+        </Style>
+    </Page.Resources>
+
+    <Grid>
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16">
+            <StackPanel Spacing="16">
+
+                <!-- Cabeçalho -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Spacing="4">
+                        <TextBlock Text="Siscon" Style="{ThemeResource TitleTextBlockStyle}"/>
+                        <TextBlock x:Name="SubtitleText"
+                                   Text="Carregando informações..."
+                                   Style="{ThemeResource CaptionTextBlockStyle}"
+                                   Opacity="0.6"/>
+                    </StackPanel>
+
+                    <Button Grid.Column="1"
+                            x:Name="BtnAtualizar"
+                            VerticalAlignment="Center"
+                            Click="BtnAtualizar_Click"
+                            Style="{ThemeResource AccentButtonStyle}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="&#xE72C;" FontSize="14"/>
+                            <TextBlock Text="Atualizar"/>
+                        </StackPanel>
+                    </Button>
+                </Grid>
+
+                <!-- InfoBar para erros / avisos -->
+                <InfoBar x:Name="StatusInfoBar"
+                         IsOpen="False"
+                         Severity="Error"
+                         IsClosable="True"/>
+
+                <!-- Estado: não configurado -->
+                <Border x:Name="PanelNaoConfigurado"
+                        Style="{StaticResource CardStyle}"
+                        Visibility="Collapsed">
+                    <StackPanel Spacing="12" HorizontalAlignment="Center" Padding="24">
+                        <FontIcon Glyph="&#xE8D4;" FontSize="40"
+                                  Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                  HorizontalAlignment="Center"/>
+                        <TextBlock Text="Credenciais do Siscon não configuradas"
+                                   Style="{ThemeResource SubtitleTextBlockStyle}"
+                                   HorizontalAlignment="Center"/>
+                        <TextBlock Text="Acesse Configurações → Acesso Siscon e informe seu login e senha."
+                                   Style="{ThemeResource CaptionTextBlockStyle}"
+                                   Opacity="0.7"
+                                   HorizontalAlignment="Center"
+                                   TextAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Conteúdo principal (visível após carregar) -->
+                <StackPanel x:Name="PanelConteudo" Spacing="16" Visibility="Collapsed">
+
+                    <!-- Cards de resumo do usuário -->
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Border Grid.Column="0" Style="{StaticResource CardStyle}">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Atividades abertas"
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Opacity="0.7"/>
+                                <TextBlock x:Name="TxtQtdAtividades"
+                                           Text="—"
+                                           Style="{ThemeResource HeaderTextBlockStyle}"
+                                           Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Grid.Column="1" Style="{StaticResource CardStyle}">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Usuário"
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Opacity="0.7"/>
+                                <TextBlock x:Name="TxtNomeUsuario"
+                                           Text="—"
+                                           Style="{ThemeResource BodyStrongTextBlockStyle}"
+                                           TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <!-- Expander: Horas da Semana -->
+                    <Expander Style="{StaticResource FullWidthExpanderStyle}" IsExpanded="True">
+                        <Expander.Header>
+                            <TextBlock Text="Horas da Semana" VerticalAlignment="Center"/>
+                        </Expander.Header>
+                        <Expander.Content>
+                            <StackPanel Spacing="12" Margin="0,12,0,0">
+
+                                <!-- Legenda -->
+                                <StackPanel Orientation="Horizontal" Spacing="16">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <Ellipse Width="8" Height="8" Fill="{ThemeResource SystemFillColorSuccessBrush}" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Completo (≥8h)"
+                                                   Style="{ThemeResource CaptionTextBlockStyle}"
+                                                   Opacity="0.7"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <Ellipse Width="8" Height="8" Fill="{ThemeResource SystemFillColorCriticalBrush}" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Pendente (&lt;8h)"
+                                                   Style="{ThemeResource CaptionTextBlockStyle}"
+                                                   Opacity="0.7"/>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!-- Cards de dias -->
+                                <ItemsControl x:Name="HorasItemsControl">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Horizontal" Spacing="8"/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <!-- Renderizado via code-behind por flexibilidade -->
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <!-- Container real dos cards de horas (preenchido via code-behind) -->
+                                <StackPanel x:Name="HorasCardsPanel"
+                                            Orientation="Horizontal"
+                                            Spacing="8"
+                                            Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Expander.Content>
+                    </Expander>
+
+                    <!-- Expander: Minhas Atividades (SMSs) -->
+                    <Expander Style="{StaticResource FullWidthExpanderStyle}" IsExpanded="True">
+                        <Expander.Header>
+                            <TextBlock Text="Minhas Atividades (SMS)" VerticalAlignment="Center"/>
+                        </Expander.Header>
+                        <Expander.Content>
+                            <StackPanel Spacing="8" Margin="0,12,0,0">
+                                <ListView x:Name="AtividadesListView"
+                                          SelectionMode="Single"
+                                          IsItemClickEnabled="True"
+                                          ItemClick="AtividadesListView_ItemClick">
+                                    <ListView.ItemContainerStyle>
+                                        <Style TargetType="ListViewItem">
+                                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                            <Setter Property="Padding" Value="0,4"/>
+                                        </Style>
+                                    </ListView.ItemContainerStyle>
+                                    <ListView.ItemTemplate>
+                                        <DataTemplate x:DataType="local:SisconAtividadeItem">
+                                            <Border Style="{StaticResource CardStyle}"
+                                                    Padding="12"
+                                                    Margin="0,2">
+                                                <Grid ColumnSpacing="12">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <!-- Ícone -->
+                                                    <Grid Grid.Column="0" Width="36" Height="36">
+                                                        <Border CornerRadius="6"
+                                                                Background="{ThemeResource AccentFillColorDefaultBrush}"
+                                                                Opacity="0.15"/>
+                                                        <FontIcon Glyph="&#xE9D5;"
+                                                                  FontSize="16"
+                                                                  Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                                  HorizontalAlignment="Center"
+                                                                  VerticalAlignment="Center"/>
+                                                    </Grid>
+
+                                                    <!-- Conteúdo -->
+                                                    <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                                                        <!-- Tags: lib/versão + situação -->
+                                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                                            <Grid>
+                                                                <Border CornerRadius="10"
+                                                                        Background="{ThemeResource AccentFillColorDefaultBrush}"
+                                                                        Opacity="0.15"/>
+                                                                <TextBlock Text="{x:Bind TagLib}"
+                                                                           FontSize="11"
+                                                                           Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                                           Margin="6,2"/>
+                                                            </Grid>
+                                                            <Grid>
+                                                                <Border CornerRadius="10"
+                                                                        Background="{ThemeResource AccentFillColorDefaultBrush}"
+                                                                        Opacity="0.15"/>
+                                                                <TextBlock Text="{x:Bind TagVersao}"
+                                                                           FontSize="11"
+                                                                           Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                                           VerticalAlignment="Center"
+                                                                           TextTrimming="CharacterEllipsis"
+                                                                           MaxWidth="180"
+                                                                           Margin="6,2"/>
+                                                            </Grid>
+                                                        </StackPanel>
+                                                        <!-- Título SMS -->
+                                                        <TextBlock Text="{x:Bind Titulo}"
+                                                                   Style="{ThemeResource BodyTextBlockStyle}"
+                                                                   TextTrimming="CharacterEllipsis"
+                                                                   MaxLines="1"/>
+                                                        <!-- Cliente -->
+                                                        <TextBlock Text="{x:Bind Cliente}"
+                                                                   FontSize="11"
+                                                                   Opacity="0.5"
+                                                                   TextTrimming="CharacterEllipsis"
+                                                                   MaxLines="1"/>
+                                                    </StackPanel>
+
+                                                    <!-- Ações -->
+                                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Spacing="4">
+                                                        <!-- Botão copiar número SMS -->
+                                                        <Button Tag="{x:Bind Id}"
+                                                                Click="BtnCopiarSms_Click"
+                                                                Background="Transparent"
+                                                                BorderBrush="Transparent"
+                                                                Padding="6"
+                                                                ToolTipService.ToolTip="Copiar número da SMS">
+                                                            <FontIcon Glyph="&#xE8C8;"
+                                                                      FontSize="16"
+                                                                      Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                                                        </Button>
+
+                                                        <!-- Botão lançar horas -->
+                                                        <Button Tag="{x:Bind}"
+                                                                Click="BtnLancarHoras_Click"
+                                                                Background="Transparent"
+                                                                BorderBrush="Transparent"
+                                                                Padding="6"
+                                                                ToolTipService.ToolTip="Lançar horas nesta SMS">
+                                                            <FontIcon Glyph="&#xE823;"
+                                                                      FontSize="16"
+                                                                      Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                                                        </Button>
+                                                    </StackPanel>
+
+                                                    <!-- Seta detalhe -->
+                                                    <FontIcon Grid.Column="3"
+                                                              Glyph="&#xE76C;"
+                                                              FontSize="10"
+                                                              Opacity="0.4"
+                                                              VerticalAlignment="Center"/>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ListView.ItemTemplate>
+                                </ListView>
+
+                                <TextBlock x:Name="TxtSemAtividades"
+                                           Text="Nenhuma atividade encontrada."
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Opacity="0.6"
+                                           Visibility="Collapsed"
+                                           Margin="8,4"/>
+                            </StackPanel>
+                        </Expander.Content>
+                    </Expander>
+
+                </StackPanel>
+
+                <!-- Loading -->
+                <StackPanel x:Name="PanelLoading"
+                            HorizontalAlignment="Center"
+                            Spacing="12"
+                            Margin="0,40,0,0">
+                    <ProgressRing IsActive="True" Width="40" Height="40"/>
+                    <TextBlock Text="Carregando dados do Siscon..."
+                               Style="{ThemeResource CaptionTextBlockStyle}"
+                               Opacity="0.6"
+                               HorizontalAlignment="Center"/>
+                </StackPanel>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>

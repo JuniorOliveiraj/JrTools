@@ -52,6 +52,27 @@
 
                 <InfoBar x:Name="ValidationInfoBar" IsOpen="False" Severity="Error" Margin="0,0,8,0"/>
 
+                <!-- Buildar os Dois -->
+                <Border Style="{StaticResource FullWidthCardStyle}">
+                    <Grid HorizontalAlignment="Stretch">
+                        <Button x:Name="BuildarAmbosButton"
+                                Style="{ThemeResource AccentButtonStyle}"
+                                HorizontalAlignment="Stretch"
+                                Click="ProcessarAmbosButton_Click">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="&#xE768;" FontSize="14"/>
+                                <TextBlock Text="Buildar os Dois  (Delphi → .Net)"/>
+                            </StackPanel>
+                        </Button>
+                        <ProgressRing x:Name="LoadingAmbosRing"
+                                      IsActive="False"
+                                      Width="24" Height="24"
+                                      VerticalAlignment="Center"
+                                      HorizontalAlignment="Right"
+                                      Margin="0,0,8,0"/>
+                    </Grid>
+                </Border>
+
                 <Expander  x:Name="ExpanderDotNet"  Style="{StaticResource FullWidthExpanderStyle}" IsExpanded="True">
                     <Expander.Header>
                         <TextBlock Text="Buildar .Net" VerticalAlignment="Center"/>

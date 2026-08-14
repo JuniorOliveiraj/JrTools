@@ -44,10 +44,12 @@
                         PaneDisplayMode="Left"
                         OpenPaneLength="250"
                         CompactPaneLength="60"
-                        SelectionChanged="NavView_SelectionChanged">
+                        ItemInvoked="NavView_ItemInvoked"
+                        BackRequested="NavView_BackRequested">
 
                 <NavigationView.MenuItems>
                     <NavigationViewItem Icon="Home" Content="Home" Tag="Home"/>
+
                     <NavigationViewItem Icon="Play" Content="Apps Rh" Tag="Rhprod"/>
                     
                     <NavigationViewItem Content="Buildar Projetos" Tag="BuildarProjeto">
@@ -82,6 +84,18 @@
                     <NavigationViewItem Content="Lançar horas" Tag="LancarHoras">
                         <NavigationViewItem.Icon>
                             <FontIcon Glyph="&#xE823;" />
+                        </NavigationViewItem.Icon>
+                    </NavigationViewItem>
+
+                    <NavigationViewItem Content="Siscon" Tag="Siscon">
+                        <NavigationViewItem.Icon>
+                            <FontIcon Glyph="&#xE9D5;" />
+                        </NavigationViewItem.Icon>
+                    </NavigationViewItem>
+
+                    <NavigationViewItem Content="Selecionador de Sistema" Tag="SelecionadorSistema">
+                        <NavigationViewItem.Icon>
+                            <FontIcon Glyph="&#xECAF;" />
                         </NavigationViewItem.Icon>
                     </NavigationViewItem>
 

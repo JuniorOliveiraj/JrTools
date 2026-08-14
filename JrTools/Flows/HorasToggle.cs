@@ -140,5 +140,41 @@ namespace JrTools.Flows
             var toggl = new TogglClient(_token);
             await toggl.DeleteTimeEntryAsync(lancamento.Id);
         }
+
+        public async Task<TimeSpan> SugerirProximoHorarioInicioAsync(DateTime data)
+        {
+            var lancamentos = await CarregarLancamentosDoDiaAsync(data);
+            return SugerirProximoHorarioInicio(lancamentos);
+        }
+
+        public TimeSpan SugerirProximoHorarioInicio(IEnumerable<HoraLancamento> lancamentos)
+        {
+            if (lancamentos == null || !lancamentos.Any())
+                return TimeSpan.FromHours(8); // Início padrão 08:00
+
+            var ultimoLancamento = lancamentos
+                .Where(l => l.HoraInicio.HasValue || l.HoraFim.HasValue)
+                .OrderBy(l =>
+                {
+                    // Define um "fim" calculado para ordenar corretamente
+                    if (l.HoraFim.HasValue)
+                        return l.HoraFim.Value;
+                    if (l.HoraInicio.HasValue && l.TotalHoras.HasValue)
+                        return l.HoraInicio.Value + TimeSpan.FromHours(l.TotalHoras.Value);
+                    return l.HoraInicio ?? TimeSpan.Zero;
+                })
+                .LastOrDefault();
+
+            if (ultimoLancamento == null)
+                return TimeSpan.FromHours(8);
+
+            if (ultimoLancamento.HoraFim.HasValue)
+                return ultimoLancamento.HoraFim.Value;
+            
+            if (ultimoLancamento.HoraInicio.HasValue && ultimoLancamento.TotalHoras.HasValue)
+                return ultimoLancamento.HoraInicio.Value + TimeSpan.FromHours(ultimoLancamento.TotalHoras.Value);
+
+            return ultimoLancamento.HoraInicio ?? TimeSpan.FromHours(8);
+        }
     }
 }

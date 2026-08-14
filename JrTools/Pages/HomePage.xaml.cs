@@ -28,22 +28,26 @@ namespace JrTools.Pages
     /// </summary>
     public sealed partial class HomePage : Page
     {
-
+        private bool _inicializado = false;
 
         public HomePage()
         {
             this.InitializeComponent();
             this.NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Required;
             this.Loaded += RenderizarPages_Loaded;
-            BuscarBancoDeHorasAsync();
-            
-
         }
+
         private void RenderizarPages_Loaded(object sender, RoutedEventArgs e)
         {
-            DefinirHorarioPrevistoAsync();
+            if (_inicializado) return;
+            _inicializado = true;
+
             InnerFrame.Navigate(typeof(JrTools.Pages.FecharProcessos));
-            CarregarLancamentosDoDiaAsync();
+
+            // Inicia as chamadas de API só depois que a página está visível
+            _ = BuscarBancoDeHorasAsync();
+            _ = DefinirHorarioPrevistoAsync();
+            _ = CarregarLancamentosDoDiaAsync();
         }
 
         private async Task DefinirHorarioPrevistoAsync()

@@ -1,23 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
+using System;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
-using Microsoft.UI.Xaml.Shapes;
-using Windows.ApplicationModel;
-using Windows.ApplicationModel.Activation;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
-
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
+using Microsoft.UI.Dispatching;
+using Microsoft.Windows.AppNotifications;
+using JrTools.Services;
+using System.Threading.Tasks;
 
 namespace JrTools
 {
@@ -28,30 +14,51 @@ namespace JrTools
     {
         private Window? _window;
         public static Window MainWindow { get; private set; }
+        private DispatcherQueueTimer? _notificationTimer;
 
         /// <summary>
-        /// Initializes the singleton application object.  This is the first line of authored code
-        /// executed, and as such is the logical equivalent of main() or WinMain().
+        /// Initializes the singleton application object.
         /// </summary>
         public App()
         {
-            InitializeComponent();
-
-
+            this.InitializeComponent();
+            
+            // Registra o gerenciador de notificações ao iniciar
+            try 
+            {
+                AppNotificationManager.Default.Register();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Erro ao registrar notificações: {ex.Message}");
+            }
         }
 
         /// <summary>
         /// Invoked when the application is launched.
         /// </summary>
-        /// <param name="args">Details about the launch request and process.</param>
         protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
         {
-
             _window = new MainWindow();
             MainWindow = _window;
             _window.Activate();
+
+            StartNotificationTimer();
         }
 
+        private void StartNotificationTimer()
+        {
+            // Cria um timer para verificar as horas a cada 5 minutos
+            _notificationTimer = DispatcherQueue.GetForCurrentThread().CreateTimer();
+            _notificationTimer.Interval = TimeSpan.FromMinutes(5);
+            _notificationTimer.Tick += async (s, e) =>
+            {
+                await NotificationService.Instance.CheckAndNotifyTogglHoursAsync();
+            };
+            _notificationTimer.Start();
 
+            // Primeira execução imediata em background
+            Task.Run(async () => await NotificationService.Instance.CheckAndNotifyTogglHoursAsync());
+        }
     }
 }

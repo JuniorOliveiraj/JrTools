@@ -1,0 +1,317 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="JrTools.Pages.SelecionadorSistemaPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:dto="using:JrTools.Dto"
+    mc:Ignorable="d">
+
+    <Page.Resources>
+        <Style x:Key="CardStyle" TargetType="Border">
+            <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+            <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="Padding" Value="16" />
+        </Style>
+    </Page.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Área rolável: cabeçalho + 3 cards -->
+        <ScrollViewer x:Name="CardsScrollViewer"
+                      Grid.Row="0"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled"
+                      SizeChanged="CardsScrollViewer_SizeChanged">
+            <Grid x:Name="CardsContainer">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0"
+                           Text="Selecionador de Sistema"
+                           FontSize="22" FontWeight="Bold"
+                           Margin="40,20,40,0"/>
+
+        <!-- 3 cards lado a lado -->
+        <Grid Grid.Row="1" ColumnSpacing="12" Margin="40,12,40,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="1.2*"/>
+                <ColumnDefinition Width="1.3*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- ── Card 1: Pasta de Binários ── -->
+            <Border Grid.Column="0" Style="{StaticResource CardStyle}">
+                <Grid RowSpacing="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Binários"
+                                   FontWeight="SemiBold"
+                                   VerticalAlignment="Center"/>
+                        <Button Grid.Column="1"
+                                Padding="8,4"
+                                Click="BtnRecarregarPastas_Click"
+                                ToolTipService.ToolTip="Recarregar pastas">
+                            <FontIcon Glyph="&#xE72C;" FontSize="13"/>
+                        </Button>
+                    </Grid>
+
+                    <ListView x:Name="ListBinarios"
+                              Grid.Row="1"
+                              SelectionMode="Single"
+                              SelectionChanged="ListBinarios_SelectionChanged">
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="dto:PastaBinariosDto">
+                                <TextBlock Text="{x:Bind NomeDisplay}"
+                                           TextTrimming="CharacterEllipsis"
+                                           ToolTipService.ToolTip="{x:Bind Caminho}"/>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </Grid>
+            </Border>
+
+            <!-- ── Card 2: Servidores ── -->
+            <Border Grid.Column="1" Style="{StaticResource CardStyle}">
+                <Grid RowSpacing="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Text="Servidores" FontWeight="SemiBold"/>
+
+                    <!-- Programa (app type) -->
+                    <ComboBox x:Name="CmbAplicativo"
+                              Grid.Row="1"
+                              Header="Programa"
+                              HorizontalAlignment="Stretch"
+                              SelectionChanged="CmbAplicativo_SelectionChanged">
+                        <ComboBoxItem Content="Runner (CS1.exe)"  Tag="Runner"/>
+                        <ComboBoxItem Content="Builder"            Tag="Builder"/>
+                        <ComboBoxItem Content="Builder CLI"        Tag="BuilderCli"/>
+                        <ComboBoxItem Content="Instaler (CS.exe)"  Tag="Instaler"/>
+                    </ComboBox>
+
+                    <Border Grid.Row="2" Height="1"
+                            Background="{ThemeResource DividerStrokeColorDefaultBrush}"
+                            Margin="0,4"/>
+
+                    <!-- Campo + botões para adicionar/remover servidor -->
+                    <Grid Grid.Row="3" ColumnSpacing="6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="TxtNovoServidor"
+                                 PlaceholderText="Ex: bnu-suprh101"
+                                 KeyDown="TxtNovoServidor_KeyDown"/>
+                        <Button Grid.Column="1"
+                                VerticalAlignment="Bottom"
+                                Click="BtnAdicionarServidor_Click"
+                                ToolTipService.ToolTip="Adicionar (Enter)">
+                            <FontIcon Glyph="&#xE710;" FontSize="14"/>
+                        </Button>
+                        <Button Grid.Column="2"
+                                VerticalAlignment="Bottom"
+                                Click="BtnRemoverServidorSelecionado_Click"
+                                ToolTipService.ToolTip="Remover selecionado">
+                            <FontIcon Glyph="&#xE738;" FontSize="14"/>
+                        </Button>
+                    </Grid>
+
+                    <!-- Lista de servidores com status -->
+                    <ListView x:Name="ListServidores"
+                              Grid.Row="4"
+                              SelectionMode="Single"
+                              SelectionChanged="ListServidores_SelectionChanged">
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="dto:ServidorStatusDto">
+                                <Grid ColumnSpacing="10" Margin="0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Ellipse Grid.Column="0"
+                                             Width="10" Height="10"
+                                             VerticalAlignment="Center">
+                                        <Ellipse.Fill>
+                                            <SolidColorBrush Color="{x:Bind CorStatus, Mode=OneWay}"/>
+                                        </Ellipse.Fill>
+                                    </Ellipse>
+                                    <TextBlock Grid.Column="1"
+                                               Text="{x:Bind Nome}"
+                                               VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </Grid>
+            </Border>
+
+            <!-- ── Card 3: Login e Sistemas ── -->
+            <Border Grid.Column="2" Style="{StaticResource CardStyle}">
+                <Grid RowSpacing="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Text="Login" FontWeight="SemiBold"/>
+
+                    <TextBox x:Name="TxtUsuario"
+                             Grid.Row="1"
+                             Header="Usuário"
+                             HorizontalAlignment="Stretch"
+                             PlaceholderText="Ex: SYSDBA"
+                             TextChanged="TxtUsuario_TextChanged"/>
+
+                    <TextBox x:Name="TxtSenha"
+                             Grid.Row="2"
+                             Header="Senha"
+                             TextChanged="TxtSenha_TextChanged"/>
+
+                    <Border Grid.Row="3" Height="1"
+                            Background="{ThemeResource DividerStrokeColorDefaultBrush}"
+                            Margin="0,4"/>
+
+                    <!-- Título Sistemas + loading -->
+                    <Grid Grid.Row="4">
+                        <TextBlock Text="Sistemas"
+                                   FontWeight="SemiBold"
+                                   VerticalAlignment="Center"/>
+                        <ProgressRing x:Name="LoadingSistemas"
+                                      IsActive="False"
+                                      Width="16" Height="16"
+                                      HorizontalAlignment="Right"
+                                      VerticalAlignment="Center"/>
+                    </Grid>
+
+                    <!-- Filtro -->
+                    <TextBox x:Name="TxtFiltroSistema"
+                             Grid.Row="5"
+                             PlaceholderText="Filtrar por..."
+                             TextChanged="TxtFiltroSistema_TextChanged"/>
+
+                    <!-- Status da conexão -->
+                    <InfoBar x:Name="InfoBarBServer"
+                             Grid.Row="6"
+                             IsOpen="False"
+                             IsClosable="True"/>
+
+                    <!-- Lista de sistemas -->
+                    <ListView x:Name="ListSistemas"
+                              Grid.Row="7"
+                              SelectionMode="Single"
+                              SelectionChanged="ListSistemas_SelectionChanged">
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}"
+                                           FontFamily="Consolas"
+                                           FontSize="12"/>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </Grid>
+            </Border>
+        </Grid>
+            </Grid>
+        </ScrollViewer>
+
+        <!-- Barra de comando fixada no rodapé -->
+        <Border Grid.Row="1"
+                Margin="40,8,40,20"
+                Padding="12"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="12">
+            <Grid ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="TxtComando"
+                         IsReadOnly="True"
+                         FontFamily="Consolas"
+                         FontSize="12"
+                         VerticalAlignment="Center"
+                         PlaceholderText="Selecione pasta, servidor e sistema para gerar o comando..."/>
+                <Button x:Name="BtnParametros"
+                        Grid.Column="1"
+                        VerticalAlignment="Center"
+                        Click="BtnParametros_Click"
+                        ToolTipService.ToolTip="Parâmetros extras">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <FontIcon Glyph="&#xE710;" FontSize="13"/>
+                        <TextBlock x:Name="TxtBadgeParams" Text="Params" FontSize="12"/>
+                    </StackPanel>
+                </Button>
+                <Button x:Name="BtnCopiar"
+                        Grid.Column="2"
+                        Content="Copiar"
+                        IsEnabled="False"
+                        Click="BtnCopiar_Click"/>
+                <Button x:Name="BtnExecutar"
+                        Grid.Column="3"
+                        Style="{StaticResource AccentButtonStyle}"
+                        IsEnabled="False"
+                        Click="BtnExecutar_Click">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE768;" FontSize="14"/>
+                        <TextBlock Text="Executar"/>
+                    </StackPanel>
+                </Button>
+            </Grid>
+        </Border>
+        <!-- Modal de parâmetros extras -->
+        <ContentDialog x:Name="ParametrosDialog"
+                       Title="Parâmetros extras"
+                       PrimaryButtonText="Aplicar"
+                       SecondaryButtonText="Cancelar"
+                       DefaultButton="Primary">
+            <StackPanel Spacing="12" MinWidth="380">
+                <TextBlock Text="Informe os parâmetros adicionais que serão anexados ao comando."
+                           TextWrapping="Wrap"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                <TextBox x:Name="TxtParametrosExtras"
+                         Header="Parâmetros"
+                         PlaceholderText="Ex: -debug  ou  -log verbose"
+                         FontFamily="Consolas"/>
+                <TextBlock Text="Deixe em branco para remover os parâmetros extras."
+                           FontSize="11"
+                           Foreground="{ThemeResource TextFillColorTertiaryBrush}"/>
+            </StackPanel>
+        </ContentDialog>
+    </Grid>
+</Page>
