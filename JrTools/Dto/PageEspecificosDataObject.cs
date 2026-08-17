@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -19,6 +19,7 @@ namespace JrTools.Dto
         public bool CompilarEspecificos { get; set; }
         public bool CriarAplicacaoIIS { get; set; }
         public bool RestaurarWebApp { get; set; }
+        public bool InstalarArtefatos { get; set; }
 
         // Configuração da Aplicação Web
         public string EnderecoServidor { get; set; }

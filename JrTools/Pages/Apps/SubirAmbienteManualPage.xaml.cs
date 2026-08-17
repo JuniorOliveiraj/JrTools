@@ -71,7 +71,7 @@ namespace JrTools.Pages.Apps
             _carregandoConfig = false;
 
             CarregarBranches();
-            await Task.WhenAll(CarregarProjetosWesAsync(), CarregarProjetosIisAsync(), CarregarPoolsAsync());
+            await Task.WhenAll(CarregarProjetosWesAsync(), CarregarProjetosIisAsync(), CarregarPoolsAsync(), CarregarSitesAsync());
         }
 
         // ── Projeto WES ──────────────────────────────────────────────────────
@@ -126,11 +126,16 @@ namespace JrTools.Pages.Apps
             BtnSetarConfiguracoes.IsEnabled = false;
             try
             {
+                if (CmbProjetoWes?.SelectedItem is PastaInformacoesDto projetoWes)
+                {
+                    var linker = new WebAppLinkService();
+                    await linker.GarantirLinkWebAppProdAsync(projetoWes.Caminho, _cfg?.DiretorioProducao, CriarProgresso());
+                }
+
                 var wes     = new WesService(_wesExePath);
-                var sistema = CmbSistema.SelectedItem as string ?? string.Empty;
+                var sistema = CmbSistema?.SelectedItem as string ?? TxtSistema?.Text ?? string.Empty;
                 AppendLog($"[WES CONFIG SET] Configurando: {sistema}");
                 await wes.ConfigSetAsync(TxtServidor.Text, sistema, TxtUsuario.Text, TxtSenha.Password, CriarProgresso());
-
                 await Task.Run(() => InjetarUseCOMFree());
             }
             catch (Exception ex) { MostrarErro(ex.Message); }
@@ -138,6 +143,35 @@ namespace JrTools.Pages.Apps
             {
                 LoadingConfigSet.IsActive = false;
                 BtnSetarConfiguracoes.IsEnabled = true;
+            }
+        }
+
+        private async void BtnVincularWebAppProd_Click(object sender, RoutedEventArgs e)
+        {
+            if (CmbProjetoWes?.SelectedItem is not PastaInformacoesDto projeto)
+            {
+                MostrarErro("Selecione um projeto WES antes de vincular.");
+                return;
+            }
+
+            InfoBarAviso.IsOpen = false;
+            LoadingVincularWebApp.IsActive = true;
+            BtnVincularWebAppProd.IsEnabled = false;
+
+            try
+            {
+                var linker = new WebAppLinkService();
+                await linker.GarantirLinkWebAppProdAsync(projeto.Caminho, _cfg?.DiretorioProducao, CriarProgresso());
+            }
+            catch (Exception ex)
+            {
+                MostrarErro(ex.Message);
+                AppendLog($"[ERRO VÍNCULO WEBAPP] {ex.Message}");
+            }
+            finally
+            {
+                LoadingVincularWebApp.IsActive = false;
+                BtnVincularWebAppProd.IsEnabled = true;
             }
         }
 
@@ -200,7 +234,6 @@ namespace JrTools.Pages.Apps
             _cfgRh.Sistema = CmbSistema.SelectedItem as string ?? string.Empty;
             await ConfiguracaoRelatoriosHelper.SalvarAsync(_cfgRh);
         }
-
         private async void BtnLimparCache_Click(object sender, RoutedEventArgs e)
             => await ExecutarWes(LoadingLimparCache, BtnLimparCache,
                 wes => wes.CacheClearAsync(CriarProgresso()));
@@ -223,7 +256,16 @@ namespace JrTools.Pages.Apps
             InfoBarAviso.IsOpen = false;
             loading.IsActive    = true;
             btn.IsEnabled       = false;
-            try   { await acao(new WesService(_wesExePath)); }
+            try
+            {
+                if (CmbProjetoWes.SelectedItem is PastaInformacoesDto projetoWes)
+                {
+                    var linker = new WebAppLinkService();
+                    await linker.GarantirLinkWebAppProdAsync(projetoWes.Caminho, _cfg?.DiretorioProducao, CriarProgresso());
+                }
+
+                await acao(new WesService(_wesExePath));
+            }
             catch (Exception ex) { MostrarErro(ex.Message); AppendLog($"[ERRO] {ex.Message}"); }
             finally { loading.IsActive = false; btn.IsEnabled = true; }
         }
@@ -477,6 +519,32 @@ namespace JrTools.Pages.Apps
                 });
             });
 
+        private async Task CarregarSitesAsync()
+        {
+            try
+            {
+                var sites = await _iis.ListarSitesAsync();
+                CmbSiteIis.ItemsSource = sites;
+                if (sites.Contains("Default Web Site", StringComparer.OrdinalIgnoreCase))
+                {
+                    CmbSiteIis.SelectedItem = sites.FirstOrDefault(s => s.Equals("Default Web Site", StringComparison.OrdinalIgnoreCase));
+                }
+                else if (sites.Any())
+                {
+                    CmbSiteIis.SelectedIndex = 0;
+                }
+                else
+                {
+                    CmbSiteIis.Text = "Default Web Site";
+                }
+            }
+            catch (Exception ex)
+            {
+                AppendLog($"[AVISO] Não foi possível listar sites: {ex.Message}");
+                CmbSiteIis.Text = "Default Web Site";
+            }
+        }
+
         private async Task CarregarPoolsAsync()
         {
             try
@@ -500,7 +568,7 @@ namespace JrTools.Pages.Apps
 
         private async void BtnCriarApp_Click(object sender, RoutedEventArgs e)
         {
-            var site    = TxtSiteIis.Text.Trim();
+            var site    = CmbSiteIis.SelectedItem?.ToString() ?? CmbSiteIis.Text.Trim();
             var nomeApp = TxtNomeApp.Text.Trim();
             var pool    = CmbPool.SelectedItem?.ToString();
             var caminho = TxtCaminhoIis.Text.Trim();
@@ -519,6 +587,12 @@ namespace JrTools.Pages.Apps
             BtnCriarApp.IsEnabled    = false;
             try
             {
+                if (CmbProjeto.SelectedItem is PastaInformacoesDto projetoIis)
+                {
+                    var linker = new WebAppLinkService();
+                    await linker.GarantirLinkWebAppProdAsync(projetoIis.Caminho, _cfg?.DiretorioProducao, CriarProgresso());
+                }
+
                 await _iis.CriarAplicacaoAsync(site, nomeApp, pool, caminho, CriarProgresso());
             }
             catch (Exception ex)

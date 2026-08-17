@@ -135,6 +135,16 @@
                             <TextBlock Text="wes.exe artifacts install -s"
                                        FontFamily="Consolas" FontSize="12"
                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            
+                            <StackPanel Orientation="Horizontal" Spacing="16" Margin="0,8,0,8">
+                                <CheckBox x:Name="ChkLayerBuilder" Content="Builder" IsChecked="True"/>
+                                <CheckBox x:Name="ChkLayerTecnologia" Content="Tecnologia" IsChecked="True"/>
+                                <CheckBox x:Name="ChkLayerBenner" Content="Benner" IsChecked="True"/>
+                                <CheckBox x:Name="ChkLayerVertical" Content="Vertical" IsChecked="True"/>
+                                <CheckBox x:Name="ChkLayerEspecifico" Content="Específico" IsChecked="True"/>
+                                <CheckBox x:Name="ChkLayerCliente" Content="Cliente" IsChecked="True"/>
+                            </StackPanel>
+
                             <Button x:Name="BtnArtifactsInstall" Click="BtnArtifactsInstall_Click" MinWidth="200" HorizontalAlignment="Left" Margin="0,4,0,0">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <ProgressRing x:Name="LoadingArtifacts" IsActive="False" Width="16" Height="16"/>
@@ -157,6 +167,116 @@
                                     <TextBlock Text="Executar pages generate"/>
                                 </StackPanel>
                             </Button>
+                        </StackPanel>
+
+                        <NavigationViewItemSeparator/>
+
+                        <!-- Navegador & Inspetor de Artefatos (Guias / Auto-Fix) -->
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="Navegador de Artefatos &amp; Auto-Fix por Guia" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                            <TextBlock Text="Filtre os artefatos por Guia (Menus, Páginas, Visões...) e inspecione as dependências automaticamente antes de instalar."
+                                       FontFamily="Consolas" FontSize="12"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+
+                            <!-- Controles de Filtros -->
+                            <Grid ColumnSpacing="12" RowSpacing="8" Margin="0,8,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="1.5*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="2*"/>
+                                </Grid.ColumnDefinitions>
+                                <ComboBox x:Name="CmbStatusArtefato"
+                                          Grid.Column="0"
+                                          Header="Status (Instalação)"
+                                          HorizontalAlignment="Stretch"
+                                          SelectionChanged="CmbFiltroArtefato_SelectionChanged"/>
+                                <ComboBox x:Name="CmbGuiaArtefato"
+                                          Grid.Column="1"
+                                          Header="Guia (Tipo)"
+                                          HorizontalAlignment="Stretch"
+                                          SelectionChanged="CmbFiltroArtefato_SelectionChanged"/>
+                                <ComboBox x:Name="CmbCamadaArtefato"
+                                          Grid.Column="2"
+                                          Header="Camada"
+                                          HorizontalAlignment="Stretch"
+                                          SelectionChanged="CmbFiltroArtefato_SelectionChanged"/>
+                                <TextBox x:Name="TxtBuscaArtefato"
+                                         Grid.Column="3"
+                                         Header="Buscar por ID ou Nome"
+                                         PlaceholderText="Ex: AGA_ADM..."
+                                         TextChanged="TxtBuscaArtefato_TextChanged"/>
+                            </Grid>
+
+                            <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,8,0,8">
+                                <Button x:Name="BtnCarregarArtefatos" Click="BtnCarregarArtefatos_Click">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <FontIcon Glyph="&#xE8B9;"/>
+                                        <TextBlock Text="Atualizar Lista"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button x:Name="BtnCompararDB" Click="BtnCompararDB_Click">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <FontIcon Glyph="&#xE890;"/>
+                                        <TextBlock Text="Comparar DB (Status)"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button x:Name="BtnMarcarTodos" Click="BtnMarcarTodos_Click">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <FontIcon Glyph="&#xE73A;"/>
+                                        <TextBlock Text="Marcar Todos"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button x:Name="BtnDesmarcarTodos" Click="BtnDesmarcarTodos_Click">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <FontIcon Glyph="&#xE73B;"/>
+                                        <TextBlock Text="Desmarcar Todos"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button x:Name="BtnInspecionarDep" Click="BtnInspecionarDep_Click">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <FontIcon Glyph="&#xE721;"/>
+                                        <TextBlock Text="Inspecionar Dependências"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button x:Name="BtnInstalarSmart" Click="BtnInstalarSmart_Click" Style="{ThemeResource AccentButtonStyle}">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <FontIcon Glyph="&#xE945;"/>
+                                        <TextBlock Text="Instalar Selecionados (Smart)"/>
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+
+                            <!-- Lista de Artefatos com Checkbox -->
+                            <Border BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="8" Padding="8" MaxHeight="280">
+                                <ListView x:Name="LstArtefatos" SelectionMode="Single" SelectionChanged="LstArtefatos_SelectionChanged">
+                                    <ListView.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid ColumnSpacing="12" Padding="4">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="100"/>
+                                                    <ColumnDefinition Width="100"/>
+                                                    <ColumnDefinition Width="80"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <CheckBox Grid.Column="0" IsChecked="{Binding IsSelecionado, Mode=TwoWay}" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding StatusFormatado}" FontWeight="Bold" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="2" Text="{Binding Guia}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="3" Text="{Binding CamadaFormatada}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="4" Text="{Binding Identificador}" FontWeight="Bold" VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ListView.ItemTemplate>
+                                </ListView>
+                            </Border>
+
+                            <!-- Painel de Detalhes da Dependência -->
+                            <TextBlock x:Name="TxtInfoDependencia"
+                                       Text="Selecione um artefato e clique em 'Inspecionar Dependências' para ver o fluxo."
+                                       FontFamily="Consolas" FontSize="12"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       TextWrapping="Wrap"/>
                         </StackPanel>
 
                     </StackPanel>
