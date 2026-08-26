@@ -205,8 +205,9 @@
 	<PropertyGroup>
 		<PublishReadyToRun Condition="'$(Configuration)' == 'Debug'">False</PublishReadyToRun>
 		<PublishReadyToRun Condition="'$(Configuration)' != 'Debug'">True</PublishReadyToRun>
-		<PublishTrimmed Condition="'$(Configuration)' == 'Debug'">False</PublishTrimmed>
-		<PublishTrimmed Condition="'$(Configuration)' != 'Debug'">True</PublishTrimmed>
+		<!-- Trimming quebra o WinUI 3 em runtime (crash em Microsoft.UI.Xaml.dll, STATUS_STOWED_EXCEPTION)
+         porque o XAML runtime resolve tipos via reflexão que o trimmer remove. -->
+		<PublishTrimmed>False</PublishTrimmed>
 	</PropertyGroup>
 
 	<Target Name="CopyBennerSmartInstaller" AfterTargets="Build">
