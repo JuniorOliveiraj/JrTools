@@ -5,9 +5,12 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:converters="using:JrTools.Converters"
     mc:Ignorable="d">
 
     <Page.Resources>
+        <converters:StatusToBrushConverter x:Key="StatusToBrushConverter"/>
+
         <Style x:Key="CardStyle" TargetType="Border">
             <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
             <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
@@ -15,23 +18,58 @@
             <Setter Property="CornerRadius" Value="12" />
             <Setter Property="Padding" Value="20" />
         </Style>
+
+        <Style x:Key="SectionHeaderTextStyle" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="SectionIconStyle" TargetType="FontIcon">
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="Foreground" Value="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="CommandTileStyle" TargetType="Border">
+            <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorSecondaryBrush}" />
+            <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="16" />
+        </Style>
+
+        <Style x:Key="MonoDescriptionStyle" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Consolas"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}"/>
+        </Style>
     </Page.Resources>
 
     <Grid>
         <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="40,30">
-            <StackPanel Spacing="16">
+            <StackPanel Spacing="20">
 
                 <!-- Cabeçalho -->
-                <TextBlock Text="Automatizações — WES"
-                           FontSize="22"
-                           FontWeight="Bold"/>
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Automatizações — WES"
+                               FontSize="24"
+                               FontWeight="Bold"/>
+                    <TextBlock Text="Configure, instale artefatos e gerencie o WebApp do WES de forma automatizada."
+                               FontSize="13"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                </StackPanel>
 
                 <InfoBar x:Name="InfoBarAviso" IsOpen="False" Severity="Warning" IsClosable="False"/>
 
                 <!-- Configurações (compartilhadas com Importador) -->
                 <Border Style="{StaticResource CardStyle}">
-                    <StackPanel Spacing="12">
-                        <TextBlock Text="Configurações" FontWeight="SemiBold"/>
+                    <StackPanel Spacing="14">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="&#xE713;" Style="{StaticResource SectionIconStyle}"/>
+                            <TextBlock Text="Configurações" Style="{StaticResource SectionHeaderTextStyle}"/>
+                        </StackPanel>
 
                         <!-- Seleção do projeto -->
                         <ComboBox x:Name="CmbProjetoWes"
@@ -95,37 +133,73 @@
                 <!-- Comandos WES -->
                 <Border Style="{StaticResource CardStyle}">
                     <StackPanel Spacing="16">
-                        <TextBlock Text="Comandos WES" FontWeight="SemiBold"/>
-
-                        <!-- config set -->
-                        <StackPanel Spacing="4">
-                            <TextBlock Text="Definir configuração" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
-                            <TextBlock Text="wes.exe config set -h {servidor} -s {sistema} -u {usuario} -p {senha}"
-                                       FontFamily="Consolas" FontSize="12"
-                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                            <Button x:Name="BtnConfigSet" Click="BtnConfigSet_Click" MinWidth="200" HorizontalAlignment="Left" Margin="0,4,0,0">
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <ProgressRing x:Name="LoadingConfigSet" IsActive="False" Width="16" Height="16"/>
-                                    <TextBlock Text="Executar config set"/>
-                                </StackPanel>
-                            </Button>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="&#xE756;" Style="{StaticResource SectionIconStyle}"/>
+                            <TextBlock Text="Comandos WES" Style="{StaticResource SectionHeaderTextStyle}"/>
                         </StackPanel>
 
-                        <NavigationViewItemSeparator/>
+                        <!-- config set / cache clear / pages generate lado a lado -->
+                        <Grid ColumnSpacing="16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
 
-                        <!-- cache clear -->
-                        <StackPanel Spacing="4">
-                            <TextBlock Text="Limpar cache" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
-                            <TextBlock Text="wes.exe cache clear"
-                                       FontFamily="Consolas" FontSize="12"
-                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                            <Button x:Name="BtnCacheClear" Click="BtnCacheClear_Click" MinWidth="200" HorizontalAlignment="Left" Margin="0,4,0,0">
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <ProgressRing x:Name="LoadingCacheClear" IsActive="False" Width="16" Height="16"/>
-                                    <TextBlock Text="Executar cache clear"/>
+                            <!-- config set -->
+                            <Border Grid.Column="0" Style="{StaticResource CommandTileStyle}">
+                                <StackPanel Spacing="6">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <FontIcon Glyph="&#xE90F;" FontSize="14" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                                        <TextBlock Text="Definir configuração" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                                    </StackPanel>
+                                    <TextBlock Text="wes.exe config set -h {servidor} -s {sistema} -u {usuario} -p {senha}"
+                                               Style="{StaticResource MonoDescriptionStyle}"/>
+                                    <Button x:Name="BtnConfigSet" Click="BtnConfigSet_Click" HorizontalAlignment="Stretch" Margin="0,6,0,0">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <ProgressRing x:Name="LoadingConfigSet" IsActive="False" Width="16" Height="16"/>
+                                            <TextBlock Text="Executar config set"/>
+                                        </StackPanel>
+                                    </Button>
                                 </StackPanel>
-                            </Button>
-                        </StackPanel>
+                            </Border>
+
+                            <!-- cache clear -->
+                            <Border Grid.Column="1" Style="{StaticResource CommandTileStyle}">
+                                <StackPanel Spacing="6">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <FontIcon Glyph="&#xE74D;" FontSize="14" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                                        <TextBlock Text="Limpar cache" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                                    </StackPanel>
+                                    <TextBlock Text="wes.exe cache clear"
+                                               Style="{StaticResource MonoDescriptionStyle}"/>
+                                    <Button x:Name="BtnCacheClear" Click="BtnCacheClear_Click" HorizontalAlignment="Stretch" Margin="0,6,0,0">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <ProgressRing x:Name="LoadingCacheClear" IsActive="False" Width="16" Height="16"/>
+                                            <TextBlock Text="Executar cache clear"/>
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- pages generate -->
+                            <Border Grid.Column="2" Style="{StaticResource CommandTileStyle}">
+                                <StackPanel Spacing="6">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <FontIcon Glyph="&#xE8B9;" FontSize="14" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                                        <TextBlock Text="Gerar páginas" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                                    </StackPanel>
+                                    <TextBlock Text="wes.exe pages generate"
+                                               Style="{StaticResource MonoDescriptionStyle}"/>
+                                    <Button x:Name="BtnPagesGenerate" Click="BtnPagesGenerate_Click" HorizontalAlignment="Stretch" Margin="0,6,0,0">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <ProgressRing x:Name="LoadingPages" IsActive="False" Width="16" Height="16"/>
+                                            <TextBlock Text="Executar pages generate"/>
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
 
                         <NavigationViewItemSeparator/>
 
@@ -133,38 +207,29 @@
                         <StackPanel Spacing="4">
                             <TextBlock Text="Instalar artefatos" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
                             <TextBlock Text="wes.exe artifacts install -s"
-                                       FontFamily="Consolas" FontSize="12"
-                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                            
-                            <StackPanel Orientation="Horizontal" Spacing="16" Margin="0,8,0,8">
-                                <CheckBox x:Name="ChkLayerBuilder" Content="Builder" IsChecked="True"/>
-                                <CheckBox x:Name="ChkLayerTecnologia" Content="Tecnologia" IsChecked="True"/>
-                                <CheckBox x:Name="ChkLayerBenner" Content="Benner" IsChecked="True"/>
-                                <CheckBox x:Name="ChkLayerVertical" Content="Vertical" IsChecked="True"/>
-                                <CheckBox x:Name="ChkLayerEspecifico" Content="Específico" IsChecked="True"/>
-                                <CheckBox x:Name="ChkLayerCliente" Content="Cliente" IsChecked="True"/>
-                            </StackPanel>
+                                       Style="{StaticResource MonoDescriptionStyle}"/>
 
-                            <Button x:Name="BtnArtifactsInstall" Click="BtnArtifactsInstall_Click" MinWidth="200" HorizontalAlignment="Left" Margin="0,4,0,0">
+                            <Border Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    Padding="12,10"
+                                    Margin="0,8,0,8">
+                                <StackPanel Orientation="Horizontal" Spacing="16">
+                                    <CheckBox x:Name="ChkLayerBuilder" Content="Builder" IsChecked="True"/>
+                                    <CheckBox x:Name="ChkLayerTecnologia" Content="Tecnologia" IsChecked="True"/>
+                                    <CheckBox x:Name="ChkLayerBenner" Content="Benner" IsChecked="True"/>
+                                    <CheckBox x:Name="ChkLayerVertical" Content="Vertical" IsChecked="True"/>
+                                    <CheckBox x:Name="ChkLayerEspecifico" Content="Específico" IsChecked="True"/>
+                                    <CheckBox x:Name="ChkLayerCliente" Content="Cliente" IsChecked="True"/>
+                                </StackPanel>
+                            </Border>
+
+                            <Button x:Name="BtnArtifactsInstall" Click="BtnArtifactsInstall_Click" Style="{ThemeResource AccentButtonStyle}" MinWidth="200" HorizontalAlignment="Left" Margin="0,4,0,0">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <ProgressRing x:Name="LoadingArtifacts" IsActive="False" Width="16" Height="16"/>
+                                    <FontIcon Glyph="&#xE896;" FontSize="14"/>
                                     <TextBlock Text="Executar artifacts install"/>
-                                </StackPanel>
-                            </Button>
-                        </StackPanel>
-
-                        <NavigationViewItemSeparator/>
-
-                        <!-- pages generate -->
-                        <StackPanel Spacing="4">
-                            <TextBlock Text="Gerar páginas" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
-                            <TextBlock Text="wes.exe pages generate"
-                                       FontFamily="Consolas" FontSize="12"
-                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                            <Button x:Name="BtnPagesGenerate" Click="BtnPagesGenerate_Click" MinWidth="200" HorizontalAlignment="Left" Margin="0,4,0,0">
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <ProgressRing x:Name="LoadingPages" IsActive="False" Width="16" Height="16"/>
-                                    <TextBlock Text="Executar pages generate"/>
                                 </StackPanel>
                             </Button>
                         </StackPanel>
@@ -173,10 +238,12 @@
 
                         <!-- Navegador & Inspetor de Artefatos (Guias / Auto-Fix) -->
                         <StackPanel Spacing="8">
-                            <TextBlock Text="Navegador de Artefatos &amp; Auto-Fix por Guia" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="&#xE71C;" Style="{StaticResource SectionIconStyle}"/>
+                                <TextBlock Text="Navegador de Artefatos &amp; Auto-Fix por Guia" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                            </StackPanel>
                             <TextBlock Text="Filtre os artefatos por Guia (Menus, Páginas, Visões...) e inspecione as dependências automaticamente antes de instalar."
-                                       FontFamily="Consolas" FontSize="12"
-                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                       Style="{StaticResource MonoDescriptionStyle}"/>
 
                             <!-- Controles de Filtros -->
                             <Grid ColumnSpacing="12" RowSpacing="8" Margin="0,8,0,0">
@@ -208,62 +275,80 @@
                                          TextChanged="TxtBuscaArtefato_TextChanged"/>
                             </Grid>
 
-                            <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,8,0,8">
-                                <Button x:Name="BtnCarregarArtefatos" Click="BtnCarregarArtefatos_Click">
-                                    <StackPanel Orientation="Horizontal" Spacing="6">
-                                        <FontIcon Glyph="&#xE8B9;"/>
-                                        <TextBlock Text="Atualizar Lista"/>
-                                    </StackPanel>
-                                </Button>
-                                <Button x:Name="BtnCompararDB" Click="BtnCompararDB_Click">
-                                    <StackPanel Orientation="Horizontal" Spacing="6">
-                                        <FontIcon Glyph="&#xE890;"/>
-                                        <TextBlock Text="Comparar DB (Status)"/>
-                                    </StackPanel>
-                                </Button>
-                                <Button x:Name="BtnMarcarTodos" Click="BtnMarcarTodos_Click">
-                                    <StackPanel Orientation="Horizontal" Spacing="6">
-                                        <FontIcon Glyph="&#xE73A;"/>
-                                        <TextBlock Text="Marcar Todos"/>
-                                    </StackPanel>
-                                </Button>
-                                <Button x:Name="BtnDesmarcarTodos" Click="BtnDesmarcarTodos_Click">
-                                    <StackPanel Orientation="Horizontal" Spacing="6">
-                                        <FontIcon Glyph="&#xE73B;"/>
-                                        <TextBlock Text="Desmarcar Todos"/>
-                                    </StackPanel>
-                                </Button>
-                                <Button x:Name="BtnInspecionarDep" Click="BtnInspecionarDep_Click">
-                                    <StackPanel Orientation="Horizontal" Spacing="6">
-                                        <FontIcon Glyph="&#xE721;"/>
-                                        <TextBlock Text="Inspecionar Dependências"/>
-                                    </StackPanel>
-                                </Button>
-                                <Button x:Name="BtnInstalarSmart" Click="BtnInstalarSmart_Click" Style="{ThemeResource AccentButtonStyle}">
-                                    <StackPanel Orientation="Horizontal" Spacing="6">
-                                        <FontIcon Glyph="&#xE945;"/>
-                                        <TextBlock Text="Instalar Selecionados (Smart)"/>
-                                    </StackPanel>
-                                </Button>
-                            </StackPanel>
+                            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,8,0,8">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Button x:Name="BtnCarregarArtefatos" Click="BtnCarregarArtefatos_Click">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <FontIcon Glyph="&#xE8B9;"/>
+                                            <TextBlock Text="Atualizar Lista"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <Button x:Name="BtnCompararDB" Click="BtnCompararDB_Click">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <FontIcon Glyph="&#xE890;"/>
+                                            <TextBlock Text="Comparar DB (Status)"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <Button x:Name="BtnMarcarTodos" Click="BtnMarcarTodos_Click">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <FontIcon Glyph="&#xE73A;"/>
+                                            <TextBlock Text="Marcar Todos"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <Button x:Name="BtnDesmarcarTodos" Click="BtnDesmarcarTodos_Click">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <FontIcon Glyph="&#xE73B;"/>
+                                            <TextBlock Text="Desmarcar Todos"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <Button x:Name="BtnInspecionarDep" Click="BtnInspecionarDep_Click">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <FontIcon Glyph="&#xE721;"/>
+                                            <TextBlock Text="Inspecionar Dependências"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <Button x:Name="BtnInstalarSmart" Click="BtnInstalarSmart_Click" Style="{ThemeResource AccentButtonStyle}">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <FontIcon Glyph="&#xE945;"/>
+                                            <TextBlock Text="Instalar Selecionados (Smart)"/>
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+                            </ScrollViewer>
 
                             <!-- Lista de Artefatos com Checkbox -->
-                            <Border BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="8" Padding="8" MaxHeight="280">
+                            <Border BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="8" Padding="4" MaxHeight="280">
                                 <ListView x:Name="LstArtefatos" SelectionMode="Single" SelectionChanged="LstArtefatos_SelectionChanged">
+                                    <ListView.ItemContainerStyle>
+                                        <Style TargetType="ListViewItem">
+                                            <Setter Property="Padding" Value="8,2"/>
+                                        </Style>
+                                    </ListView.ItemContainerStyle>
                                     <ListView.ItemTemplate>
                                         <DataTemplate>
-                                            <Grid ColumnSpacing="12" Padding="4">
+                                            <Grid ColumnSpacing="12" Padding="4,6">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto"/>
-                                                    <ColumnDefinition Width="100"/>
+                                                    <ColumnDefinition Width="120"/>
                                                     <ColumnDefinition Width="100"/>
                                                     <ColumnDefinition Width="80"/>
                                                     <ColumnDefinition Width="*"/>
                                                 </Grid.ColumnDefinitions>
                                                 <CheckBox Grid.Column="0" IsChecked="{Binding IsSelecionado, Mode=TwoWay}" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="{Binding StatusFormatado}" FontWeight="Bold" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" VerticalAlignment="Center"/>
+                                                <Border Grid.Column="1"
+                                                        BorderBrush="{Binding Status, Converter={StaticResource StatusToBrushConverter}}"
+                                                        BorderThickness="1.5"
+                                                        CornerRadius="4"
+                                                        Padding="8,2"
+                                                        HorizontalAlignment="Left"
+                                                        VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding StatusFormatado}"
+                                                               FontSize="12"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{Binding Status, Converter={StaticResource StatusToBrushConverter}}"/>
+                                                </Border>
                                                 <TextBlock Grid.Column="2" Text="{Binding Guia}" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="3" Text="{Binding CamadaFormatada}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="3" Text="{Binding CamadaFormatada}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontSize="12" VerticalAlignment="Center"/>
                                                 <TextBlock Grid.Column="4" Text="{Binding Identificador}" FontWeight="Bold" VerticalAlignment="Center"/>
                                             </Grid>
                                         </DataTemplate>
@@ -272,11 +357,17 @@
                             </Border>
 
                             <!-- Painel de Detalhes da Dependência -->
-                            <TextBlock x:Name="TxtInfoDependencia"
-                                       Text="Selecione um artefato e clique em 'Inspecionar Dependências' para ver o fluxo."
-                                       FontFamily="Consolas" FontSize="12"
-                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                       TextWrapping="Wrap"/>
+                            <Border Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    Padding="12,10">
+                                <TextBlock x:Name="TxtInfoDependencia"
+                                           Text="Selecione um artefato e clique em 'Inspecionar Dependências' para ver o fluxo."
+                                           FontFamily="Consolas" FontSize="12"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           TextWrapping="Wrap"/>
+                            </Border>
                         </StackPanel>
 
                     </StackPanel>
@@ -284,22 +375,31 @@
 
                 <!-- Log -->
                 <Border Style="{StaticResource CardStyle}">
-                    <StackPanel Spacing="8">
+                    <StackPanel Spacing="10">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="Log de execução" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="&#xE9D9;" Style="{StaticResource SectionIconStyle}"/>
+                                <TextBlock Text="Log de execução" Style="{StaticResource SectionHeaderTextStyle}"/>
+                            </StackPanel>
                             <Button x:Name="BtnLimparLog" Grid.Column="1" Content="Limpar"
                                     FontSize="11" Padding="8,2" Click="BtnLimparLog_Click"/>
                         </Grid>
-                        <ScrollViewer x:Name="ScrollLog" MaxHeight="200" VerticalScrollBarVisibility="Auto">
-                            <TextBlock x:Name="TxtLog"
-                                       FontFamily="Consolas" FontSize="12"
-                                       TextWrapping="Wrap"
-                                       IsTextSelectionEnabled="True"/>
-                        </ScrollViewer>
+                        <Border Background="{ThemeResource SolidBackgroundFillColorBaseBrush}"
+                                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="12">
+                            <ScrollViewer x:Name="ScrollLog" MaxHeight="200" VerticalScrollBarVisibility="Auto">
+                                <TextBlock x:Name="TxtLog"
+                                           FontFamily="Consolas" FontSize="12"
+                                           TextWrapping="Wrap"
+                                           IsTextSelectionEnabled="True"/>
+                            </ScrollViewer>
+                        </Border>
                     </StackPanel>
                 </Border>
 
