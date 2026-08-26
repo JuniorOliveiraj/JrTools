@@ -191,9 +191,12 @@ namespace JrTools.Services
 
             return Task.Run(async () =>
             {
-                await tcs.Task;
-                await process.WaitForExitAsync();
-                return process.ExitCode;
+                using (process)
+                {
+                    await tcs.Task;
+                    await process.WaitForExitAsync();
+                    return process.ExitCode;
+                }
             });
         }
 

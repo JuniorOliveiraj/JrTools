@@ -133,7 +133,7 @@ namespace JrTools.Pages.Apps
                 }
 
                 var wes     = new WesService(_wesExePath);
-                var sistema = CmbSistema?.SelectedItem as string ?? TxtSistema?.Text ?? string.Empty;
+                var sistema = CmbSistema?.SelectedItem as string ?? string.Empty;
                 AppendLog($"[WES CONFIG SET] Configurando: {sistema}");
                 await wes.ConfigSetAsync(TxtServidor.Text, sistema, TxtUsuario.Text, TxtSenha.Password, CriarProgresso());
                 await Task.Run(() => InjetarUseCOMFree());
