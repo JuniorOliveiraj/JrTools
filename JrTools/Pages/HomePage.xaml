@@ -118,10 +118,41 @@
                                             <RowDefinition Height="Auto"/>
                                         </Grid.RowDefinitions>
 
-                                        <TimePicker x:Name="Entrada1TimePicker" Header="Entrada 1" Grid.Row="0" Grid.Column="0" ClockIdentifier="24HourClock"/>
-                                        <TimePicker x:Name="Saida1TimePicker" Header="Saída 1" Grid.Row="0" Grid.Column="1" ClockIdentifier="24HourClock"/>
-                                        <TimePicker x:Name="Entrada2TimePicker" Header="Entrada 2" Grid.Row="1" Grid.Column="0" ClockIdentifier="24HourClock"/>
-                                        <TimePicker x:Name="Saida2TimePicker" Header="Saída 2" Grid.Row="1" Grid.Column="1" ClockIdentifier="24HourClock"/>
+                                        <StackPanel Grid.Row="0" Grid.Column="0" Spacing="4">
+                                            <TextBlock Text="Entrada 1" Style="{ThemeResource CaptionTextBlockStyle}"/>
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <NumberBox x:Name="Entrada1HoraBox" Width="70" Minimum="0" Maximum="23" SpinButtonPlacementMode="Compact" SmallChange="1" PlaceholderText="HH"/>
+                                                <TextBlock Text=":" VerticalAlignment="Center" FontSize="16"/>
+                                                <NumberBox x:Name="Entrada1MinutoBox" Width="70" Minimum="0" Maximum="59" SpinButtonPlacementMode="Compact" SmallChange="1" PlaceholderText="MM"/>
+                                            </StackPanel>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Row="0" Grid.Column="1" Spacing="4">
+                                            <TextBlock Text="Saída 1" Style="{ThemeResource CaptionTextBlockStyle}"/>
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <NumberBox x:Name="Saida1HoraBox" Width="70" Minimum="0" Maximum="23" SpinButtonPlacementMode="Compact" SmallChange="1" PlaceholderText="HH"/>
+                                                <TextBlock Text=":" VerticalAlignment="Center" FontSize="16"/>
+                                                <NumberBox x:Name="Saida1MinutoBox" Width="70" Minimum="0" Maximum="59" SpinButtonPlacementMode="Compact" SmallChange="1" PlaceholderText="MM"/>
+                                            </StackPanel>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Row="1" Grid.Column="0" Spacing="4">
+                                            <TextBlock Text="Entrada 2" Style="{ThemeResource CaptionTextBlockStyle}"/>
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <NumberBox x:Name="Entrada2HoraBox" Width="70" Minimum="0" Maximum="23" SpinButtonPlacementMode="Compact" SmallChange="1" PlaceholderText="HH"/>
+                                                <TextBlock Text=":" VerticalAlignment="Center" FontSize="16"/>
+                                                <NumberBox x:Name="Entrada2MinutoBox" Width="70" Minimum="0" Maximum="59" SpinButtonPlacementMode="Compact" SmallChange="1" PlaceholderText="MM"/>
+                                            </StackPanel>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4">
+                                            <TextBlock Text="Saída 2" Style="{ThemeResource CaptionTextBlockStyle}"/>
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <NumberBox x:Name="Saida2HoraBox" Width="70" Minimum="0" Maximum="23" SpinButtonPlacementMode="Compact" SmallChange="1" PlaceholderText="HH"/>
+                                                <TextBlock Text=":" VerticalAlignment="Center" FontSize="16"/>
+                                                <NumberBox x:Name="Saida2MinutoBox" Width="70" Minimum="0" Maximum="59" SpinButtonPlacementMode="Compact" SmallChange="1" PlaceholderText="MM"/>
+                                            </StackPanel>
+                                        </StackPanel>
 
                                         <Button x:Name="CalcularHorasButton" Content="Calcular" Grid.Row="2" Grid.Column="0" Click="CalcularHorasButton_Click"/>
 
