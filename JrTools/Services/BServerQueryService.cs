@@ -33,7 +33,15 @@ namespace JrTools.Services
 
             try
             {
-                using var proc = Process.Start(psi)!;
+                // Process.Start roda de forma síncrona (inclui o custo de escaneamento de
+                // antivírus corporativo na criação do processo) — sem o Task.Run, esse custo
+                // acontece na thread da UI antes do primeiro await de verdade, travando a
+                // interface por um instante antes do indicador de carregamento conseguir
+                // renderizar.
+                using var proc = await Task.Run(() => Process.Start(psi));
+                if (proc == null)
+                    return Erro("Não foi possível iniciar o processo auxiliar.");
+
                 var output = await proc.StandardOutput.ReadToEndAsync();
                 await proc.WaitForExitAsync();
 
