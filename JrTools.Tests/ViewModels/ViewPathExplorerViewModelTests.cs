@@ -587,9 +587,14 @@ namespace JrTools.Tests.ViewModels
         public Property Property3_Resultado_ContemEntradaParaCadaViewNormalizada()
         {
             // Gerador de conjunto de views normalizadas de tamanho variável (1..30)
+            // Ordem importa: remove caracteres de controle ANTES de trimar (não depois) — senão
+            // um espaço "protegido" por um caractere de controle na borda (ex: "\x01 xU") sobrevive
+            // ao Trim() inicial e só vira visível depois, gerando uma string diferente da que
+            // NormalizarEntrada (que só faz Trim, sem remover caracteres de controle) produziria
+            // a partir do mesmo texto — quebrando a comparação de identidade da propriedade.
             var genNonEmptyString = Arb.Generate<NonEmptyString>()
-                .Select(s => s.Get.Trim())
-                .Select(s => new string(s.Where(c => !char.IsControl(c)).ToArray()))
+                .Select(s => new string(s.Get.Where(c => !char.IsControl(c)).ToArray()))
+                .Select(s => s.Trim())
                 .Where(s => !string.IsNullOrWhiteSpace(s));
 
             var genConjuntoViews = Gen.Choose(1, 30)
@@ -686,9 +691,14 @@ namespace JrTools.Tests.ViewModels
         public Property Property4_ViewsNaoEncontradas_RetornamListaVazia()
         {
             // Gerador de nomes de views aleatórios não presentes no índice do FakeViewPathMapper
+            // Ordem importa: remove caracteres de controle ANTES de trimar (não depois) — senão
+            // um espaço "protegido" por um caractere de controle na borda (ex: "\x01 xU") sobrevive
+            // ao Trim() inicial e só vira visível depois, gerando uma string diferente da que
+            // NormalizarEntrada (que só faz Trim, sem remover caracteres de controle) produziria
+            // a partir do mesmo texto — quebrando a comparação de identidade da propriedade.
             var genNonEmptyString = Arb.Generate<NonEmptyString>()
-                .Select(s => s.Get.Trim())
-                .Select(s => new string(s.Where(c => !char.IsControl(c)).ToArray()))
+                .Select(s => new string(s.Get.Where(c => !char.IsControl(c)).ToArray()))
+                .Select(s => s.Trim())
                 .Where(s => !string.IsNullOrWhiteSpace(s));
 
             var genListaViews = Gen.Choose(1, 20)
