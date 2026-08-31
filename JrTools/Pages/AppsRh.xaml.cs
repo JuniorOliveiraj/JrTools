@@ -21,11 +21,11 @@ namespace JrTools.Pages
             var items = new List<SystemSettingItem>
             {
                 new("Projetos RH", "Altere a versão do sistema de forma rápida.", "\uE912", typeof(RhProdPage)),
+                new("Automações - WES", "Instalar artefatos e gerar páginas via wes.exe.", "\uE896", typeof(InstalarArtefatosPage)),
                 new("Notas", "Anotações e documentação pessoal com suporte a Markdown.", "", typeof(NotasPage)),
                 new("Cria", "Ta afim mesmo de levar uns esculachos?", "\uE99A", typeof(Cria)),
                 new("Cria Fix", "Corrigir a formatação UTF8-BOM dos arquivos", "\uE99A", typeof(CriaFix)),
                 new("Ambiente Específico", "Subir ambiente específico completo.", "\uE716", typeof(EspecificosPage)),
-                new("Automações - WES", "Instalar artefatos e gerar páginas via wes.exe.", "\uE896", typeof(InstalarArtefatosPage)),
                 new("Importador de Relatórios", "Importar relatórios .rpt para o servidor Benner.", "\uE8A5", typeof(ImportadorRelatoriosPage)),
                 new("Subir Ambiente Manual", "Sobe o ambiente manualmente, passo a passo.", "\uE8B7", typeof(SubirAmbienteManualPage)),
                 new("Criar Aplicação IIS", "Cria uma nova aplicação no IIS com pool existente.", "\uE774", typeof(CriarAplicacaoIisPage)),

@@ -71,7 +71,17 @@ namespace JrTools.Pages.Apps
             _carregandoConfig = false;
 
             CarregarBranches();
-            await Task.WhenAll(CarregarProjetosWesAsync(), CarregarProjetosIisAsync(), CarregarPoolsAsync(), CarregarSitesAsync());
+
+            // A página fica cacheada (NavigationCacheMode.Required) e Loaded dispara a
+            // cada revisita — evita repetir a varredura de pastas e as chamadas de IIS
+            // (COM, mais lentas) toda vez que o usuário volta pra essa tela.
+            var tarefas = new List<Task>();
+            if (CmbProjetoWes.ItemsSource == null) tarefas.Add(CarregarProjetosWesAsync());
+            if (CmbProjeto.ItemsSource == null)    tarefas.Add(CarregarProjetosIisAsync());
+            if (CmbPool.ItemsSource == null)       tarefas.Add(CarregarPoolsAsync());
+            if (CmbSiteIis.ItemsSource == null)    tarefas.Add(CarregarSitesAsync());
+            if (tarefas.Count > 0)
+                await Task.WhenAll(tarefas);
         }
 
         // ── Projeto WES ──────────────────────────────────────────────────────
@@ -161,7 +171,7 @@ namespace JrTools.Pages.Apps
             try
             {
                 var linker = new WebAppLinkService();
-                await linker.GarantirLinkWebAppProdAsync(projeto.Caminho, _cfg?.DiretorioProducao, CriarProgresso());
+                await linker.GarantirLinkWebAppProdAsync(projeto.Caminho, _cfg?.DiretorioProducao, CriarProgresso(), forcar: true);
             }
             catch (Exception ex)
             {

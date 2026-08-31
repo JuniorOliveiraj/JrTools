@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -10,6 +11,10 @@ namespace JrTools.Services
     public class WebAppLinkService
     {
         private const string PROD_DEFAULT_PATH = @"D:\Benner\fontes\rh\prod";
+
+        // Evita refazer o full scan/relink de WES\WebApp a cada clique de botão dentro da
+        // mesma sessão do app — o vínculo já é idempotente, então uma vez por sessão basta.
+        private static readonly HashSet<string> _verificadosNestaSessao = new(StringComparer.OrdinalIgnoreCase);
 
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         [return: MarshalAs(UnmanagedType.I1)]
@@ -27,13 +32,20 @@ namespace JrTools.Services
         /// possua os links/arquivos essenciais da pasta WES\WebApp do produto (prod),
         /// utilizando NTFS Hard Links e Directory Junctions de forma ultra-rápida (praticamente instantânea).
         /// </summary>
-        public async Task GarantirLinkWebAppProdAsync(string caminhoProjetoTarget, string? caminhoProd = null, IProgress<string>? progresso = null)
+        public async Task GarantirLinkWebAppProdAsync(string caminhoProjetoTarget, string? caminhoProd = null, IProgress<string>? progresso = null, bool forcar = false)
         {
             await Task.Run(() =>
             {
                 string prodRoot = string.IsNullOrWhiteSpace(caminhoProd) ? PROD_DEFAULT_PATH : caminhoProd;
                 string prodWebApp = Path.Combine(prodRoot, @"WES\WebApp");
                 string targetWebApp = Path.Combine(caminhoProjetoTarget, @"WES\WebApp");
+                string targetWebAppNormalizado = Path.GetFullPath(targetWebApp).TrimEnd('\\');
+
+                if (!forcar && _verificadosNestaSessao.Contains(targetWebAppNormalizado))
+                {
+                    progresso?.Report("[LINK WEBAPP] Já verificado nesta sessão, pulando.");
+                    return;
+                }
 
                 if (!Directory.Exists(prodRoot))
                 {
@@ -94,6 +106,7 @@ namespace JrTools.Services
                     }
                 }
 
+                _verificadosNestaSessao.Add(targetWebAppNormalizado);
                 progresso?.Report("[LINK WEBAPP] Vínculo instantâneo concluído com sucesso.");
             });
         }

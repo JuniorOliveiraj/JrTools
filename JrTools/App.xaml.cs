@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Dispatching;
 using Microsoft.Windows.AppNotifications;
@@ -22,9 +23,18 @@ namespace JrTools
         public App()
         {
             this.InitializeComponent();
-            
+
+            // Sem isso, qualquer exceção não tratada em qualquer thread (inclusive
+            // dentro de async void) derruba o processo inteiro sem log nem aviso.
+            this.UnhandledException += App_UnhandledException;
+            TaskScheduler.UnobservedTaskException += (s, e) =>
+            {
+                LogCrash(e.Exception, "TaskScheduler.UnobservedTaskException");
+                e.SetObserved();
+            };
+
             // Registra o gerenciador de notificações ao iniciar
-            try 
+            try
             {
                 AppNotificationManager.Default.Register();
             }
@@ -32,6 +42,30 @@ namespace JrTools
             {
                 System.Diagnostics.Debug.WriteLine($"Erro ao registrar notificações: {ex.Message}");
             }
+        }
+
+        private void App_UnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
+        {
+            LogCrash(e.Exception, "Application.UnhandledException");
+            e.Handled = true;
+        }
+
+        private static void LogCrash(Exception ex, string origem)
+        {
+            try
+            {
+                var folder = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "JrTools");
+                Directory.CreateDirectory(folder);
+                var linha = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] ({origem}) {ex}\n{new string('-', 80)}\n";
+                File.AppendAllText(Path.Combine(folder, "crash.log"), linha);
+            }
+            catch
+            {
+                // Se nem o log der certo, não há nada a fazer — mas não deixa isso derrubar o app.
+            }
+            System.Diagnostics.Debug.WriteLine($"[{origem}] {ex}");
         }
 
         /// <summary>
