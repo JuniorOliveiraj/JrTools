@@ -352,21 +352,36 @@ namespace JrTools.Pages
                 CmbStatusArtefato.SelectedIndex = 0;
             }
 
-            _todosArtefatos = await Task.Run(() => _artefatoService.CarregarArtefatos(_webAppPath));
+            LoadingArtefatos.IsActive = true;
+            BtnCarregarArtefatos.IsEnabled = false;
+            try
+            {
+                _todosArtefatos = await Task.Run(() => _artefatoService.CarregarArtefatos(_webAppPath));
 
-            // Popula ComboBox de Guias
-            var guias = new System.Collections.Generic.List<string> { "Todas" };
-            guias.AddRange(_todosArtefatos.Select(a => a.Guia).Distinct().OrderBy(g => g));
-            CmbGuiaArtefato.ItemsSource = guias;
-            CmbGuiaArtefato.SelectedIndex = 0;
+                // Popula ComboBox de Guias
+                var guias = new System.Collections.Generic.List<string> { "Todas" };
+                guias.AddRange(_todosArtefatos.Select(a => a.Guia).Distinct().OrderBy(g => g));
+                CmbGuiaArtefato.ItemsSource = guias;
+                CmbGuiaArtefato.SelectedIndex = 0;
 
-            // Popula ComboBox de Camadas
-            var camadas = new System.Collections.Generic.List<string> { "Todas" };
-            camadas.AddRange(_todosArtefatos.Select(a => a.Camada).Distinct().OrderBy(c => c));
-            CmbCamadaArtefato.ItemsSource = camadas;
-            CmbCamadaArtefato.SelectedIndex = 0;
+                // Popula ComboBox de Camadas
+                var camadas = new System.Collections.Generic.List<string> { "Todas" };
+                camadas.AddRange(_todosArtefatos.Select(a => a.Camada).Distinct().OrderBy(c => c));
+                CmbCamadaArtefato.ItemsSource = camadas;
+                CmbCamadaArtefato.SelectedIndex = 0;
 
-            FiltrarArtefatos();
+                FiltrarArtefatos();
+
+                // Sem isso, todo artefato fica com Status = "Não Verificado" (fora do filtro
+                // "Somente Pendentes") até o usuário clicar manualmente em "Comparar DB" —
+                // resultando numa lista vazia mesmo havendo artefatos novos/modificados de verdade.
+                await CompararComBancoDadosAsync();
+            }
+            finally
+            {
+                LoadingArtefatos.IsActive = false;
+                BtnCarregarArtefatos.IsEnabled = true;
+            }
         }
 
         private async Task CompararComBancoDadosAsync()
@@ -376,6 +391,7 @@ namespace JrTools.Pages
             try
             {
                 BtnCompararDB.IsEnabled = false;
+                LoadingCompararDB.IsActive = true;
                 InfoBarAviso.IsOpen = true;
                 InfoBarAviso.Severity = InfoBarSeverity.Informational;
                 InfoBarAviso.Title = "Comparando artefatos...";
@@ -422,6 +438,7 @@ namespace JrTools.Pages
             finally
             {
                 BtnCompararDB.IsEnabled = true;
+                LoadingCompararDB.IsActive = false;
                 FiltrarArtefatos();
             }
         }

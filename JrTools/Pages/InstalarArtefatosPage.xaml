@@ -279,12 +279,14 @@
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <Button x:Name="BtnCarregarArtefatos" Click="BtnCarregarArtefatos_Click">
                                         <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <ProgressRing x:Name="LoadingArtefatos" IsActive="False" Width="14" Height="14"/>
                                             <FontIcon Glyph="&#xE8B9;"/>
                                             <TextBlock Text="Atualizar Lista"/>
                                         </StackPanel>
                                     </Button>
                                     <Button x:Name="BtnCompararDB" Click="BtnCompararDB_Click">
                                         <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <ProgressRing x:Name="LoadingCompararDB" IsActive="False" Width="14" Height="14"/>
                                             <FontIcon Glyph="&#xE890;"/>
                                             <TextBlock Text="Comparar DB (Status)"/>
                                         </StackPanel>
