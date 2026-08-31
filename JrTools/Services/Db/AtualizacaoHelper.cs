@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace JrTools.Services.Db
 {
-    public static class BServerConfigHelper
+    public static class AtualizacaoHelper
     {
         // Seam de teste: no Windows, Environment.GetFolderPath(SpecialFolder.LocalApplicationData)
         // resolve via API de Known Folder do Shell e ignora SetEnvironmentVariable — não dá pra
@@ -20,24 +20,24 @@ namespace JrTools.Services.Db
             var folder = Path.Combine(baseFolder, "JrTools");
             if (!Directory.Exists(folder))
                 Directory.CreateDirectory(folder);
-            return Path.Combine(folder, "bserver-config.json");
+            return Path.Combine(folder, "atualizacao.json");
         }
 
-        public static async Task<BServerConfigDto> LerAsync()
+        public static async Task<AtualizacaoConfigDto> LerAsync()
         {
             var path = GetPath();
             if (!File.Exists(path))
-                return new BServerConfigDto();
+                return new AtualizacaoConfigDto();
             try
             {
                 var json = await File.ReadAllTextAsync(path);
-                return JsonSerializer.Deserialize<BServerConfigDto>(json)
-                       ?? new BServerConfigDto();
+                return JsonSerializer.Deserialize<AtualizacaoConfigDto>(json)
+                       ?? new AtualizacaoConfigDto();
             }
-            catch { return new BServerConfigDto(); }
+            catch { return new AtualizacaoConfigDto(); }
         }
 
-        public static async Task SalvarAsync(BServerConfigDto config)
+        public static async Task SalvarAsync(AtualizacaoConfigDto config)
         {
             var json = JsonSerializer.Serialize(config,
                 new JsonSerializerOptions { WriteIndented = true });

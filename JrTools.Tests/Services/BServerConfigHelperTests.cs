@@ -11,27 +11,26 @@ namespace JrTools.Tests.Services
     /// <summary>
     /// Unit tests for <see cref="BServerConfigHelper"/>.
     /// Validates: Requirements 3.1, 3.2, 3.3, 3.6
+    /// Isola a pasta base via <see cref="BServerConfigHelper.PastaBaseParaTestes"/> — no
+    /// Windows, Environment.GetFolderPath(SpecialFolder.LocalApplicationData) ignora
+    /// SetEnvironmentVariable, então não dá pra redirecionar via variável de ambiente
+    /// (era o que este teste tentava fazer antes, sem efeito real).
     /// </summary>
     public class BServerConfigHelperTests : IDisposable
     {
         private readonly string _testDirectory;
-        private readonly string _originalLocalAppData;
 
         public BServerConfigHelperTests()
         {
             // Create a temporary test directory for configuration files
             _testDirectory = Path.Combine(Path.GetTempPath(), "JrToolsTests_BServerConfig_" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(_testDirectory);
-
-            // Override LocalApplicationData environment variable for testing
-            _originalLocalAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            Environment.SetEnvironmentVariable("LOCALAPPDATA", _testDirectory, EnvironmentVariableTarget.Process);
+            BServerConfigHelper.PastaBaseParaTestes = _testDirectory;
         }
 
         public void Dispose()
         {
-            // Restore original LocalApplicationData
-            Environment.SetEnvironmentVariable("LOCALAPPDATA", _originalLocalAppData, EnvironmentVariableTarget.Process);
+            BServerConfigHelper.PastaBaseParaTestes = null;
 
             // Clean up test directory
             try

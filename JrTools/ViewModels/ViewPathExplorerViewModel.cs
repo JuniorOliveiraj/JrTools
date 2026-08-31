@@ -47,7 +47,7 @@ namespace JrTools.ViewModels
                 ((RelayCommand)BuscarCommand).RaiseCanExecuteChanged();
 
                 // Persistir seleção de forma fire-and-forget, ignorando falhas (Req 8.1)
-                _ = SalvarProjetoSelecionadoAsync(value?.Nome);
+                UltimaSalvarProjetoTask = SalvarProjetoSelecionadoAsync(value?.Nome);
             }
         }
 
@@ -106,6 +106,20 @@ namespace JrTools.ViewModels
         /// <summary>Copia todos os resultados formatados para a área de transferência.</summary>
         public ICommand CopiarTudoCommand { get; }
 
+        /// <summary>
+        /// Task da última execução de <see cref="ExecutarBuscaAsync"/> disparada por
+        /// <see cref="BuscarCommand"/> (fire-and-forget para o chamador do ICommand). Exposta só
+        /// para testes poderem aguardar a conclusão de forma determinística, em vez de um
+        /// Task.Delay de duração fixa (fonte de flakiness sob contenção de CPU/thread pool em CI).
+        /// </summary>
+        internal Task? UltimaBuscaTask { get; private set; }
+
+        /// <summary>
+        /// Task do último salvamento fire-and-forget disparado por <see cref="ProjetoSelecionado"/>.
+        /// Mesmo propósito de <see cref="UltimaBuscaTask"/>: permitir await determinístico em testes.
+        /// </summary>
+        internal Task? UltimaSalvarProjetoTask { get; private set; }
+
         // ── Construtores ──────────────────────────────────────────────────────
 
         /// <summary>Construtor público para uso em produção.</summary>
@@ -120,7 +134,7 @@ namespace JrTools.ViewModels
             _configHelper = configHelper ?? throw new ArgumentNullException(nameof(configHelper));
 
             BuscarCommand = new RelayCommand(
-                execute: () => _ = ExecutarBuscaAsync(),
+                execute: () => UltimaBuscaTask = ExecutarBuscaAsync(),
                 canExecute: () =>
                     ProjetoSelecionado != null
                     && NormalizarEntrada(TextoViews).Count > 0

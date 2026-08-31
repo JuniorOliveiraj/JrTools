@@ -83,6 +83,16 @@
                     </Border>
                 </Grid>
 
+                <!-- Aviso de nova versão disponível (auto-update) -->
+                <InfoBar x:Name="AtualizacaoInfoBar"
+                         Severity="Informational"
+                         Title="Nova versão disponível"
+                         IsOpen="False"
+                         IsClosable="False">
+                    <InfoBar.ActionButton>
+                        <Button x:Name="BtnAtualizarVersao" Content="Atualizar agora" Click="BtnAtualizarVersao_Click"/>
+                    </InfoBar.ActionButton>
+                </InfoBar>
 
                 <!-- EXPANDER BUILDAR DOTNET -->
                 <Expander  x:Name="ExpanderCalculadoraHoras"  Style="{StaticResource FullWidthExpanderStyle}" IsExpanded="True">

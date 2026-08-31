@@ -71,12 +71,19 @@ namespace JrTools.Tests.Services
                 GenNonEmptyString().SelectMany(title =>
                     Gen.ListOf(GenWidgetData()).Select(widgets =>
                     {
-                        var widgetList = widgets.ToList();
+                        // Garante Titles de widget únicos dentro da página (Ordinal, mesma
+                        // comparação usada pelo teste pra localizar o widget correspondente) —
+                        // sem isso, dois widgets gerados podem colidir no mesmo Title por acaso
+                        // (ex: um com EntityViewName="U" e outro com FormUrl="U" geram ambos
+                        // "Widget_U"), tornando a busca por Title ambígua e o teste flaky.
+                        var titulosVistos = new HashSet<string>(StringComparer.Ordinal);
+                        var widgetList = widgets.Where(w => titulosVistos.Add(w.Title)).ToList();
+
                         var builder = new XmlPageBuilder()
                             .WithUrl(url)
                             .WithTitle(title)
                             .AddWidgets(widgetList);
-                        
+
                         var xml = builder.Build();
                         return (url, title, widgetList, xml);
                     })));

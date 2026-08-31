@@ -95,5 +95,40 @@ namespace JrTools
                 NavView.IsBackEnabled = false;
             }
         }
+
+        // ── Auto-update ──────────────────────────────────────────────────────
+
+        // Chamado pelo App depois que a checagem de atualização (feita uma única vez,
+        // na abertura do app) encontra uma versão nova.
+        public async void ExibirAtualizacaoDisponivel(Dto.AtualizacaoDisponivelDto atualizacao)
+        {
+            // O banner na Home fica sempre visível enquanto houver atualização pendente.
+            _homePage ??= new Pages.HomePage();
+            _homePage.SetAtualizacaoDisponivel(atualizacao);
+
+            // O modal só aparece uma vez por versão nova.
+            var cfg = await Services.Db.AtualizacaoHelper.LerAsync();
+            if (cfg.UltimaTagModalExibida == atualizacao.Tag) return;
+
+            var dialog = new ContentDialog
+            {
+                Title = "Nova versão do JrTools disponível",
+                Content = $"A build {atualizacao.Tag} já está disponível. Você pode atualizar agora ou depois, pelo aviso na tela inicial.",
+                PrimaryButtonText = "Atualizar agora",
+                CloseButtonText = "Agora não",
+                XamlRoot = this.Content.XamlRoot
+            };
+
+            var resultado = await dialog.ShowAsync();
+
+            // Só marca como "já exibido" depois do modal realmente ter sido mostrado — se
+            // ShowAsync falhar (ex.: outro ContentDialog já aberto) antes disso, o modal
+            // continua elegível pra aparecer na próxima abertura do app.
+            cfg.UltimaTagModalExibida = atualizacao.Tag;
+            await Services.Db.AtualizacaoHelper.SalvarAsync(cfg);
+
+            if (resultado == ContentDialogResult.Primary)
+                await _homePage.IniciarAtualizacaoAsync();
+        }
     }
 }

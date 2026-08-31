@@ -30,6 +30,9 @@ namespace JrTools.Pages
     {
         private bool _inicializado = false;
 
+        private AtualizacaoDisponivelDto? _atualizacaoDisponivel;
+        private readonly UpdateService _updateService = new();
+
         public HomePage()
         {
             this.InitializeComponent();
@@ -254,5 +257,37 @@ namespace JrTools.Pages
             }
         }
 
+        // ── Auto-update ──────────────────────────────────────────────────────
+
+        public void SetAtualizacaoDisponivel(AtualizacaoDisponivelDto atualizacao)
+        {
+            _atualizacaoDisponivel = atualizacao;
+            AtualizacaoInfoBar.Message = $"A build {atualizacao.Tag} já está disponível.";
+            AtualizacaoInfoBar.IsOpen = true;
+        }
+
+        public async Task IniciarAtualizacaoAsync()
+        {
+            if (_atualizacaoDisponivel == null) return;
+
+            BtnAtualizarVersao.IsEnabled = false;
+            AtualizacaoInfoBar.Severity = InfoBarSeverity.Informational;
+
+            try
+            {
+                var progresso = new Progress<string>(msg => AtualizacaoInfoBar.Message = msg);
+                var stagingDir = await _updateService.BaixarEExtrairAsync(_atualizacaoDisponivel, progresso);
+                _updateService.PrepararEReiniciar(stagingDir);
+            }
+            catch (Exception ex)
+            {
+                AtualizacaoInfoBar.Severity = InfoBarSeverity.Error;
+                AtualizacaoInfoBar.Message = $"Falha ao atualizar: {ex.Message}";
+                BtnAtualizarVersao.IsEnabled = true;
+            }
+        }
+
+        private async void BtnAtualizarVersao_Click(object sender, RoutedEventArgs e)
+            => await IniciarAtualizacaoAsync();
     }
 }

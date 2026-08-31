@@ -78,6 +78,28 @@ namespace JrTools
             _window.Activate();
 
             StartNotificationTimer();
+
+            // Checa atualização uma única vez, na abertura do app — nenhuma outra ação
+            // dentro da sessão dispara uma nova checagem.
+            _ = VerificarAtualizacaoNaAberturaAsync();
+        }
+
+        private async Task VerificarAtualizacaoNaAberturaAsync()
+        {
+            try
+            {
+                var atualizacao = await new UpdateService().VerificarAsync();
+                // Referência qualificada pra não colidir com a propriedade estática
+                // MainWindow (mesmo identificador, tipo diferente) desta classe.
+                if (atualizacao != null && _window is JrTools.MainWindow mainWindow)
+                {
+                    mainWindow.DispatcherQueue.TryEnqueue(() => mainWindow.ExibirAtualizacaoDisponivel(atualizacao));
+                }
+            }
+            catch (Exception ex)
+            {
+                LogCrash(ex, "VerificarAtualizacaoNaAberturaAsync");
+            }
         }
 
         private void StartNotificationTimer()
