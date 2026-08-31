@@ -22,8 +22,12 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
+      # PublishReadyToRun fica ligado pro Release no JrTools.csproj (pensado pro publish
+      # self-contained do release.yml, que passa -r win-x64). Num "dotnet build" sem RID
+      # isso quebra com NETSDK1094 (falta pacote de runtime pra otimizar) — desligamos
+      # aqui porque este workflow só valida que compila e os testes passam, não publica.
       - name: Build (Release, x64)
-        run: dotnet build JrTools.sln -c Release -p:Platform=x64
+        run: dotnet build JrTools.sln -c Release -p:Platform=x64 -p:PublishReadyToRun=false
 
       - name: Testes
         run: dotnet test JrTools.Tests/JrTools.Tests.csproj -c Release --no-build --logger "trx;LogFileName=test-results.trx"
