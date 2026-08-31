@@ -33,8 +33,15 @@ namespace JrTools.Pages
         private async void ConfiguracoesPage_Loaded(object sender, RoutedEventArgs e)
         {
             await CarregarConfiguracoes();
-            CarregarProjetos();
-            await Task.WhenAll(CarregarSitesAsync(), CarregarPoolsAsync());
+
+            // A página fica cacheada (NavigationCacheMode.Required) e Loaded dispara a
+            // cada revisita — evita repetir a varredura de pastas e as chamadas de IIS
+            // (COM, mais lentas) toda vez que o usuário volta pra essa tela.
+            if (ProjetoComboBox.ItemsSource == null)
+                CarregarProjetos();
+
+            if (SiteComboBox.ItemsSource == null || PoolComboBox.ItemsSource == null)
+                await Task.WhenAll(CarregarSitesAsync(), CarregarPoolsAsync());
         }
 
         private async Task CarregarConfiguracoes()

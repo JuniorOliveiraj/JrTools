@@ -39,10 +39,10 @@ namespace JrTools.Pages
             InitializeComponent();
             NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Required;
             Loaded += OnLoaded;
-            
+            Unloaded += (s, e) => _logTimer.Stop();
+
             _logTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
             _logTimer.Tick += (s, e) => FlushLogBuffer();
-            _logTimer.Start();
         }
 
         private void FlushLogBuffer()
@@ -58,6 +58,7 @@ namespace JrTools.Pages
 
         private async void OnLoaded(object sender, RoutedEventArgs e)
         {
+            _logTimer.Start();
             _carregandoConfig = true;
 
             _cfgRh = await ConfiguracaoRelatoriosHelper.LerAsync();
@@ -93,7 +94,7 @@ namespace JrTools.Pages
             CmbProjetoWes.SelectedItem = prod ?? projetos.FirstOrDefault();
         }
 
-        private void CmbProjetoWes_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private async void CmbProjetoWes_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (CmbProjetoWes.SelectedItem is not PastaInformacoesDto projeto) return;
 
@@ -102,7 +103,16 @@ namespace JrTools.Pages
             _webAppPath    = Path.Combine(projeto.Caminho, @"WES\WebApp");
             TxtWesExePath.Text = _wesExePath;
 
-            CarregarArtefatosDoProjeto();
+            try
+            {
+                await CarregarArtefatosDoProjetoAsync();
+            }
+            catch (Exception ex)
+            {
+                InfoBarAviso.Message  = $"Erro ao carregar artefatos do projeto: {ex.Message}";
+                InfoBarAviso.Severity = InfoBarSeverity.Error;
+                InfoBarAviso.IsOpen   = true;
+            }
         }
 
         // ── Configurações ────────────────────────────────────────────────────
@@ -324,7 +334,7 @@ namespace JrTools.Pages
 
         // ── Inspetor de Artefatos e Auto-Fix ───────────────────────────────
 
-        private void CarregarArtefatosDoProjeto()
+        private async Task CarregarArtefatosDoProjetoAsync()
         {
             if (string.IsNullOrWhiteSpace(_webAppPath)) return;
 
@@ -342,7 +352,7 @@ namespace JrTools.Pages
                 CmbStatusArtefato.SelectedIndex = 0;
             }
 
-            _todosArtefatos = _artefatoService.CarregarArtefatos(_webAppPath);
+            _todosArtefatos = await Task.Run(() => _artefatoService.CarregarArtefatos(_webAppPath));
 
             // Popula ComboBox de Guias
             var guias = new System.Collections.Generic.List<string> { "Todas" };
@@ -455,8 +465,19 @@ namespace JrTools.Pages
         private void TxtBuscaArtefato_TextChanged(object sender, TextChangedEventArgs e)
             => FiltrarArtefatos();
 
-        private void BtnCarregarArtefatos_Click(object sender, RoutedEventArgs e)
-            => CarregarArtefatosDoProjeto();
+        private async void BtnCarregarArtefatos_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                await CarregarArtefatosDoProjetoAsync();
+            }
+            catch (Exception ex)
+            {
+                InfoBarAviso.Message  = $"Erro ao carregar artefatos do projeto: {ex.Message}";
+                InfoBarAviso.Severity = InfoBarSeverity.Error;
+                InfoBarAviso.IsOpen   = true;
+            }
+        }
 
         private async void BtnCompararDB_Click(object sender, RoutedEventArgs e)
             => await CompararComBancoDadosAsync();
