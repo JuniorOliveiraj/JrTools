@@ -38,6 +38,31 @@ namespace JrTools.Pages
             this.InitializeComponent();
             this.NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Required;
             this.Loaded += RenderizarPages_Loaded;
+            ConfigurarFormatacaoCamposHorario();
+        }
+
+        /// <summary>
+        /// Aplica um formatador de 2 dígitos aos NumberBox de hora/minuto da Calculadora de
+        /// Horas — sem isso, digitar "8" mostra "8" em vez de "08".
+        /// </summary>
+        private void ConfigurarFormatacaoCamposHorario()
+        {
+            var formatter = new Windows.Globalization.NumberFormatting.DecimalFormatter
+            {
+                IntegerDigits = 2,
+                FractionDigits = 0
+            };
+
+            foreach (var box in new[]
+            {
+                Entrada1HoraBox, Entrada1MinutoBox,
+                Saida1HoraBox, Saida1MinutoBox,
+                Entrada2HoraBox, Entrada2MinutoBox,
+                Saida2HoraBox, Saida2MinutoBox
+            })
+            {
+                box.NumberFormatter = formatter;
+            }
         }
 
         private void RenderizarPages_Loaded(object sender, RoutedEventArgs e)
