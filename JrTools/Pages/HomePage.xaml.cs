@@ -38,31 +38,11 @@ namespace JrTools.Pages
             this.InitializeComponent();
             this.NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Required;
             this.Loaded += RenderizarPages_Loaded;
-            ConfigurarFormatacaoCamposHorario();
-        }
-
-        /// <summary>
-        /// Aplica um formatador de 2 dígitos aos NumberBox de hora/minuto da Calculadora de
-        /// Horas — sem isso, digitar "8" mostra "8" em vez de "08".
-        /// </summary>
-        private void ConfigurarFormatacaoCamposHorario()
-        {
-            var formatter = new Windows.Globalization.NumberFormatting.DecimalFormatter
-            {
-                IntegerDigits = 2,
-                FractionDigits = 0
-            };
-
-            foreach (var box in new[]
-            {
+            Utils.CamposHoraMinutoHelper.AplicarFormatacaoDoisDigitos(
                 Entrada1HoraBox, Entrada1MinutoBox,
                 Saida1HoraBox, Saida1MinutoBox,
                 Entrada2HoraBox, Entrada2MinutoBox,
-                Saida2HoraBox, Saida2MinutoBox
-            })
-            {
-                box.NumberFormatter = formatter;
-            }
+                Saida2HoraBox, Saida2MinutoBox);
         }
 
         private void RenderizarPages_Loaded(object sender, RoutedEventArgs e)
@@ -165,10 +145,10 @@ namespace JrTools.Pages
             }
 
             // Atualiza os campos de horário (com os valores reais)
-            DefinirHoraMinuto(Entrada1HoraBox, Entrada1MinutoBox, entrada1.TimeOfDay);
-            DefinirHoraMinuto(Saida1HoraBox, Saida1MinutoBox, saida1.TimeOfDay);
-            DefinirHoraMinuto(Entrada2HoraBox, Entrada2MinutoBox, entrada2.TimeOfDay);
-            DefinirHoraMinuto(Saida2HoraBox, Saida2MinutoBox, saida2.TimeOfDay);
+            Utils.CamposHoraMinutoHelper.Definir(Entrada1HoraBox, Entrada1MinutoBox, entrada1.TimeOfDay);
+            Utils.CamposHoraMinutoHelper.Definir(Saida1HoraBox, Saida1MinutoBox, saida1.TimeOfDay);
+            Utils.CamposHoraMinutoHelper.Definir(Entrada2HoraBox, Entrada2MinutoBox, entrada2.TimeOfDay);
+            Utils.CamposHoraMinutoHelper.Definir(Saida2HoraBox, Saida2MinutoBox, saida2.TimeOfDay);
             var horasaida = saidaPrevista.TimeOfDay;
 
             HorariosaidaPrevistaText.Text = $"{horasaida.Hours:D2}:{horasaida.Minutes:D2}";
@@ -219,33 +199,16 @@ namespace JrTools.Pages
             return $"{(negativo ? "-" : "")}{horas}h {minutos:D2}m";
         }
 
-        // ── Helpers de horário (campos numéricos Hora/Minuto) ──────────────────
-
-        private static void DefinirHoraMinuto(NumberBox horaBox, NumberBox minutoBox, TimeSpan valor)
-        {
-            horaBox.Value = valor.Hours;
-            minutoBox.Value = valor.Minutes;
-        }
-
-        private static TimeSpan ObterHoraMinuto(NumberBox horaBox, NumberBox minutoBox)
-        {
-            int hora = double.IsNaN(horaBox.Value) ? 0 : (int)horaBox.Value;
-            int minuto = double.IsNaN(minutoBox.Value) ? 0 : (int)minutoBox.Value;
-            hora = Math.Clamp(hora, 0, 23);
-            minuto = Math.Clamp(minuto, 0, 59);
-            return new TimeSpan(hora, minuto, 0);
-        }
-
         private void CalcularHorasButton_Click(object sender, RoutedEventArgs e)
         {
             CalculadoraInfoBar.IsOpen = false;
 
             try
             {
-                TimeSpan entrada1 = ObterHoraMinuto(Entrada1HoraBox, Entrada1MinutoBox);
-                TimeSpan saida1 = ObterHoraMinuto(Saida1HoraBox, Saida1MinutoBox);
-                TimeSpan entrada2 = ObterHoraMinuto(Entrada2HoraBox, Entrada2MinutoBox);
-                TimeSpan saida2 = ObterHoraMinuto(Saida2HoraBox, Saida2MinutoBox);
+                TimeSpan entrada1 = Utils.CamposHoraMinutoHelper.Obter(Entrada1HoraBox, Entrada1MinutoBox);
+                TimeSpan saida1 = Utils.CamposHoraMinutoHelper.Obter(Saida1HoraBox, Saida1MinutoBox);
+                TimeSpan entrada2 = Utils.CamposHoraMinutoHelper.Obter(Entrada2HoraBox, Entrada2MinutoBox);
+                TimeSpan saida2 = Utils.CamposHoraMinutoHelper.Obter(Saida2HoraBox, Saida2MinutoBox);
 
                 // Validação simples
                 if (saida1 < entrada1 || saida2 < entrada2)

@@ -42,7 +42,7 @@
                                    VerticalAlignment="Center"
                                    Grid.Column="0"/>
 
-                        <DatePicker Grid.Column="1"  VerticalAlignment="Center" x:Name="DiaLancamento" SelectedDateChanged="DiaLancamento_Changed"/>
+                        <CalendarDatePicker Grid.Column="1" VerticalAlignment="Center" x:Name="DiaLancamento" DateChanged="DiaLancamento_Changed"/>
                     </Grid>
 
 
@@ -52,12 +52,20 @@
                     <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12">
                         <StackPanel>
                             <TextBlock Text="Hora de Início" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                            <TimePicker x:Name="HoraInicioPicker" ClockIdentifier="24HourClock" />
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <NumberBox x:Name="HoraInicioHoraBox" Width="70" Minimum="0" Maximum="23" SpinButtonPlacementMode="Compact" SmallChange="1" PlaceholderText="HH"/>
+                                <TextBlock Text=":" VerticalAlignment="Center" FontSize="16"/>
+                                <NumberBox x:Name="HoraInicioMinutoBox" Width="70" Minimum="0" Maximum="59" SpinButtonPlacementMode="Compact" SmallChange="1" PlaceholderText="MM"/>
+                            </StackPanel>
                         </StackPanel>
 
                         <StackPanel Grid.Column="1">
                             <TextBlock Text="Hora de Fim" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                            <TimePicker x:Name="HoraFimPicker" ClockIdentifier="24HourClock" />
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <NumberBox x:Name="HoraFimHoraBox" Width="70" Minimum="0" Maximum="23" SpinButtonPlacementMode="Compact" SmallChange="1" PlaceholderText="HH"/>
+                                <TextBlock Text=":" VerticalAlignment="Center" FontSize="16"/>
+                                <NumberBox x:Name="HoraFimMinutoBox" Width="70" Minimum="0" Maximum="59" SpinButtonPlacementMode="Compact" SmallChange="1" PlaceholderText="MM"/>
+                            </StackPanel>
                         </StackPanel>
 
                         <StackPanel Grid.Column="2">
@@ -104,13 +112,14 @@
 
                     <!-- Botões de ação -->
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,12,0,0">
+                        <ProgressRing x:Name="SalvandoRing" IsActive="False" Width="20" Height="20" VerticalAlignment="Center"/>
                         <Button x:Name="ClearButton"
                                 Content="Limpar"
                                 Click="ClearButton_Click"
                                 Visibility="Collapsed"/>
                         <Button x:Name="SaveButton"
-                                Content="Salvar Lançamento" 
-                                Style="{StaticResource AccentButtonStyle}" 
+                                Content="Salvar Lançamento"
+                                Style="{StaticResource AccentButtonStyle}"
                                 Click="SalvarLancamentoButton_Click" />
                     </StackPanel>
 

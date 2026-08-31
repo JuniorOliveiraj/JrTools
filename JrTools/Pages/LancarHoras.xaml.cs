@@ -1,6 +1,7 @@
 using JrTools.Dto;
 using JrTools.Flows;
 using JrTools.Services.Db;
+using JrTools.Utils;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
@@ -23,6 +24,9 @@ namespace JrTools.Pages
             LancamentosListView.ItemsSource = Lancamentos;
             ProjetoComboBox.ItemsSource = Projetos;
             Loaded += LancarHoras_Loaded;
+            CamposHoraMinutoHelper.AplicarFormatacaoDoisDigitos(
+                HoraInicioHoraBox, HoraInicioMinutoBox,
+                HoraFimHoraBox, HoraFimMinutoBox);
         }
 
         private async void LancarHoras_Loaded(object sender, RoutedEventArgs e)
@@ -78,10 +82,14 @@ namespace JrTools.Pages
 
         private async void SalvarLancamentoButton_Click(object sender, RoutedEventArgs e)
         {
+            if (_horasService == null) return;
+
+            SalvandoRing.IsActive = true;
+            SaveButton.IsEnabled = false;
+            ClearButton.IsEnabled = false;
+
             try
             {
-                if (_horasService == null) return;
-
                 if (string.IsNullOrEmpty(DescricaoBox.Text) && (ProjetoComboBox.SelectedItem == null || ProjetoComboBox.SelectedItem.ToString() == "Nenhum"))
                 {
                     ShowValidationError("A Descrição ou o projeto devem ser preenchidos");
@@ -92,8 +100,8 @@ namespace JrTools.Pages
                 string descricaoBase = _horasService.GerarDescricaoFinal(DescricaoBox.Text, projetoSelecionado);
 
                 // Lê os horários informados
-                TimeSpan? horaInicio = HoraInicioPicker.SelectedTime;
-                TimeSpan? horaFim = HoraFimPicker.SelectedTime;
+                TimeSpan? horaInicio = CamposHoraMinutoHelper.ObterOuNull(HoraInicioHoraBox, HoraInicioMinutoBox);
+                TimeSpan? horaFim = CamposHoraMinutoHelper.ObterOuNull(HoraFimHoraBox, HoraFimMinutoBox);
 
                 // Se não há duração, mas há início e fim, calcula a duração automaticamente
                 if (TotalHorasBox.Value <= 0 && horaInicio.HasValue && horaFim.HasValue)
@@ -122,20 +130,20 @@ namespace JrTools.Pages
                     horaFim = horaInicio.Value.Add(TimeSpan.FromHours(TotalHorasBox.Value));
 
                     // Reflete o padrão também na interface
-                    HoraInicioPicker.SelectedTime = horaInicio;
-                    HoraFimPicker.SelectedTime = horaFim;
+                    CamposHoraMinutoHelper.Definir(HoraInicioHoraBox, HoraInicioMinutoBox, horaInicio);
+                    CamposHoraMinutoHelper.Definir(HoraFimHoraBox, HoraFimMinutoBox, horaFim);
                 }
                 // Caso haja início e apenas a duração, garante o cálculo do fim
                 else if (horaInicio.HasValue && !horaFim.HasValue && TotalHorasBox.Value > 0)
                 {
                     horaFim = horaInicio.Value.Add(TimeSpan.FromHours(TotalHorasBox.Value));
-                    HoraFimPicker.SelectedTime = horaFim;
+                    CamposHoraMinutoHelper.Definir(HoraFimHoraBox, HoraFimMinutoBox, horaFim);
                 }
 
                 var lancamento = new HoraLancamento
                 {
                     Id = _lancamentoSelecionado?.Id ?? 0,
-                    Data = DiaLancamento.Date.Date,
+                    Data = DiaLancamento.Date?.Date,
                     HoraInicio = horaInicio,
                     HoraFim = horaFim,
                     TotalHoras = TotalHorasBox.Value,
@@ -155,6 +163,12 @@ namespace JrTools.Pages
             {
                 ShowValidationError(ex.Message);
             }
+            finally
+            {
+                SalvandoRing.IsActive = false;
+                SaveButton.IsEnabled = true;
+                ClearButton.IsEnabled = true;
+            }
         }
 
         private async Task CarregarLancamentosAsync()
@@ -162,7 +176,8 @@ namespace JrTools.Pages
             try
             {
                 if (_horasService == null) return;
-                var lancamentos = await _horasService.CarregarLancamentosDoDiaAsync(DiaLancamento.Date.Date);
+                var data = DiaLancamento.Date?.Date ?? DateTime.Today;
+                var lancamentos = await _horasService.CarregarLancamentosDoDiaAsync(data);
 
                 Lancamentos.Clear();
                 foreach (var l in lancamentos.OrderBy(l => l.HoraInicio))
@@ -181,7 +196,7 @@ namespace JrTools.Pages
             ValidationInfoBar.IsOpen = true;
         }
 
-        private async void DiaLancamento_Changed(DatePicker sender, DatePickerSelectedValueChangedEventArgs e)
+        private async void DiaLancamento_Changed(CalendarDatePicker sender, CalendarDatePickerDateChangedEventArgs args)
         {
             await CarregarLancamentosAsync();
             LimparFormulario();
@@ -193,8 +208,8 @@ namespace JrTools.Pages
             LancamentosListView.SelectedItem = null;
             FormTitle.Text = "Lançamento de Horas";
 
-            HoraInicioPicker.SelectedTime = null;
-            HoraFimPicker.SelectedTime = null;
+            CamposHoraMinutoHelper.Definir(HoraInicioHoraBox, HoraInicioMinutoBox, null);
+            CamposHoraMinutoHelper.Definir(HoraFimHoraBox, HoraFimMinutoBox, null);
             TotalHorasBox.Value = 0;
             DescricaoBox.Text = string.Empty;
             ProjetoComboBox.SelectedItem = Projetos.FirstOrDefault(p => p == "Nenhum");
@@ -207,8 +222,8 @@ namespace JrTools.Pages
         private void PreencherFormularioComLancamento(HoraLancamento lancamento)
         {
             FormTitle.Text = "Editar Lançamento";
-            HoraInicioPicker.SelectedTime = lancamento.HoraInicio;
-            HoraFimPicker.SelectedTime = lancamento.HoraFim;
+            CamposHoraMinutoHelper.Definir(HoraInicioHoraBox, HoraInicioMinutoBox, lancamento.HoraInicio);
+            CamposHoraMinutoHelper.Definir(HoraFimHoraBox, HoraFimMinutoBox, lancamento.HoraFim);
             TotalHorasBox.Value = lancamento.TotalHoras ?? 0;
             DescricaoBox.Text = lancamento.Descricao;
             ProjetoComboBox.SelectedItem = lancamento.Projeto ?? Projetos.FirstOrDefault(p => p == "Nenhum");
@@ -241,9 +256,11 @@ namespace JrTools.Pages
 
         private void TotalHorasBox_LostFocus(object sender, RoutedEventArgs e)
         {
-            if (HoraInicioPicker.SelectedTime.HasValue && TotalHorasBox.Value > 0)
+            var horaInicio = CamposHoraMinutoHelper.ObterOuNull(HoraInicioHoraBox, HoraInicioMinutoBox);
+            if (horaInicio.HasValue && TotalHorasBox.Value > 0)
             {
-                HoraFimPicker.SelectedTime = HoraInicioPicker.SelectedTime.Value.Add(TimeSpan.FromHours(TotalHorasBox.Value));
+                var horaFim = horaInicio.Value.Add(TimeSpan.FromHours(TotalHorasBox.Value));
+                CamposHoraMinutoHelper.Definir(HoraFimHoraBox, HoraFimMinutoBox, horaFim);
             }
         }
 
