@@ -4,7 +4,6 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using JrTools.Dto;
 using JrTools.Services.Db;
-using JrTools.Tests.Helpers;
 using Xunit;
 
 namespace JrTools.Tests.Services
@@ -12,29 +11,24 @@ namespace JrTools.Tests.Services
     /// <summary>
     /// Testes unitários para <see cref="AtualizacaoHelper"/> — persistência do estado de
     /// checagem de auto-update (último check e última tag avisada por modal).
-    /// Mesmo padrão de isolamento de <see cref="BServerConfigHelperTests"/>: redireciona
-    /// LOCALAPPDATA para uma pasta temporária a cada teste. Compartilha a coleção
-    /// "LocalAppData" com <see cref="BServerConfigHelperTests"/> pra nunca rodar em
-    /// paralelo com ela (as duas mexem na mesma variável de ambiente de processo).
+    /// Isola a pasta base via <see cref="AtualizacaoHelper.PastaBaseParaTestes"/> — no
+    /// Windows, Environment.GetFolderPath(SpecialFolder.LocalApplicationData) ignora
+    /// SetEnvironmentVariable, então não dá pra redirecionar via variável de ambiente.
     /// </summary>
-    [Collection("LocalAppData")]
     public class AtualizacaoHelperTests : IDisposable
     {
         private readonly string _testDirectory;
-        private readonly string _originalLocalAppData;
 
         public AtualizacaoHelperTests()
         {
             _testDirectory = Path.Combine(Path.GetTempPath(), "JrToolsTests_Atualizacao_" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(_testDirectory);
-
-            _originalLocalAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            Environment.SetEnvironmentVariable("LOCALAPPDATA", _testDirectory, EnvironmentVariableTarget.Process);
+            AtualizacaoHelper.PastaBaseParaTestes = _testDirectory;
         }
 
         public void Dispose()
         {
-            Environment.SetEnvironmentVariable("LOCALAPPDATA", _originalLocalAppData, EnvironmentVariableTarget.Process);
+            AtualizacaoHelper.PastaBaseParaTestes = null;
             try
             {
                 if (Directory.Exists(_testDirectory))

@@ -8,11 +8,16 @@ namespace JrTools.Services.Db
 {
     public static class AtualizacaoHelper
     {
+        // Seam de teste: no Windows, Environment.GetFolderPath(SpecialFolder.LocalApplicationData)
+        // resolve via API de Known Folder do Shell e ignora SetEnvironmentVariable — não dá pra
+        // redirecionar via variável de ambiente em teste. Os testes usam esta propriedade em vez disso.
+        internal static string? PastaBaseParaTestes { get; set; }
+
         private static string GetPath()
         {
-            var folder = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "JrTools");
+            var baseFolder = PastaBaseParaTestes
+                ?? Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            var folder = Path.Combine(baseFolder, "JrTools");
             if (!Directory.Exists(folder))
                 Directory.CreateDirectory(folder);
             return Path.Combine(folder, "atualizacao.json");
