@@ -23,6 +23,12 @@ namespace JrTools.Services
         private const string ReleasesApiUrl = "https://api.github.com/repos/JuniorOliveiraj/JrTools/releases?per_page=5";
         private static readonly TimeSpan IntervaloMinimoEntreChecagens = TimeSpan.FromMinutes(1);
 
+        // Timeout curto só pra checagem (GET pequeno de JSON) — não pro _http inteiro, porque o
+        // mesmo cliente é reaproveitado pelo download do zip em BaixarEExtrairAsync, que pode
+        // legitimamente demorar mais numa conexão lenta. Sem isso, numa internet ruim a checagem
+        // ficava presa até o timeout padrão do HttpClient (100s) antes de desistir.
+        private static readonly TimeSpan TimeoutChecagem = TimeSpan.FromSeconds(8);
+
         private static readonly HttpClient _http = CriarHttpClient();
 
         private readonly IProcessLauncher _processLauncher;
@@ -158,7 +164,8 @@ namespace JrTools.Services
 
             try
             {
-                var json = await _http.GetStringAsync(ReleasesApiUrl);
+                using var cts = new System.Threading.CancellationTokenSource(TimeoutChecagem);
+                var json = await _http.GetStringAsync(ReleasesApiUrl, cts.Token);
                 return AnalisarRelease(json, runAtual);
             }
             catch

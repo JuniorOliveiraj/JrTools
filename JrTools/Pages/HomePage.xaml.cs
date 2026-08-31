@@ -38,6 +38,31 @@ namespace JrTools.Pages
             this.InitializeComponent();
             this.NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Required;
             this.Loaded += RenderizarPages_Loaded;
+            ConfigurarFormatacaoCamposHorario();
+        }
+
+        /// <summary>
+        /// Aplica um formatador de 2 dígitos aos NumberBox de hora/minuto da Calculadora de
+        /// Horas — sem isso, digitar "8" mostra "8" em vez de "08".
+        /// </summary>
+        private void ConfigurarFormatacaoCamposHorario()
+        {
+            var formatter = new Windows.Globalization.NumberFormatting.DecimalFormatter
+            {
+                IntegerDigits = 2,
+                FractionDigits = 0
+            };
+
+            foreach (var box in new[]
+            {
+                Entrada1HoraBox, Entrada1MinutoBox,
+                Saida1HoraBox, Saida1MinutoBox,
+                Entrada2HoraBox, Entrada2MinutoBox,
+                Saida2HoraBox, Saida2MinutoBox
+            })
+            {
+                box.NumberFormatter = formatter;
+            }
         }
 
         private void RenderizarPages_Loaded(object sender, RoutedEventArgs e)
@@ -139,11 +164,11 @@ namespace JrTools.Pages
                 }
             }
 
-            // Atualiza os TimePickers (com os valores reais)
-            Entrada1TimePicker.Time = entrada1.TimeOfDay;
-            Saida1TimePicker.Time = saida1.TimeOfDay;
-            Entrada2TimePicker.Time = entrada2.TimeOfDay;
-            Saida2TimePicker.Time = saida2.TimeOfDay;
+            // Atualiza os campos de horário (com os valores reais)
+            DefinirHoraMinuto(Entrada1HoraBox, Entrada1MinutoBox, entrada1.TimeOfDay);
+            DefinirHoraMinuto(Saida1HoraBox, Saida1MinutoBox, saida1.TimeOfDay);
+            DefinirHoraMinuto(Entrada2HoraBox, Entrada2MinutoBox, entrada2.TimeOfDay);
+            DefinirHoraMinuto(Saida2HoraBox, Saida2MinutoBox, saida2.TimeOfDay);
             var horasaida = saidaPrevista.TimeOfDay;
 
             HorariosaidaPrevistaText.Text = $"{horasaida.Hours:D2}:{horasaida.Minutes:D2}";
@@ -166,29 +191,61 @@ namespace JrTools.Pages
             // Faz o parse do JSON
             using var doc = JsonDocument.Parse(resultado);
 
-            // Pega o valor de "SaldoFinal"
+            // Pega o valor de "SaldoFinal" (formato "[-]H[H]:MM", ex.: "-05:04" ou "042:30")
             string saldoFinal = doc.RootElement.GetProperty("SaldoFinal").GetString();
 
-            // Formata como você quer
-            string saldoFormatado = saldoFinal.Insert(2, "h ") + "m";
-            string saldoFormatado2 = saldoFormatado.Replace(":", "");
-
-            BancoDeHorasText.Text = saldoFormatado2;
-            // var obj = JsonSerializer.Deserialize<SeuDto>(resultado);
-
-
+            BancoDeHorasText.Text = FormatarSaldoHoras(saldoFinal);
         }
+
+        /// <summary>
+        /// Formata um saldo no formato "[-]H[H]:MM" vindo da API (ex.: "-05:04", "042:30") como
+        /// "-5h 04m". Faz parse de verdade em vez de manipulação de string por posição fixa —
+        /// a abordagem anterior (Insert num índice fixo) quebrava dependendo da quantidade de
+        /// dígitos antes dos dois-pontos (ex.: "-0h 504m" para "-05:04").
+        /// </summary>
+        internal static string FormatarSaldoHoras(string? saldo)
+        {
+            if (string.IsNullOrWhiteSpace(saldo)) return "0h 00m";
+
+            var texto = saldo.Trim();
+            bool negativo = texto.StartsWith("-");
+            if (negativo) texto = texto[1..];
+
+            var partes = texto.Split(':');
+            if (!int.TryParse(partes[0], out int horas)) horas = 0;
+            int minutos = 0;
+            if (partes.Length > 1) int.TryParse(partes[1], out minutos);
+
+            return $"{(negativo ? "-" : "")}{horas}h {minutos:D2}m";
+        }
+
+        // ── Helpers de horário (campos numéricos Hora/Minuto) ──────────────────
+
+        private static void DefinirHoraMinuto(NumberBox horaBox, NumberBox minutoBox, TimeSpan valor)
+        {
+            horaBox.Value = valor.Hours;
+            minutoBox.Value = valor.Minutes;
+        }
+
+        private static TimeSpan ObterHoraMinuto(NumberBox horaBox, NumberBox minutoBox)
+        {
+            int hora = double.IsNaN(horaBox.Value) ? 0 : (int)horaBox.Value;
+            int minuto = double.IsNaN(minutoBox.Value) ? 0 : (int)minutoBox.Value;
+            hora = Math.Clamp(hora, 0, 23);
+            minuto = Math.Clamp(minuto, 0, 59);
+            return new TimeSpan(hora, minuto, 0);
+        }
+
         private void CalcularHorasButton_Click(object sender, RoutedEventArgs e)
         {
             CalculadoraInfoBar.IsOpen = false;
 
             try
             {
-                // Pega os valores dos TimePickers
-                TimeSpan entrada1 = Entrada1TimePicker.Time;
-                TimeSpan saida1 = Saida1TimePicker.Time;
-                TimeSpan entrada2 = Entrada2TimePicker.Time;
-                TimeSpan saida2 = Saida2TimePicker.Time;
+                TimeSpan entrada1 = ObterHoraMinuto(Entrada1HoraBox, Entrada1MinutoBox);
+                TimeSpan saida1 = ObterHoraMinuto(Saida1HoraBox, Saida1MinutoBox);
+                TimeSpan entrada2 = ObterHoraMinuto(Entrada2HoraBox, Entrada2MinutoBox);
+                TimeSpan saida2 = ObterHoraMinuto(Saida2HoraBox, Saida2MinutoBox);
 
                 // Validação simples
                 if (saida1 < entrada1 || saida2 < entrada2)
@@ -248,8 +305,9 @@ namespace JrTools.Pages
                     totalHoras += durHoras; 
                 }
 
-                string formato = "H ";
-                TotalHorasLancadas.Text = formato +=  totalHoras.ToString("0.##"); // duas casas decimais
+                int horasInteiras = (int)totalHoras;
+                int minutos = (int)Math.Round((totalHoras - horasInteiras) * 60);
+                TotalHorasLancadas.Text = $"{horasInteiras}h {minutos:D2}m";
             }
             catch (Exception ex)
             {
