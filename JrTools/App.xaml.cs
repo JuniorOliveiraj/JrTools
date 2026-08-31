@@ -50,7 +50,13 @@ namespace JrTools
             e.Handled = true;
         }
 
-        private static void LogCrash(Exception ex, string origem)
+        /// <summary>
+        /// Grava no mesmo crash.log usado para exceções não tratadas. Exposto para serviços
+        /// como <see cref="UpdateService"/> registrarem falhas que eles mesmos escolhem engolir
+        /// (ex.: checagem de atualização sem rede) — sem isso, essas falhas não deixavam
+        /// nenhum rastro, dificultando diagnosticar por que uma atualização não foi detectada.
+        /// </summary>
+        internal static void LogCrash(Exception ex, string origem)
         {
             try
             {
