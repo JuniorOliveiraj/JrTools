@@ -1,5 +1,6 @@
 using JrTools.Dto;
 using JrTools.Services.Db;
+using JrTools;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -168,10 +169,13 @@ namespace JrTools.Services
                 var json = await _http.GetStringAsync(ReleasesApiUrl, cts.Token);
                 return AnalisarRelease(json, runAtual);
             }
-            catch
+            catch (Exception ex)
             {
-                // Sem rede, GitHub fora do ar, rate limit, etc. — falha silenciosa, o app
-                // continua funcionando normalmente sem atualização.
+                // Sem rede, GitHub fora do ar, rate limit, etc. — o app continua funcionando
+                // normalmente sem atualização, mas registra a causa no crash.log: sem isso,
+                // uma falha aqui era 100% invisível, impossível de diferenciar de "não há
+                // atualização nova" ao investigar por que uma build não foi detectada.
+                App.LogCrash(ex, "UpdateService.VerificarAsync (checagem da API do GitHub)");
                 return null;
             }
         }
