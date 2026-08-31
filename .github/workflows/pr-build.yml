@@ -1,0 +1,36 @@
+name: PR Build & Test
+
+on:
+  pull_request:
+    branches: [master]
+    paths-ignore:
+      - '**.md'
+      - 'Docs/**'
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build (Release, x64)
+        run: dotnet build JrTools.sln -c Release -p:Platform=x64
+
+      - name: Testes
+        run: dotnet test JrTools.Tests/JrTools.Tests.csproj -c Release --no-build --logger "trx;LogFileName=test-results.trx"
+
+      - name: Publicar resultados dos testes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: JrTools.Tests/TestResults/test-results.trx
