@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using JrTools.Dto;
 using JrTools.Services.Db;
+using JrTools.Tests.Helpers;
 using Xunit;
 
 namespace JrTools.Tests.Services
@@ -12,8 +13,11 @@ namespace JrTools.Tests.Services
     /// Testes unitários para <see cref="AtualizacaoHelper"/> — persistência do estado de
     /// checagem de auto-update (último check e última tag avisada por modal).
     /// Mesmo padrão de isolamento de <see cref="BServerConfigHelperTests"/>: redireciona
-    /// LOCALAPPDATA para uma pasta temporária a cada teste.
+    /// LOCALAPPDATA para uma pasta temporária a cada teste. Compartilha a coleção
+    /// "LocalAppData" com <see cref="BServerConfigHelperTests"/> pra nunca rodar em
+    /// paralelo com ela (as duas mexem na mesma variável de ambiente de processo).
     /// </summary>
+    [Collection("LocalAppData")]
     public class AtualizacaoHelperTests : IDisposable
     {
         private readonly string _testDirectory;

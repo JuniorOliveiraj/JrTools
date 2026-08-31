@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using JrTools.Dto;
 using JrTools.Services.Db;
+using JrTools.Tests.Helpers;
 using Xunit;
 
 namespace JrTools.Tests.Services
@@ -11,7 +12,12 @@ namespace JrTools.Tests.Services
     /// <summary>
     /// Unit tests for <see cref="BServerConfigHelper"/>.
     /// Validates: Requirements 3.1, 3.2, 3.3, 3.6
+    /// Compartilha a coleção "LocalAppData" com <see cref="AtualizacaoHelperTests"/> pra
+    /// nunca rodar em paralelo com ela (as duas mexem na mesma variável de ambiente de
+    /// processo LOCALAPPDATA — sem isso, uma pisa na outra quando o xUnit as executa
+    /// concorrentemente).
     /// </summary>
+    [Collection("LocalAppData")]
     public class BServerConfigHelperTests : IDisposable
     {
         private readonly string _testDirectory;
