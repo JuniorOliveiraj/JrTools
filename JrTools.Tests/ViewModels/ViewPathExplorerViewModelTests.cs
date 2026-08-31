@@ -123,9 +123,8 @@ namespace JrTools.Tests.ViewModels
                 // Act: selecionar o projeto (dispara fire-and-forget de salvamento)
                 vm.ProjetoSelecionado = projeto;
 
-                // Aguardar o fire-and-forget completar (yield para o scheduler de tasks)
-                await Task.Yield();
-                await Task.Delay(50); // margem para a task assíncrona de salvamento concluir
+                // Aguardar a task de salvamento concluir de forma determinística
+                await vm.UltimaSalvarProjetoTask!;
 
                 // Assert: SalvarConfiguracoesAsync deve ter sido chamado com o nome correto (Req 8.1)
                 Assert.True(fakeConfig.SalvarCallCount >= 1,
@@ -295,16 +294,23 @@ namespace JrTools.Tests.ViewModels
                 vm.TextoViews = "IWFuncionarios";
 
                 // Iniciar busca (não aguardar — queremos verificar o estado durante o carregamento)
-                var buscaTask = Task.Run(() => vm.BuscarCommand.Execute(null));
-                await Task.Delay(50); // dar tempo para IsCarregando = true ser setado
+                vm.BuscarCommand.Execute(null);
+
+                // Espera determinística (com timeout generoso) até IsCarregando=true, em vez de um
+                // Task.Delay fixo — sob contenção de CPU/thread pool em CI, um delay curto pode não
+                // ser suficiente pro Task.Run interno sequer ter iniciado.
+                var sw = System.Diagnostics.Stopwatch.StartNew();
+                while (!vm.IsCarregando && sw.ElapsedMilliseconds < 5000)
+                    await Task.Delay(10);
 
                 // Act & Assert (Req 3.6)
+                Assert.True(vm.IsCarregando, "IsCarregando deveria ter se tornado true.");
                 Assert.False(vm.BuscarCommand.CanExecute(null),
                     "BuscarCommand deve estar desabilitado durante IsCarregando = true.");
 
                 // Liberar o mapper bloqueado para não deixar tasks pendentes
                 tcs.SetResult(true);
-                await buscaTask;
+                await vm.UltimaBuscaTask!;
             }
             finally
             {
@@ -373,7 +379,7 @@ namespace JrTools.Tests.ViewModels
 
                 // Act: executar busca e aguardar conclusão
                 vm.BuscarCommand.Execute(null);
-                await Task.Delay(200); // aguardar a task assíncrona concluir
+                await vm.UltimaBuscaTask!;
 
                 // Assert (Req 7.2)
                 Assert.False(string.IsNullOrWhiteSpace(vm.MensagemErro),
@@ -429,7 +435,7 @@ namespace JrTools.Tests.ViewModels
 
                 // Act: executar busca e aguardar conclusão
                 vm.BuscarCommand.Execute(null);
-                await Task.Delay(200); // aguardar a task assíncrona concluir
+                await vm.UltimaBuscaTask!;
 
                 // Assert (Req 5.5)
                 Assert.False(vm.IsCarregando,
@@ -479,7 +485,7 @@ namespace JrTools.Tests.ViewModels
                 vm.TextoViews = "IWFuncionarios";
 
                 vm.BuscarCommand.Execute(null);
-                await Task.Delay(200);
+                await vm.UltimaBuscaTask!;
 
                 Assert.Equal(dirArtifacts, fakeMapper.LastInitializedDirectory);
                 Assert.Single(vm.Resultados);
@@ -642,8 +648,8 @@ namespace JrTools.Tests.ViewModels
                         // Act: executar busca
                         vm.BuscarCommand.Execute(null);
 
-                        // Aguardar a task assíncrona concluir
-                        Task.Delay(200).GetAwaiter().GetResult();
+                        // Aguardar a task assíncrona concluir de forma determinística
+                        vm.UltimaBuscaTask?.GetAwaiter().GetResult();
 
                         // Assert: Resultados.Count deve ser igual ao número de views normalizadas (Req 4.3)
                         if (vm.Resultados.Count != conjuntoViews.Count)
@@ -729,8 +735,8 @@ namespace JrTools.Tests.ViewModels
                         // Act: executar busca
                         vm.BuscarCommand.Execute(null);
 
-                        // Aguardar a task assíncrona concluir
-                        Task.Delay(200).GetAwaiter().GetResult();
+                        // Aguardar a task assíncrona concluir de forma determinística
+                        vm.UltimaBuscaTask?.GetAwaiter().GetResult();
 
                         // Assert: cada view não encontrada deve ter SemCaminhos == true e Caminhos.Count == 0 (Req 4.4)
                         foreach (var resultado in vm.Resultados)
@@ -814,8 +820,8 @@ namespace JrTools.Tests.ViewModels
                         // Act: executar busca
                         vm.BuscarCommand.Execute(null);
 
-                        // Aguardar a task assíncrona concluir
-                        Task.Delay(200).GetAwaiter().GetResult();
+                        // Aguardar a task assíncrona concluir de forma determinística
+                        vm.UltimaBuscaTask?.GetAwaiter().GetResult();
 
                         // Assert: EnsureInitialized deve ter sido chamado exatamente uma vez (Req 3.1, 4.2)
                         return fakeMapper.EnsureInitializedCallCount == 1;
