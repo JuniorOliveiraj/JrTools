@@ -110,9 +110,6 @@ namespace JrTools
             var cfg = await Services.Db.AtualizacaoHelper.LerAsync();
             if (cfg.UltimaTagModalExibida == atualizacao.Tag) return;
 
-            cfg.UltimaTagModalExibida = atualizacao.Tag;
-            await Services.Db.AtualizacaoHelper.SalvarAsync(cfg);
-
             var dialog = new ContentDialog
             {
                 Title = "Nova versão do JrTools disponível",
@@ -123,6 +120,13 @@ namespace JrTools
             };
 
             var resultado = await dialog.ShowAsync();
+
+            // Só marca como "já exibido" depois do modal realmente ter sido mostrado — se
+            // ShowAsync falhar (ex.: outro ContentDialog já aberto) antes disso, o modal
+            // continua elegível pra aparecer na próxima abertura do app.
+            cfg.UltimaTagModalExibida = atualizacao.Tag;
+            await Services.Db.AtualizacaoHelper.SalvarAsync(cfg);
+
             if (resultado == ContentDialogResult.Primary)
                 await _homePage.IniciarAtualizacaoAsync();
         }

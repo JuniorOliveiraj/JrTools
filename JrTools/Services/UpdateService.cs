@@ -17,7 +17,10 @@ namespace JrTools.Services
     /// </summary>
     public class UpdateService
     {
-        private const string ReleasesApiUrl = "https://api.github.com/repos/JuniorOliveiraj/JrTools/releases?per_page=1";
+        // per_page=5 (não 1): dá margem pra AnalisarRelease pular releases cuja tag não bate com
+        // o padrão build-<N>-<sha> (ex.: uma release manual/hotfix criada fora do release.yml),
+        // em vez de ficar cego assim que a mais recente não seguir o padrão esperado.
+        private const string ReleasesApiUrl = "https://api.github.com/repos/JuniorOliveiraj/JrTools/releases?per_page=5";
         private static readonly TimeSpan IntervaloMinimoEntreChecagens = TimeSpan.FromMinutes(1);
 
         private static readonly HttpClient _http = CriarHttpClient();
@@ -72,49 +75,58 @@ namespace JrTools.Services
         }
 
         /// <summary>
-        /// Decide, a partir do JSON de <c>GET /releases?per_page=1</c>, se há uma versão mais
-        /// nova que <paramref name="runAtual"/> com um asset .zip. Não depende de rede — toda a
-        /// lógica de comparação fica isolada aqui para poder ser testada com JSONs de exemplo.
+        /// Decide, a partir do JSON de <c>GET /releases?per_page=5</c>, se há uma versão mais
+        /// nova que <paramref name="runAtual"/> com um asset .zip. Percorre a lista (mais recente
+        /// primeiro) e usa a primeira release cuja tag bata com o padrão build-&lt;N&gt;-&lt;sha&gt;,
+        /// pulando releases manuais/fora do padrão em vez de ficar cega se a mais recente não for
+        /// uma build automática. Não depende de rede — toda a lógica de comparação fica isolada
+        /// aqui para poder ser testada com JSONs de exemplo.
         /// </summary>
         internal static AtualizacaoDisponivelDto? AnalisarRelease(string json, int runAtual)
         {
             try
             {
                 using var doc = JsonDocument.Parse(json);
-                if (doc.RootElement.ValueKind != JsonValueKind.Array || doc.RootElement.GetArrayLength() == 0)
+                if (doc.RootElement.ValueKind != JsonValueKind.Array)
                     return null;
 
-                var release = doc.RootElement[0];
-                var tag = release.GetProperty("tag_name").GetString();
-                if (string.IsNullOrWhiteSpace(tag)) return null;
-
-                var runNovo = ExtrairRunNumber(tag);
-                if (runNovo < 0 || runNovo <= runAtual) return null;
-
-                string? downloadUrl = null;
-                if (release.TryGetProperty("assets", out var assets))
+                foreach (var release in doc.RootElement.EnumerateArray())
                 {
-                    foreach (var asset in assets.EnumerateArray())
+                    var tag = release.GetProperty("tag_name").GetString();
+                    if (string.IsNullOrWhiteSpace(tag)) continue;
+
+                    var runNovo = ExtrairRunNumber(tag);
+                    if (runNovo < 0) continue; // tag fora do padrão build-<N>-<sha>, pula
+
+                    if (runNovo <= runAtual) return null; // já é a mais recente que bate o padrão
+
+                    string? downloadUrl = null;
+                    if (release.TryGetProperty("assets", out var assets))
                     {
-                        var nome = asset.GetProperty("name").GetString();
-                        if (nome != null && nome.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+                        foreach (var asset in assets.EnumerateArray())
                         {
-                            downloadUrl = asset.GetProperty("browser_download_url").GetString();
-                            break;
+                            var nome = asset.GetProperty("name").GetString();
+                            if (nome != null && nome.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+                            {
+                                downloadUrl = asset.GetProperty("browser_download_url").GetString();
+                                break;
+                            }
                         }
                     }
+                    if (string.IsNullOrWhiteSpace(downloadUrl)) continue;
+
+                    var htmlUrl = release.TryGetProperty("html_url", out var htmlProp) ? htmlProp.GetString() ?? string.Empty : string.Empty;
+
+                    return new AtualizacaoDisponivelDto
+                    {
+                        Tag = tag,
+                        RunNumber = runNovo,
+                        DownloadUrl = downloadUrl,
+                        HtmlUrl = htmlUrl
+                    };
                 }
-                if (string.IsNullOrWhiteSpace(downloadUrl)) return null;
 
-                var htmlUrl = release.TryGetProperty("html_url", out var htmlProp) ? htmlProp.GetString() ?? string.Empty : string.Empty;
-
-                return new AtualizacaoDisponivelDto
-                {
-                    Tag = tag,
-                    RunNumber = runNovo,
-                    DownloadUrl = downloadUrl,
-                    HtmlUrl = htmlUrl
-                };
+                return null;
             }
             catch
             {
@@ -129,7 +141,9 @@ namespace JrTools.Services
         /// </summary>
         public async Task<AtualizacaoDisponivelDto?> VerificarAsync()
         {
-            var versaoAtual = VersaoAtual();
+            // VersaoAtual() faz I/O síncrono (File.Exists/File.ReadAllText); Task.Run evita
+            // bloquear a UI thread, já que este método é chamado logo na abertura do app.
+            var versaoAtual = await Task.Run(() => VersaoAtual());
             if (versaoAtual == null) return null;
 
             var runAtual = ExtrairRunNumber(versaoAtual);

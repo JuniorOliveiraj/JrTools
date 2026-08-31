@@ -152,6 +152,28 @@ namespace JrTools.Tests.Services
         }
 
         [Fact]
+        public void AnalisarRelease_QuandoMaisRecenteTemTagForaDoPadrao_PulaEUsaAProximaValida()
+        {
+            // Release manual/hotfix no topo (tag fora do padrão build-<N>-<sha>) não deve
+            // esconder a build automática mais recente logo depois dela na lista.
+            const string json = @"[
+              { ""tag_name"": ""v2.0.0-hotfix"", ""assets"": [
+                  { ""name"": ""app.zip"", ""browser_download_url"": ""https://x/hotfix.zip"" }
+              ] },
+              { ""tag_name"": ""build-33-abc1234"", ""html_url"": ""https://x/build-33"", ""assets"": [
+                  { ""name"": ""JrTools-win-x64-build-33-abc1234.zip"", ""browser_download_url"": ""https://x/build33.zip"" }
+              ] }
+            ]";
+
+            var resultado = UpdateService.AnalisarRelease(json, runAtual: 10);
+
+            Assert.NotNull(resultado);
+            Assert.Equal("build-33-abc1234", resultado!.Tag);
+            Assert.Equal(33, resultado.RunNumber);
+            Assert.Equal("https://x/build33.zip", resultado.DownloadUrl);
+        }
+
+        [Fact]
         public void AnalisarRelease_JsonInvalido_RetornaNullSemLancarExcecao()
         {
             Assert.Null(UpdateService.AnalisarRelease("isso não é json", runAtual: 10));
