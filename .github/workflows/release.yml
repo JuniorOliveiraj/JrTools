@@ -55,6 +55,10 @@ jobs:
           "tag=$tag" >> $env:GITHUB_OUTPUT
           "zip=JrTools-win-x64-$tag.zip" >> $env:GITHUB_OUTPUT
 
+      - name: Gravar versão no artefato (usada pelo auto-update)
+        shell: pwsh
+        run: Set-Content -Path publish/version.txt -Value "${{ steps.vars.outputs.tag }}" -NoNewline
+
       - name: Compactar artefato
         shell: pwsh
         run: Compress-Archive -Path publish/* -DestinationPath ${{ steps.vars.outputs.zip }}
