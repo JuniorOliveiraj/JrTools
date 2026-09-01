@@ -3,12 +3,16 @@ using JrTools.Models;
 using JrTools.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading.Tasks;
 using Windows.Storage.Pickers;
+using Windows.Storage.Streams;
 
 namespace JrTools.Pages
 {
@@ -102,6 +106,12 @@ namespace JrTools.Pages
                     .Where(p => !jaMonitorados.Contains(p.Nome))
                     .ToList();
 
+                // Os ícones já vieram como PNG (extraídos numa thread de background em
+                // ListarProcessosDisponiveis) — decodificar pra BitmapImage só pode ser feito
+                // na UI thread, então isso acontece aqui, antes do grid renderizar.
+                foreach (var processo in _todosProcessosDisponiveis)
+                    processo.Icone = await CarregarIconeAsync(processo.IconePng);
+
                 ListProcessosDisponiveis.ItemsSource = _todosProcessosDisponiveis;
             }
             finally
@@ -110,6 +120,25 @@ namespace JrTools.Pages
             }
 
             await AdicionarProcessoDialog.ShowAsync();
+        }
+
+        private static async Task<BitmapImage?> CarregarIconeAsync(byte[]? pngBytes)
+        {
+            if (pngBytes == null || pngBytes.Length == 0) return null;
+            try
+            {
+                using var stream = new InMemoryRandomAccessStream();
+                await stream.WriteAsync(pngBytes.AsBuffer());
+                stream.Seek(0);
+
+                var bitmap = new BitmapImage();
+                await bitmap.SetSourceAsync(stream);
+                return bitmap;
+            }
+            catch
+            {
+                return null; // PNG inesperado/corrompido — só não mostra ícone pra esse item
+            }
         }
 
         private void TxtBuscaProcesso_TextChanged(object sender, TextChangedEventArgs e)

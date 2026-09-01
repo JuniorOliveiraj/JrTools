@@ -2,6 +2,7 @@ using JrTools.Models;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Management;
 using System.Threading;
@@ -168,11 +169,16 @@ namespace JrTools.Services
                 return todos
                     .Where(p => p.Id != currentPid)
                     .GroupBy(p => p.ProcessName, StringComparer.OrdinalIgnoreCase)
-                    .Select(g => new ProcessoDisponivel
+                    .Select(g =>
                     {
-                        Nome = g.Key,
-                        Quantidade = g.Count(),
-                        CaminhoExecutavel = ObterCaminhoExecutavelSeguro(g.First())
+                        var caminho = ObterCaminhoExecutavelSeguro(g.First());
+                        return new ProcessoDisponivel
+                        {
+                            Nome = g.Key,
+                            Quantidade = g.Count(),
+                            CaminhoExecutavel = caminho,
+                            IconePng = ExtrairIconePng(caminho)
+                        };
                     })
                     .OrderBy(p => p.Nome, StringComparer.OrdinalIgnoreCase)
                     .ToList();
@@ -189,6 +195,31 @@ namespace JrTools.Services
         {
             try { return p.MainModule?.FileName; }
             catch { return null; } // acesso negado é esperado pra processos de sistema/outro usuário
+        }
+
+        /// <summary>
+        /// Extrai o ícone associado ao executável (o mesmo que aparece no Explorer/Gerenciador
+        /// de Tarefas), codificado como PNG. Retorna bytes puros (não um tipo de imagem do
+        /// WinUI) porque este método roda numa thread de background — BitmapImage só pode ser
+        /// criado/decodificado na UI thread.
+        /// </summary>
+        private static byte[]? ExtrairIconePng(string? caminhoExecutavel)
+        {
+            if (string.IsNullOrWhiteSpace(caminhoExecutavel)) return null;
+            try
+            {
+                using var icone = System.Drawing.Icon.ExtractAssociatedIcon(caminhoExecutavel);
+                if (icone == null) return null;
+
+                using var bitmap = icone.ToBitmap();
+                using var ms = new MemoryStream();
+                bitmap.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+                return ms.ToArray();
+            }
+            catch
+            {
+                return null; // sem permissão, arquivo protegido, formato inesperado, etc.
+            }
         }
 
         /// <summary>

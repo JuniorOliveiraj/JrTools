@@ -293,19 +293,24 @@
                           MaxHeight="360">
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="models:ProcessoDisponivel">
-                            <Grid Padding="4,6" ColumnSpacing="8">
+                            <Grid Padding="4,6" ColumnSpacing="10">
                                 <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <StackPanel>
+                                <Image Source="{x:Bind Icone}"
+                                       Width="24" Height="24"
+                                       VerticalAlignment="Center"
+                                       Visibility="{x:Bind Icone, Converter={StaticResource NullToVisibilityConverter}}"/>
+                                <StackPanel Grid.Column="1">
                                     <TextBlock Text="{x:Bind Nome}" FontWeight="SemiBold"/>
                                     <TextBlock Text="{x:Bind CaminhoExecutavel}"
                                                FontSize="11" Foreground="Gray"
                                                TextTrimming="CharacterEllipsis"
                                                Visibility="{x:Bind CaminhoExecutavel, Converter={StaticResource NullToVisibilityConverter}}"/>
                                 </StackPanel>
-                                <TextBlock Grid.Column="1" Text="{x:Bind Quantidade}" FontSize="11" Foreground="Gray" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                <TextBlock Grid.Column="2" Text="{x:Bind Quantidade}" FontSize="11" Foreground="Gray" VerticalAlignment="Center" Margin="8,0,0,0"/>
                             </Grid>
                         </DataTemplate>
                     </ListView.ItemTemplate>
