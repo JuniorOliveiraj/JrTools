@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -18,11 +19,35 @@ namespace JrTools.Services
             WriteIndented = true
         };
 
+        // Campos que o Benner regrava a cada exportação/salvamento do .rpt mesmo sem
+        // nenhuma mudança real no relatório — HANDLE é o id interno do registro (varia
+        // entre bases/ambientes), ALTERADOPOR/ULTIMAALTERACAO são metadados de quem/quando
+        // mexeu por último. Sem ignorá-los, todo relatório aparecia como "Diferente" o
+        // tempo todo, mesmo quando o conteúdo em si não mudou.
+        private static readonly string[] CamposVolateis = { "HANDLE", "ALTERADOPOR", "ULTIMAALTERACAO" };
+
         public string CalcularHash(string caminho)
         {
+            // Lê como Latin1 (mapeamento 1:1 de byte pra char) só para filtrar linhas por
+            // prefixo ASCII com segurança — não depende de acertar a codificação real do
+            // arquivo (esses .rpt legados costumam vir em ANSI/Windows-1252) nem risca
+            // corromper acentuação, já que as linhas que sobram não são reescritas, só
+            // concatenadas de volta.
+            var linhas = File.ReadAllLines(caminho, Encoding.Latin1);
+
+            var relevantes = linhas.Where(linha =>
+            {
+                var semIndentacao = linha.TrimStart('\t', ' ');
+                foreach (var campo in CamposVolateis)
+                {
+                    if (semIndentacao.StartsWith(campo + "|", StringComparison.OrdinalIgnoreCase))
+                        return false;
+                }
+                return true;
+            });
+
             using var sha256 = SHA256.Create();
-            using var stream = File.OpenRead(caminho);
-            var bytes = sha256.ComputeHash(stream);
+            var bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(string.Join('\n', relevantes)));
             var sb = new StringBuilder(bytes.Length * 2);
             foreach (var b in bytes)
                 sb.Append(b.ToString("x2"));
