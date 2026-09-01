@@ -174,6 +174,30 @@ namespace JrTools.Tests.Services
         }
 
         [Fact]
+        public void AnalisarRelease_QuandoReleaseMaisAntigaApareceAntesDaMaisNovaNaLista_NaoDesisteEAchaAMaisNova()
+        {
+            // A API não garante ordem estritamente decrescente por run number dentro do
+            // per_page=5 (ex.: uma release republicada/editada muda seu created_at sem mudar
+            // a tag) — uma entrada <= runAtual aparecendo antes de uma mais nova não pode fazer
+            // a busca desistir cedo demais e ignorar a mais nova que vem logo depois.
+            const string json = @"[
+              { ""tag_name"": ""build-9-1e581b8"", ""html_url"": ""https://x/build-9"", ""assets"": [
+                  { ""name"": ""JrTools-win-x64-build-9-1e581b8.zip"", ""browser_download_url"": ""https://x/build9.zip"" }
+              ] },
+              { ""tag_name"": ""build-11-6e3ef5d"", ""html_url"": ""https://x/build-11"", ""assets"": [
+                  { ""name"": ""JrTools-win-x64-build-11-6e3ef5d.zip"", ""browser_download_url"": ""https://x/build11.zip"" }
+              ] }
+            ]";
+
+            var resultado = UpdateService.AnalisarRelease(json, runAtual: 9);
+
+            Assert.NotNull(resultado);
+            Assert.Equal("build-11-6e3ef5d", resultado!.Tag);
+            Assert.Equal(11, resultado.RunNumber);
+            Assert.Equal("https://x/build11.zip", resultado.DownloadUrl);
+        }
+
+        [Fact]
         public void AnalisarRelease_JsonInvalido_RetornaNullSemLancarExcecao()
         {
             Assert.Null(UpdateService.AnalisarRelease("isso não é json", runAtual: 10));

@@ -83,11 +83,14 @@ namespace JrTools.Services
 
         /// <summary>
         /// Decide, a partir do JSON de <c>GET /releases?per_page=5</c>, se há uma versão mais
-        /// nova que <paramref name="runAtual"/> com um asset .zip. Percorre a lista (mais recente
-        /// primeiro) e usa a primeira release cuja tag bata com o padrão build-&lt;N&gt;-&lt;sha&gt;,
-        /// pulando releases manuais/fora do padrão em vez de ficar cega se a mais recente não for
-        /// uma build automática. Não depende de rede — toda a lógica de comparação fica isolada
-        /// aqui para poder ser testada com JSONs de exemplo.
+        /// nova que <paramref name="runAtual"/> com um asset .zip. Percorre a lista inteira e
+        /// retorna a primeira release cuja tag bata com o padrão build-&lt;N&gt;-&lt;sha&gt;, tenha
+        /// run number maior que o atual e tenha um asset .zip — pulando (sem abortar a busca)
+        /// tanto tags fora do padrão quanto releases não mais novas que a atual, já que a API
+        /// não garante ordem estritamente decrescente por run number dentro do per_page=5 (ex.:
+        /// uma release republicada/editada muda seu created_at sem mudar a tag). Não depende de
+        /// rede — toda a lógica de comparação fica isolada aqui para poder ser testada com JSONs
+        /// de exemplo.
         /// </summary>
         internal static AtualizacaoDisponivelDto? AnalisarRelease(string json, int runAtual)
         {
@@ -105,7 +108,12 @@ namespace JrTools.Services
                     var runNovo = ExtrairRunNumber(tag);
                     if (runNovo < 0) continue; // tag fora do padrão build-<N>-<sha>, pula
 
-                    if (runNovo <= runAtual) return null; // já é a mais recente que bate o padrão
+                    // Pula (não aborta!) uma release que não é mais nova — a API não garante
+                    // ordem estritamente decrescente por run number dentro do per_page=5 (ex.:
+                    // release republicada/editada altera created_at sem mudar a tag), então uma
+                    // entrada mais antiga aparecendo antes de uma mais nova na lista não pode
+                    // fazer a checagem desistir antes de olhar o resto do array.
+                    if (runNovo <= runAtual) continue;
 
                     string? downloadUrl = null;
                     if (release.TryGetProperty("assets", out var assets))
