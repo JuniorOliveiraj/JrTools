@@ -1,6 +1,7 @@
 using JrTools.Dto;
 using JrTools.Models;
 using JrTools.Services;
+using JrTools.Services.Db;
 using Microsoft.UI.Dispatching;
 using System;
 using System.Collections.Generic;
@@ -43,6 +44,7 @@ namespace JrTools.ViewModels
         private CancellationTokenSource? _autoKillCts;
         private CancellationTokenSource? _refreshCts;
         private CancellationTokenSource? _providerLogCts;
+        private bool _customProcessesPendingLoad = true;
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -179,6 +181,8 @@ namespace JrTools.ViewModels
 
             // Inicia o loop de refresh constante (backup para WMI e atualização de detalhes)
             StartRefreshLoop();
+
+            _ = LoadCustomProcessesAsync();
         }
 
         public void InitializeDispatcher()
@@ -186,6 +190,12 @@ namespace JrTools.ViewModels
             _dispatcher = DispatcherQueue.GetForCurrentThread();
             // Sempre que inicializar/voltar para a página, faz um refresh imediato
             RefreshAllNow();
+
+            // Se a primeira tentativa de carregar os processos customizados não conseguiu um
+            // dispatcher válido (singleton tocado fora da UI thread, ex.: RhProdFlow antes da
+            // página abrir), tenta de novo agora que com certeza estamos na UI thread.
+            if (_customProcessesPendingLoad)
+                _ = LoadCustomProcessesAsync();
         }
 
         private void StartRefreshLoop()
@@ -331,6 +341,97 @@ namespace JrTools.ViewModels
                 SelectedProvider = null;
                 AddLog($"⚡ Provider PID {pid} encerrado.");
             }
+        }
+
+        /// <summary>
+        /// Encerra um processo (padrão ou customizado) uma única vez, agora — independente do
+        /// estado do toggle ou do "Manter Tudo Fechado". _killerService já dispara ProcessKilled/
+        /// ProcessKillFailed, que já estão ligados a AddLog no construtor.
+        /// </summary>
+        public async Task KillProcessNowAsync(string name)
+        {
+            AddLog($"⌛ Encerrando {name} agora (uma vez)...");
+            await _killerService.KillProcessesByNameAsync(name);
+        }
+
+        // ── Processos customizados (adicionados manualmente) ────────────────────
+
+        public Task<List<ProcessoDisponivel>> GetProcessosDisponiveisAsync()
+            => Task.Run(() => _monitorService.ListarProcessosDisponiveis());
+
+        public async Task AddCustomProcessAsync(string name)
+        {
+            if (MonitoredProcesses.Any(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
+                return; // já monitorado (padrão ou customizado) — não duplica
+
+            var vm = new ProcessViewModel(name, enabledByDefault: true, isCustom: true) { NameDisplay = name };
+            vm.Count = _monitorService.GetProcessCount(name);
+            SubscribeCustomProcessChanges(vm);
+            MonitoredProcesses.Add(vm);
+
+            await SaveCustomProcessesAsync();
+        }
+
+        public async Task RemoveCustomProcessAsync(string name)
+        {
+            var vm = MonitoredProcesses.FirstOrDefault(p =>
+                p.IsCustom && p.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+            if (vm == null) return;
+
+            MonitoredProcesses.Remove(vm);
+            await SaveCustomProcessesAsync();
+        }
+
+        private void SubscribeCustomProcessChanges(ProcessViewModel vm)
+        {
+            // Persiste o estado ligado/desligado do toggle sempre que mudar — sem isso, um
+            // processo customizado restaurado ao reabrir o app sempre voltaria desligado.
+            vm.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(ProcessViewModel.IsEnabled))
+                    _ = SaveCustomProcessesAsync();
+            };
+        }
+
+        private async Task SaveCustomProcessesAsync()
+        {
+            var config = new ProcessoCustomizadoConfig
+            {
+                Processos = MonitoredProcesses
+                    .Where(p => p.IsCustom)
+                    .Select(p => new ProcessoCustomizadoItem { Nome = p.Name, Habilitado = p.IsEnabled })
+                    .ToList()
+            };
+            await ProcessosCustomizadosHelper.SalvarAsync(config);
+        }
+
+        private async Task LoadCustomProcessesAsync()
+        {
+            var config = await ProcessosCustomizadosHelper.LerAsync();
+
+            // Precisa de um dispatcher de verdade pra mexer na ObservableCollection sem
+            // derrubar o app — se o singleton foi tocado fora da UI thread (RhProdFlow antes
+            // da página abrir), adia e InitializeDispatcher() tenta de novo.
+            var dispatcher = _dispatcher ?? DispatcherQueue.GetForCurrentThread();
+            if (dispatcher == null)
+                return;
+
+            _customProcessesPendingLoad = false;
+            if (config.Processos.Count == 0) return;
+
+            dispatcher.TryEnqueue(() =>
+            {
+                foreach (var item in config.Processos)
+                {
+                    if (MonitoredProcesses.Any(p => p.Name.Equals(item.Nome, StringComparison.OrdinalIgnoreCase)))
+                        continue;
+
+                    var vm = new ProcessViewModel(item.Nome, item.Habilitado, isCustom: true) { NameDisplay = item.Nome };
+                    vm.Count = _monitorService.GetProcessCount(item.Nome);
+                    SubscribeCustomProcessChanges(vm);
+                    MonitoredProcesses.Add(vm);
+                }
+            });
         }
 
         /// <summary>

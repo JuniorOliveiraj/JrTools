@@ -5,7 +5,9 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Windows.Storage.Pickers;
 
 namespace JrTools.Pages
@@ -13,6 +15,7 @@ namespace JrTools.Pages
     public sealed partial class FecharProcessos : Page
     {
         public FecharProcessosViewModel ViewModel { get; }
+        private List<ProcessoDisponivel> _todosProcessosDisponiveis = new();
 
         public FecharProcessos()
         {
@@ -67,6 +70,63 @@ namespace JrTools.Pages
         {
             if (ViewModel.SelectedProvider != null)
                 _ = ViewModel.KillProviderAsync(ViewModel.SelectedProvider.PID);
+        }
+
+        private void KillNowButton_Click(object sender, RoutedEventArgs e)
+        {
+            if ((sender as FrameworkElement)?.DataContext is ProcessViewModel vm)
+                _ = ViewModel.KillProcessNowAsync(vm.Name);
+        }
+
+        private void RemoveProcessButton_Click(object sender, RoutedEventArgs e)
+        {
+            if ((sender as FrameworkElement)?.DataContext is ProcessViewModel vm)
+                _ = ViewModel.RemoveCustomProcessAsync(vm.Name);
+        }
+
+        private async void AdicionarProcessoButton_Click(object sender, RoutedEventArgs e)
+        {
+            AdicionarProcessoDialog.XamlRoot = XamlRoot;
+            TxtBuscaProcesso.Text = string.Empty;
+            LoadingProcessosDisponiveis.IsActive = true;
+            ListProcessosDisponiveis.ItemsSource = null;
+
+            try
+            {
+                var todos = await ViewModel.GetProcessosDisponiveisAsync();
+                var jaMonitorados = ViewModel.MonitoredProcesses
+                    .Select(p => p.Name)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                _todosProcessosDisponiveis = todos
+                    .Where(p => !jaMonitorados.Contains(p.Nome))
+                    .ToList();
+
+                ListProcessosDisponiveis.ItemsSource = _todosProcessosDisponiveis;
+            }
+            finally
+            {
+                LoadingProcessosDisponiveis.IsActive = false;
+            }
+
+            await AdicionarProcessoDialog.ShowAsync();
+        }
+
+        private void TxtBuscaProcesso_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            var termo = TxtBuscaProcesso.Text;
+            ListProcessosDisponiveis.ItemsSource = string.IsNullOrWhiteSpace(termo)
+                ? _todosProcessosDisponiveis
+                : _todosProcessosDisponiveis.Where(p => p.Nome.Contains(termo, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+
+        private void ListProcessosDisponiveis_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (ListProcessosDisponiveis.SelectedItem is ProcessoDisponivel selecionado)
+            {
+                _ = ViewModel.AddCustomProcessAsync(selecionado.Nome);
+                AdicionarProcessoDialog.Hide();
+            }
         }
 
         private async void ExportarLogsButton_Click(object sender, RoutedEventArgs e)

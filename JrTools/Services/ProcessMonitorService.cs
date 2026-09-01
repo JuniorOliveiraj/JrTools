@@ -153,6 +153,45 @@ namespace JrTools.Services
         }
 
         /// <summary>
+        /// Lista todos os processos distintos rodando na máquina agora (agrupados por nome,
+        /// já que o app monitora/mata por nome), pro modal "Adicionar Processo". Exclui o
+        /// próprio processo do JrTools (evita a pessoa se auto-fechar sem querer). Faz um
+        /// snapshot pesado (Process.GetProcesses() + acesso a MainModule por grupo) — sempre
+        /// chamar via Task.Run, nunca direto na UI thread.
+        /// </summary>
+        public List<ProcessoDisponivel> ListarProcessosDisponiveis()
+        {
+            var currentPid = Environment.ProcessId;
+            var todos = Process.GetProcesses();
+            try
+            {
+                return todos
+                    .Where(p => p.Id != currentPid)
+                    .GroupBy(p => p.ProcessName, StringComparer.OrdinalIgnoreCase)
+                    .Select(g => new ProcessoDisponivel
+                    {
+                        Nome = g.Key,
+                        Quantidade = g.Count(),
+                        CaminhoExecutavel = ObterCaminhoExecutavelSeguro(g.First())
+                    })
+                    .OrderBy(p => p.Nome, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+            }
+            finally
+            {
+                // Process.GetProcesses() aloca um handle nativo por processo do sistema
+                // inteiro (centenas) — sem isso, cada abertura do modal vaza handles.
+                foreach (var p in todos) p.Dispose();
+            }
+        }
+
+        private static string? ObterCaminhoExecutavelSeguro(Process p)
+        {
+            try { return p.MainModule?.FileName; }
+            catch { return null; } // acesso negado é esperado pra processos de sistema/outro usuário
+        }
+
+        /// <summary>
         /// Obtém informações detalhadas de um processo específico por PID
         /// </summary>
         public ProcessInfo? GetProcessInfo(int pid)

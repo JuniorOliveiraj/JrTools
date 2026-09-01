@@ -35,18 +35,38 @@
 
         <!-- Template para o Botão individual de Processo -->
         <DataTemplate x:Key="ProcessButtonTemplate" x:DataType="viewmodels:ProcessViewModel">
-            <ToggleButton 
-                IsChecked="{x:Bind IsEnabled, Mode=TwoWay}"
-                FontSize="16"
-                Margin="10"
-                Width="150" Height="150"
-                HorizontalContentAlignment="Center" 
-                VerticalContentAlignment="Center">
-                <StackPanel>
-                    <TextBlock Text="{x:Bind NameDisplay}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"/>
-                    <TextBlock Text="{x:Bind Count, Mode=OneWay}" FontSize="24" HorizontalAlignment="Center" Margin="0,10,0,0"/>
-                </StackPanel>
-            </ToggleButton>
+            <Grid Margin="10" Width="150" Height="150">
+                <ToggleButton
+                    IsChecked="{x:Bind IsEnabled, Mode=TwoWay}"
+                    FontSize="16"
+                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    VerticalContentAlignment="Center">
+                    <StackPanel>
+                        <TextBlock Text="{x:Bind NameDisplay}" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"/>
+                        <TextBlock Text="{x:Bind Count, Mode=OneWay}" FontSize="24" HorizontalAlignment="Center" Margin="0,10,0,0"/>
+                    </StackPanel>
+                </ToggleButton>
+
+                <!-- Encerra esse processo uma única vez, agora, sem precisar ligar "Manter Tudo Fechado" -->
+                <Button HorizontalAlignment="Left" VerticalAlignment="Top"
+                        Width="28" Height="28" Padding="0" Margin="4"
+                        CornerRadius="14"
+                        Click="KillNowButton_Click"
+                        ToolTipService.ToolTip="Encerrar agora (uma vez)">
+                    <FontIcon Glyph="&#xE945;" FontSize="13"/>
+                </Button>
+
+                <!-- Remove o tile — só processos adicionados manualmente (IsCustom) -->
+                <Button HorizontalAlignment="Right" VerticalAlignment="Top"
+                        Width="28" Height="28" Padding="0" Margin="4"
+                        CornerRadius="14"
+                        Visibility="{x:Bind IsCustom, Converter={StaticResource BoolToVisibilityConverter}}"
+                        Click="RemoveProcessButton_Click"
+                        ToolTipService.ToolTip="Remover da lista">
+                    <FontIcon Glyph="&#xE711;" FontSize="12"/>
+                </Button>
+            </Grid>
         </DataTemplate>
 
         <!-- Template para o Botão Master -->
@@ -86,10 +106,14 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="Fechar Processos" FontWeight="Bold" FontSize="18" VerticalAlignment="Center"/>
-                            <Button Grid.Column="1" 
-                                    Content="Reiniciar Pool" 
-                                    Click="ReiniciarPoolButton_Click"
-                                    ToolTipService.ToolTip="Reinicia o Pool do IIS padrão configurado"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                                <Button Content="Adicionar Processo"
+                                        Click="AdicionarProcessoButton_Click"
+                                        ToolTipService.ToolTip="Escolher um processo em execução pra adicionar à lista"/>
+                                <Button Content="Reiniciar Pool"
+                                        Click="ReiniciarPoolButton_Click"
+                                        ToolTipService.ToolTip="Reinicia o Pool do IIS padrão configurado"/>
+                            </StackPanel>
                         </Grid>
                         
                         <!-- Lista Unificada de Botões -->
@@ -251,5 +275,42 @@
 
             </StackPanel>
         </ScrollViewer>
+
+        <ContentDialog x:Name="AdicionarProcessoDialog"
+                       Title="Adicionar Processo"
+                       CloseButtonText="Cancelar"
+                       DefaultButton="Close">
+            <StackPanel Spacing="12" MinWidth="420" MaxHeight="480">
+                <TextBox x:Name="TxtBuscaProcesso"
+                         PlaceholderText="Buscar processo..."
+                         TextChanged="TxtBuscaProcesso_TextChanged"/>
+
+                <ProgressRing x:Name="LoadingProcessosDisponiveis" IsActive="False" HorizontalAlignment="Center"/>
+
+                <ListView x:Name="ListProcessosDisponiveis"
+                          SelectionMode="Single"
+                          SelectionChanged="ListProcessosDisponiveis_SelectionChanged"
+                          MaxHeight="360">
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="models:ProcessoDisponivel">
+                            <Grid Padding="4,6" ColumnSpacing="8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="{x:Bind Nome}" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{x:Bind CaminhoExecutavel}"
+                                               FontSize="11" Foreground="Gray"
+                                               TextTrimming="CharacterEllipsis"
+                                               Visibility="{x:Bind CaminhoExecutavel, Converter={StaticResource NullToVisibilityConverter}}"/>
+                                </StackPanel>
+                                <TextBlock Grid.Column="1" Text="{x:Bind Quantidade}" FontSize="11" Foreground="Gray" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </StackPanel>
+        </ContentDialog>
     </Grid>
 </Page>
