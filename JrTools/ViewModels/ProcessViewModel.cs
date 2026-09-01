@@ -16,6 +16,7 @@ namespace JrTools.ViewModels
             set { _nameDisplay = value; OnPropertyChanged(); }
         }
         public bool DefaultEnabled { get; }
+        public bool IsCustom { get; }
 
         public int Count
         {
@@ -29,11 +30,16 @@ namespace JrTools.ViewModels
             set { _isEnabled = value; OnPropertyChanged(); }
         }
 
-        public ProcessViewModel(string name, bool enabledByDefault)
+        public ProcessViewModel(string name, bool enabledByDefault) : this(name, enabledByDefault, isCustom: false)
+        {
+        }
+
+        public ProcessViewModel(string name, bool enabledByDefault, bool isCustom)
         {
             Name = name;
             DefaultEnabled = enabledByDefault;
             IsEnabled = DefaultEnabled;
+            IsCustom = isCustom;
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

@@ -2,6 +2,7 @@ using JrTools.Models;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Management;
 using System.Threading;
@@ -149,6 +150,75 @@ namespace JrTools.Services
             catch
             {
                 return Array.Empty<Process>();
+            }
+        }
+
+        /// <summary>
+        /// Lista todos os processos distintos rodando na máquina agora (agrupados por nome,
+        /// já que o app monitora/mata por nome), pro modal "Adicionar Processo". Exclui o
+        /// próprio processo do JrTools (evita a pessoa se auto-fechar sem querer). Faz um
+        /// snapshot pesado (Process.GetProcesses() + acesso a MainModule por grupo) — sempre
+        /// chamar via Task.Run, nunca direto na UI thread.
+        /// </summary>
+        public List<ProcessoDisponivel> ListarProcessosDisponiveis()
+        {
+            var currentPid = Environment.ProcessId;
+            var todos = Process.GetProcesses();
+            try
+            {
+                return todos
+                    .Where(p => p.Id != currentPid)
+                    .GroupBy(p => p.ProcessName, StringComparer.OrdinalIgnoreCase)
+                    .Select(g =>
+                    {
+                        var caminho = ObterCaminhoExecutavelSeguro(g.First());
+                        return new ProcessoDisponivel
+                        {
+                            Nome = g.Key,
+                            Quantidade = g.Count(),
+                            CaminhoExecutavel = caminho,
+                            IconePng = ExtrairIconePng(caminho)
+                        };
+                    })
+                    .OrderBy(p => p.Nome, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+            }
+            finally
+            {
+                // Process.GetProcesses() aloca um handle nativo por processo do sistema
+                // inteiro (centenas) — sem isso, cada abertura do modal vaza handles.
+                foreach (var p in todos) p.Dispose();
+            }
+        }
+
+        private static string? ObterCaminhoExecutavelSeguro(Process p)
+        {
+            try { return p.MainModule?.FileName; }
+            catch { return null; } // acesso negado é esperado pra processos de sistema/outro usuário
+        }
+
+        /// <summary>
+        /// Extrai o ícone associado ao executável (o mesmo que aparece no Explorer/Gerenciador
+        /// de Tarefas), codificado como PNG. Retorna bytes puros (não um tipo de imagem do
+        /// WinUI) porque este método roda numa thread de background — BitmapImage só pode ser
+        /// criado/decodificado na UI thread.
+        /// </summary>
+        private static byte[]? ExtrairIconePng(string? caminhoExecutavel)
+        {
+            if (string.IsNullOrWhiteSpace(caminhoExecutavel)) return null;
+            try
+            {
+                using var icone = System.Drawing.Icon.ExtractAssociatedIcon(caminhoExecutavel);
+                if (icone == null) return null;
+
+                using var bitmap = icone.ToBitmap();
+                using var ms = new MemoryStream();
+                bitmap.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+                return ms.ToArray();
+            }
+            catch
+            {
+                return null; // sem permissão, arquivo protegido, formato inesperado, etc.
             }
         }
 
