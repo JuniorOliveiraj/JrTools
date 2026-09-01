@@ -17,6 +17,11 @@ namespace JrTools
                 return;
             }
 
+            // Precisa rodar antes do AppNotificationManager.Default.Register() (chamado no
+            // construtor de App) — sem uma identidade AUMID registrada, notificações ficam
+            // com Setting = Unsupported e o app nem aparece em Configurações > Notificações.
+            Services.AppIdentityService.GarantirIdentidade();
+
             ComWrappersSupport.InitializeComWrappers();
             Application.Start((p) =>
             {
