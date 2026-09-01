@@ -88,13 +88,22 @@ namespace JrTools.Pages
                 _ = ViewModel.RemoveCustomProcessAsync(vm.Name);
         }
 
-        private async void AdicionarProcessoButton_Click(object sender, RoutedEventArgs e)
+        private void AdicionarProcessoButton_Click(object sender, RoutedEventArgs e)
         {
             AdicionarProcessoDialog.XamlRoot = XamlRoot;
             TxtBuscaProcesso.Text = string.Empty;
             LoadingProcessosDisponiveis.IsActive = true;
             ListProcessosDisponiveis.ItemsSource = null;
 
+            // Mostra o modal já, em estado de carregamento — a varredura de processos
+            // (que inclui extrair o ícone de cada um) pode levar alguns segundos, e sem
+            // isso o clique no botão ficava sem feedback nenhum até tudo terminar.
+            _ = AdicionarProcessoDialog.ShowAsync();
+            _ = CarregarProcessosDisponiveisAsync();
+        }
+
+        private async Task CarregarProcessosDisponiveisAsync()
+        {
             try
             {
                 var todos = await ViewModel.GetProcessosDisponiveisAsync();
@@ -118,8 +127,6 @@ namespace JrTools.Pages
             {
                 LoadingProcessosDisponiveis.IsActive = false;
             }
-
-            await AdicionarProcessoDialog.ShowAsync();
         }
 
         private static async Task<BitmapImage?> CarregarIconeAsync(byte[]? pngBytes)
