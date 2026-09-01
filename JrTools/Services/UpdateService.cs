@@ -143,10 +143,12 @@ namespace JrTools.Services
 
         /// <summary>
         /// Consulta a última release do GitHub e retorna os dados da atualização se houver
-        /// uma versão mais nova que a instalada. Só deve ser chamado uma vez, na abertura do
-        /// app — não é feito nenhum tipo de polling periódico aqui.
+        /// uma versão mais nova que a instalada. Por padrão só é chamado uma vez, na abertura
+        /// do app — não há polling periódico. <paramref name="forcar"/> ignora a trava de 1
+        /// minuto entre checagens, usada pelo botão de verificação manual ("Verificar
+        /// atualizações"), onde o usuário pediu explicitamente uma checagem agora.
         /// </summary>
-        public async Task<AtualizacaoDisponivelDto?> VerificarAsync()
+        public async Task<AtualizacaoDisponivelDto?> VerificarAsync(bool forcar = false)
         {
             // VersaoAtual() faz I/O síncrono (File.Exists/File.ReadAllText); Task.Run evita
             // bloquear a UI thread, já que este método é chamado logo na abertura do app.
@@ -157,7 +159,7 @@ namespace JrTools.Services
             if (runAtual < 0) return null;
 
             var cfg = await AtualizacaoHelper.LerAsync();
-            if (DateTime.UtcNow - cfg.UltimaVerificacaoUtc < IntervaloMinimoEntreChecagens)
+            if (!forcar && DateTime.UtcNow - cfg.UltimaVerificacaoUtc < IntervaloMinimoEntreChecagens)
                 return null;
 
             cfg.UltimaVerificacaoUtc = DateTime.UtcNow;

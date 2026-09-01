@@ -111,9 +111,9 @@
                            FontWeight="Bold"
                            Margin="0,0,0,12"/>
 
-                <!-- Card principal (mantido igual) -->
-                <Border Style="{StaticResource FancyCardStyle}">
-                    <Grid>
+                <!-- Card principal -->
+                <Border Style="{StaticResource FancyCardStyle}" Padding="24,20">
+                    <Grid ColumnSpacing="20">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
@@ -128,19 +128,18 @@
                         </Border>
 
                         <!-- Info -->
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="18,0,0,0">
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
                             <TextBlock Text="Central de RH" FontSize="18" FontWeight="SemiBold"/>
                             <TextBlock Text="Ferramentas e automações disponíveis"
                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                        FontSize="14"/>
                         </StackPanel>
 
-                        <!-- Serviços (mantido igual) -->
+                        <!-- Dev + verificação de atualização -->
                         <StackPanel Grid.Column="2"
                                     Orientation="Horizontal"
-                                    Spacing="20"
+                                    Spacing="24"
                                     VerticalAlignment="Center">
-                     
 
                             <StackPanel>
                                 <TextBlock Text="dev" FontWeight="SemiBold"/>
@@ -148,6 +147,16 @@
                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                            FontSize="12"/>
                             </StackPanel>
+
+                            <Button x:Name="BtnVerificarAtualizacao"
+                                    Click="BtnVerificarAtualizacao_Click"
+                                    VerticalAlignment="Center"
+                                    ToolTipService.ToolTip="Verificar se há uma atualização disponível">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <ProgressRing x:Name="LoadingVerificarAtualizacao" IsActive="False" Width="14" Height="14"/>
+                                    <FontIcon Glyph="&#xE72C;" FontSize="14"/>
+                                </StackPanel>
+                            </Button>
                         </StackPanel>
                     </Grid>
                 </Border>
