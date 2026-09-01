@@ -1,4 +1,5 @@
 ﻿using JrTools.Pages.Apps;
+using JrTools.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
@@ -72,6 +73,47 @@ namespace JrTools.Pages
                         Background = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["DividerStrokeColorDefaultBrush"]
                     });
                 }
+            }
+        }
+
+        private async void BtnVerificarAtualizacao_Click(object sender, RoutedEventArgs e)
+        {
+            LoadingVerificarAtualizacao.IsActive = true;
+            BtnVerificarAtualizacao.IsEnabled = false;
+            try
+            {
+                var atualizacao = await new UpdateService().VerificarAsync(forcar: true);
+
+                if (atualizacao != null)
+                {
+                    // Acende o banner na Home (mesmo fluxo do check automático na abertura),
+                    // além do aviso direto aqui já que o usuário está nesta página agora.
+                    if (App.MainWindow is JrTools.MainWindow mainWindow)
+                        mainWindow.ExibirAtualizacaoDisponivel(atualizacao);
+
+                    await new ContentDialog
+                    {
+                        Title = "Atualização disponível",
+                        Content = $"A build {atualizacao.Tag} já está disponível. Vá até a Home para instalar.",
+                        CloseButtonText = "OK",
+                        XamlRoot = this.XamlRoot
+                    }.ShowAsync();
+                }
+                else
+                {
+                    await new ContentDialog
+                    {
+                        Title = "Tudo atualizado",
+                        Content = "Você já está na versão mais recente do JrTools.",
+                        CloseButtonText = "OK",
+                        XamlRoot = this.XamlRoot
+                    }.ShowAsync();
+                }
+            }
+            finally
+            {
+                LoadingVerificarAtualizacao.IsActive = false;
+                BtnVerificarAtualizacao.IsEnabled = true;
             }
         }
 
