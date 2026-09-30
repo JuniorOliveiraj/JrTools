@@ -316,9 +316,8 @@ namespace JrTools.Pages
 
         private void AtualizarStatusDll()
         {
-            var dllPath = System.IO.Path.Combine(
-                _config?.DiretorioBinarios ?? string.Empty,
-                "delphi", "Benner.Tecnologia.BServer.Clients.dll");
+            var dllPath = BServerConnectionService.ResolverCaminhoDll(_config?.DiretorioBinarios ?? string.Empty)
+                ?? string.Empty;
             var existe = System.IO.File.Exists(dllPath);
 
             BServerDllInfoBar.Severity = existe ? InfoBarSeverity.Success : InfoBarSeverity.Warning;
