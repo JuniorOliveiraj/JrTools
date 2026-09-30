@@ -16,7 +16,9 @@ namespace JrTools.Pages.Apps
     {
         private const int MAX_LOG = 15000;
         private const string PASTA_BINARIOS_TEMP = @"D:\Benner\bin\delphi";
-        private const string BASE_FONTES         = @"D:\Benner\fontes\rh";
+        // Usado só como fallback quando DiretorioEspecificos não está configurado ou não existe —
+        // mesmo padrão já usado em InstalarArtefatosPage/EspecificosPage/BuildarProjeto.
+        private const string BASE_FONTES_FALLBACK = @"D:\Benner\fontes\rh";
         private const string WES_SUBPATH         = @"WES\WebApp";
         private const string WES_BIN_SUBPATH     = @"WES\WebApp\Bin\wes.exe";
         private const string WES_CONFIG_SUBPATH  = @"WES\WebApp\web.config";
@@ -86,10 +88,18 @@ namespace JrTools.Pages.Apps
 
         // ── Projeto WES ──────────────────────────────────────────────────────
 
+        private string ResolverDiretorioFontes()
+        {
+            var diretorio = _cfg?.DiretorioEspecificos;
+            return !string.IsNullOrWhiteSpace(diretorio) && Directory.Exists(diretorio)
+                ? diretorio
+                : BASE_FONTES_FALLBACK;
+        }
+
         private Task CarregarProjetosWesAsync()
             => Task.Run(() =>
             {
-                var projetos = Folders.ListarPastas(BASE_FONTES);
+                var projetos = Folders.ListarPastas(ResolverDiretorioFontes());
                 DispatcherQueue.TryEnqueue(() =>
                 {
                     CmbProjetoWes.ItemsSource       = projetos;
@@ -520,7 +530,7 @@ namespace JrTools.Pages.Apps
         private Task CarregarProjetosIisAsync()
             => Task.Run(() =>
             {
-                var projetos = Folders.ListarPastas(BASE_FONTES);
+                var projetos = Folders.ListarPastas(ResolverDiretorioFontes());
                 DispatcherQueue.TryEnqueue(() =>
                 {
                     CmbProjeto.ItemsSource       = projetos;
