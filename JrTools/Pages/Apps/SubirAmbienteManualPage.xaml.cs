@@ -19,9 +19,6 @@ namespace JrTools.Pages.Apps
         // Usado só como fallback quando DiretorioEspecificos não está configurado ou não existe —
         // mesmo padrão já usado em InstalarArtefatosPage/EspecificosPage/BuildarProjeto.
         private const string BASE_FONTES_FALLBACK = @"D:\Benner\fontes\rh";
-        private const string WES_SUBPATH         = @"WES\WebApp";
-        private const string WES_BIN_SUBPATH     = @"WES\WebApp\Bin\wes.exe";
-        private const string WES_CONFIG_SUBPATH  = @"WES\WebApp\web.config";
 
         private ConfiguracaoRelatoriosRh _cfgRh;
         private ConfiguracoesdataObject  _cfg;
@@ -115,9 +112,25 @@ namespace JrTools.Pages.Apps
         private void CmbProjetoWes_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (CmbProjetoWes.SelectedItem is not PastaInformacoesDto projeto) return;
-            _wesExePath    = Path.Combine(projeto.Caminho, WES_BIN_SUBPATH);
-            _webConfigPath = Path.Combine(projeto.Caminho, WES_CONFIG_SUBPATH);
+            var webAppPath = ResolverPastaWebApp(projeto.Caminho);
+            _wesExePath    = Path.Combine(webAppPath, "Bin", "wes.exe");
+            _webConfigPath = Path.Combine(webAppPath, "web.config");
             TxtWesExePath.Text = _wesExePath;
+        }
+
+        /// <summary>
+        /// Acha a pasta "WebApp" dentro do projeto selecionado. A convenção "padrão" Benner tem
+        /// uma camada WES\WebApp (ex.: D:\Benner\fontes\rh\prod\WES\WebApp\Bin\wes.exe), mas nem
+        /// todo repositório segue esse layout — alguns têm WebApp direto na raiz do projeto, sem
+        /// a pasta WES intermediária. Se a pasta WES existir, usa ela; senão vai direto pra WebApp.
+        /// </summary>
+        private static string ResolverPastaWebApp(string caminhoProjeto)
+        {
+            var pastaWes = Path.Combine(caminhoProjeto, "WES");
+            if (Directory.Exists(pastaWes))
+                return Path.Combine(pastaWes, "WebApp");
+
+            return Path.Combine(caminhoProjeto, "WebApp");
         }
 
         // ── Configurações WES ────────────────────────────────────────────────
@@ -583,7 +596,7 @@ namespace JrTools.Pages.Apps
         private void CmbProjeto_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (CmbProjeto.SelectedItem is not PastaInformacoesDto projeto) return;
-            TxtCaminhoIis.Text = Path.Combine(projeto.Caminho, WES_SUBPATH);
+            TxtCaminhoIis.Text = ResolverPastaWebApp(projeto.Caminho);
         }
 
         private async void BtnCriarApp_Click(object sender, RoutedEventArgs e)
