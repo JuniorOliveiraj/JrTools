@@ -23,10 +23,29 @@ namespace JrTools.Services
 
         public BServerConnectionService(string diretorioBinarios)
         {
-            _dllPath = string.IsNullOrWhiteSpace(diretorioBinarios)
-                ? string.Empty
-                : Path.Combine(diretorioBinarios, "delphi", DllName);
+            _dllPath = ResolverCaminhoDll(diretorioBinarios) ?? string.Empty;
             VerificarDll();
+        }
+
+        /// <summary>
+        /// Localiza a DLL do BServer a partir do diretório de binários configurado. Nem todo
+        /// ambiente organiza os binários numa subpasta "delphi" (esse layout vem do fluxo de
+        /// download/atualização de binários do próprio JrTools) — em vários setups o diretório
+        /// configurado já É a pasta que contém a DLL diretamente. Tenta os dois, nessa ordem,
+        /// e sempre retorna um caminho (mesmo que nenhum exista) para manter a mensagem de erro
+        /// útil, mostrando onde ela foi procurada.
+        /// </summary>
+        public static string? ResolverCaminhoDll(string diretorioBinarios)
+        {
+            if (string.IsNullOrWhiteSpace(diretorioBinarios)) return null;
+
+            var comSubpastaDelphi = Path.Combine(diretorioBinarios, "delphi", DllName);
+            if (File.Exists(comSubpastaDelphi)) return comSubpastaDelphi;
+
+            var direto = Path.Combine(diretorioBinarios, DllName);
+            if (File.Exists(direto)) return direto;
+
+            return comSubpastaDelphi; // nenhum existe — mantém o caminho "padrão" na mensagem de erro
         }
 
         private void VerificarDll()
