@@ -14,7 +14,9 @@ namespace JrTools.Pages
     public sealed partial class InstalarArtefatosPage : Page
     {
         private const int MAX_LOG = 15000;
-        private const string BASE_FONTES = @"D:\Benner\fontes\rh";
+        // Usado só como fallback quando DiretorioEspecificos não está configurado ou não existe —
+        // mesmo padrão já usado em EspecificosPage/BuildarProjeto/ViewPathExplorerViewModel.
+        private const string BASE_FONTES_FALLBACK = @"D:\Benner\fontes\rh";
         private const string WES_BIN_SUBPATH    = @"WES\WebApp\Bin\wes.exe";
         private const string WES_CONFIG_SUBPATH = @"WES\WebApp\web.config";
 
@@ -22,6 +24,7 @@ namespace JrTools.Pages
         private bool _carregandoConfig = false;
         private bool _carregandoSistema = false;
         private string _diretorioBinarios = string.Empty;
+        private string _diretorioProjetosWes = string.Empty;
 
         // Caminho derivado do projeto selecionado
         private string _wesExePath   = string.Empty;
@@ -64,6 +67,7 @@ namespace JrTools.Pages
             _cfgRh = await ConfiguracaoRelatoriosHelper.LerAsync();
             var cfg = await ConfigHelper.LerConfiguracoesAsync();
             _diretorioBinarios = cfg?.DiretorioBinarios ?? string.Empty;
+            _diretorioProjetosWes = cfg?.DiretorioEspecificos ?? string.Empty;
 
             TxtServidor.Text  = _cfgRh.Servidor;
             TxtUsuario.Text   = _cfgRh.Usuario;
@@ -84,7 +88,11 @@ namespace JrTools.Pages
 
         private async Task CarregarProjetosAsync()
         {
-            var projetos = await Task.Run(() => Folders.ListarPastas(BASE_FONTES));
+            var diretorio = !string.IsNullOrWhiteSpace(_diretorioProjetosWes) && Directory.Exists(_diretorioProjetosWes)
+                ? _diretorioProjetosWes
+                : BASE_FONTES_FALLBACK;
+
+            var projetos = await Task.Run(() => Folders.ListarPastas(diretorio));
             CmbProjetoWes.ItemsSource       = projetos;
             CmbProjetoWes.DisplayMemberPath = "Nome";
 
