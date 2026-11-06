@@ -18,7 +18,11 @@ namespace JrTools.Enums
         /// Retorna verdadeiro se o artefato precisa ser instalado ou atualizado (Novo ou Modificado).
         /// </summary>
         public static bool IsPendente(this StatusArtefato status) =>
-            status == StatusArtefato.Novo || status == StatusArtefato.Modificado;
+        status switch
+        {
+            StatusArtefato.Novo or StatusArtefato.Modificado or StatusArtefato.Excluido => true,
+            _ => false
+        };
 
         /// <summary>
         /// Retorna a descrição amigável para exibição na interface.
@@ -46,3 +50,4 @@ namespace JrTools.Enums
         }
     }
 }
+

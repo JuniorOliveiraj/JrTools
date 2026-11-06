@@ -27,7 +27,7 @@ namespace JrTools.Pages
         private string _diretorioProjetosWes = string.Empty;
 
         // Caminho derivado do projeto selecionado
-        private string _wesExePath   = string.Empty;
+        private string _wesExePath = string.Empty;
         private string _webConfigPath = string.Empty;
 
         private System.Text.StringBuilder _logBuffer = new System.Text.StringBuilder();
@@ -53,7 +53,7 @@ namespace JrTools.Pages
             if (_logBuffer.Length == 0) return;
             string newText;
             lock (_logBuffer) { newText = _logBuffer.ToString(); _logBuffer.Clear(); }
-            
+
             TxtLog.Text += newText;
             if (TxtLog.Text.Length > MAX_LOG) TxtLog.Text = TxtLog.Text[^MAX_LOG..];
             ScrollLog.ChangeView(null, ScrollLog.ScrollableHeight, null);
@@ -69,8 +69,8 @@ namespace JrTools.Pages
             _diretorioBinarios = cfg?.DiretorioBinarios ?? string.Empty;
             _diretorioProjetosWes = cfg?.DiretorioEspecificos ?? string.Empty;
 
-            TxtServidor.Text  = _cfgRh.Servidor;
-            TxtUsuario.Text   = _cfgRh.Usuario;
+            TxtServidor.Text = _cfgRh.Servidor;
+            TxtUsuario.Text = _cfgRh.Usuario;
             TxtSenha.Password = _cfgRh.Senha;
 
             if (!string.IsNullOrWhiteSpace(_cfgRh.Sistema))
@@ -93,7 +93,7 @@ namespace JrTools.Pages
                 : BASE_FONTES_FALLBACK;
 
             var projetos = await Task.Run(() => Folders.ListarPastas(diretorio));
-            CmbProjetoWes.ItemsSource       = projetos;
+            CmbProjetoWes.ItemsSource = projetos;
             CmbProjetoWes.DisplayMemberPath = "Nome";
 
             // Seleciona "prod" por padrão
@@ -106,8 +106,8 @@ namespace JrTools.Pages
         {
             if (CmbProjetoWes.SelectedItem is not PastaInformacoesDto projeto) return;
 
-            _webAppPath    = ResolverPastaWebApp(projeto.Caminho);
-            _wesExePath    = Path.Combine(_webAppPath, "Bin", "wes.exe");
+            _webAppPath = ResolverPastaWebApp(projeto.Caminho);
+            _wesExePath = Path.Combine(_webAppPath, "Bin", "wes.exe");
             _webConfigPath = Path.Combine(_webAppPath, "web.config");
             TxtWesExePath.Text = _wesExePath;
 
@@ -117,9 +117,9 @@ namespace JrTools.Pages
             }
             catch (Exception ex)
             {
-                InfoBarAviso.Message  = $"Erro ao carregar artefatos do projeto: {ex.Message}";
+                InfoBarAviso.Message = $"Erro ao carregar artefatos do projeto: {ex.Message}";
                 InfoBarAviso.Severity = InfoBarSeverity.Error;
-                InfoBarAviso.IsOpen   = true;
+                InfoBarAviso.IsOpen = true;
             }
         }
 
@@ -144,7 +144,7 @@ namespace JrTools.Pages
         {
             if (_carregandoConfig || _cfgRh == null) return;
             _cfgRh.Servidor = TxtServidor.Text;
-            _cfgRh.Usuario  = TxtUsuario.Text;
+            _cfgRh.Usuario = TxtUsuario.Text;
             await ConfiguracaoRelatoriosHelper.SalvarAsync(_cfgRh);
         }
 
@@ -230,7 +230,7 @@ namespace JrTools.Pages
                     {
                         int exitCode = await wes.ArtifactsInstallLayerAsync(layer, CriarProgresso());
                         if (exitCode == 0) break; // Sucesso, avança para a próxima camada
-                        
+
                         if (i < maxRetries)
                         {
                             AppendLog($"[AVISO] Camada '{layer}' falhou (ExitCode: {exitCode}). Retentando em 3 segundos ({i}/{maxRetries})...");
@@ -308,12 +308,12 @@ namespace JrTools.Pages
         {
             if (string.IsNullOrWhiteSpace(TxtServidor.Text) ||
                 CmbSistema.SelectedItem is not string s || string.IsNullOrWhiteSpace(s) ||
-                string.IsNullOrWhiteSpace(TxtUsuario.Text)  ||
+                string.IsNullOrWhiteSpace(TxtUsuario.Text) ||
                 string.IsNullOrWhiteSpace(TxtSenha.Password))
             {
-                InfoBarAviso.Message  = "Preencha todos os campos de configuração antes de executar.";
+                InfoBarAviso.Message = "Preencha todos os campos de configuração antes de executar.";
                 InfoBarAviso.Severity = InfoBarSeverity.Error;
-                InfoBarAviso.IsOpen   = true;
+                InfoBarAviso.IsOpen = true;
                 return false;
             }
             return true;
@@ -322,23 +322,23 @@ namespace JrTools.Pages
         private async Task ExecutarComando(ProgressRing loading, Button btn, Func<WesService, Task> acao)
         {
             InfoBarAviso.IsOpen = false;
-            loading.IsActive    = true;
-            btn.IsEnabled       = false;
+            loading.IsActive = true;
+            btn.IsEnabled = false;
             try
             {
                 await acao(CriarWesService());
             }
             catch (Exception ex)
             {
-                InfoBarAviso.Message  = ex.Message;
+                InfoBarAviso.Message = ex.Message;
                 InfoBarAviso.Severity = InfoBarSeverity.Error;
-                InfoBarAviso.IsOpen   = true;
+                InfoBarAviso.IsOpen = true;
                 AppendLog($"[ERRO] {ex.Message}");
             }
             finally
             {
                 loading.IsActive = false;
-                btn.IsEnabled    = true;
+                btn.IsEnabled = true;
             }
         }
 
@@ -367,7 +367,7 @@ namespace JrTools.Pages
                 CmbStatusArtefato.ItemsSource = new List<FiltroOpcao<FiltroStatusArtefato>>
                 {
                     new("Todos os Artefatos", FiltroStatusArtefato.Todos),
-                    new("Somente Pendentes (Novos/Modificados)", FiltroStatusArtefato.SomentePendentes),
+                    new("Somente Pendentes (Novos/Modificados/Excluídos)", FiltroStatusArtefato.SomentePendentes),
                     new("Apenas Novos (FileOnly)", FiltroStatusArtefato.ApenasNovos),
                     new("Apenas Modificados (Diferent)", FiltroStatusArtefato.ApenasModificados),
                     new("Apenas Instalados (Equal)", FiltroStatusArtefato.ApenasInstalados),
@@ -521,9 +521,9 @@ namespace JrTools.Pages
             }
             catch (Exception ex)
             {
-                InfoBarAviso.Message  = $"Erro ao carregar artefatos do projeto: {ex.Message}";
+                InfoBarAviso.Message = $"Erro ao carregar artefatos do projeto: {ex.Message}";
                 InfoBarAviso.Severity = InfoBarSeverity.Error;
-                InfoBarAviso.IsOpen   = true;
+                InfoBarAviso.IsOpen = true;
             }
         }
 

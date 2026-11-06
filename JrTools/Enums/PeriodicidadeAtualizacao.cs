@@ -11,3 +11,4 @@ namespace JrTools.Enums
         Desativado = 3
     }
 }
+

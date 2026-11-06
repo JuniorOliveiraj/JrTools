@@ -46,3 +46,4 @@ namespace JrTools.Enums
         }
     }
 }
+

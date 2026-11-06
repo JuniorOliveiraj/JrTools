@@ -9,10 +9,10 @@ namespace JrTools.Tests.Dto
         [Theory]
         [InlineData(StatusArtefato.Novo, true)]
         [InlineData(StatusArtefato.Modificado, true)]
+        [InlineData(StatusArtefato.Excluido, true)]
         [InlineData(StatusArtefato.Instalado, false)]
-        [InlineData(StatusArtefato.Excluido, false)]
         [InlineData(StatusArtefato.NaoVerificado, false)]
-        public void IsPendente_RetornaVerdadeiroApenasParaNovoOuModificado(StatusArtefato status, bool esperado)
+        public void IsPendente_RetornaVerdadeiroParaNovoModificadoOuExcluido(StatusArtefato status, bool esperado)
         {
             var dto = new ArtefatoDto { Status = status };
             Assert.Equal(esperado, dto.IsPendente);

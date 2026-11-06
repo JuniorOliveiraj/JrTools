@@ -13,3 +13,4 @@ namespace JrTools.Enums
         ApenasExcluidos = 5
     }
 }
+
