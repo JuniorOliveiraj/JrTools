@@ -1,4 +1,5 @@
 using JrTools.Dto;
+using JrTools.Enums;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -25,6 +26,7 @@ namespace JrTools.Services
             foreach (var subDir in subdirs)
             {
                 string guiaNome = Path.GetFileName(subDir); // ex: Menus, Pages, Views
+                var tipo = TipoArtefatoExtensions.ParseTipo(guiaNome);
                 var arquivos = Directory.GetFiles(subDir, "*.xml", SearchOption.TopDirectoryOnly);
 
                 foreach (var file in arquivos)
@@ -49,8 +51,8 @@ namespace JrTools.Services
                     {
                         Identificador = id,
                         NomeArquivo = fileName,
-                        Guia = guiaNome,
-                        Camada = camada,
+                        Tipo = tipo,
+                        Camada = CamadaArtefatoExtensions.ParseCamada(camada),
                         CaminhoCompleto = file
                     });
                 }

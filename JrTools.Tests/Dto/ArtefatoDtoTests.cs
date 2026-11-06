@@ -1,4 +1,5 @@
 using JrTools.Dto;
+using JrTools.Enums;
 using Xunit;
 
 namespace JrTools.Tests.Dto
@@ -52,19 +53,50 @@ namespace JrTools.Tests.Dto
             Assert.Equal(descricaoEsperada, status.ToDescricao());
         }
 
+        [Theory]
+        [InlineData("Pages", TipoArtefato.Page)]
+        [InlineData("Páginas", TipoArtefato.Page)]
+        [InlineData("Views", TipoArtefato.View)]
+        [InlineData("Visões", TipoArtefato.View)]
+        [InlineData("Menus", TipoArtefato.Menu)]
+        [InlineData("Tasks", TipoArtefato.Task)]
+        [InlineData("Roles", TipoArtefato.Role)]
+        [InlineData("Scripts", TipoArtefato.Script)]
+        [InlineData("Filters", TipoArtefato.Filter)]
+        [InlineData("DataSources", TipoArtefato.DataSource)]
+        public void ParseTipo_ConverteNomePastaParaTipoCorreto(string entrada, TipoArtefato esperado)
+        {
+            var resultado = TipoArtefatoExtensions.ParseTipo(entrada);
+            Assert.Equal(esperado, resultado);
+        }
+
+        [Theory]
+        [InlineData("10", CamadaArtefato.Camada10)]
+        [InlineData("20", CamadaArtefato.Camada20)]
+        [InlineData("30", CamadaArtefato.Camada30)]
+        [InlineData("40", CamadaArtefato.Camada40)]
+        [InlineData("50", CamadaArtefato.Camada50)]
+        [InlineData("99", CamadaArtefato.Desconhecida)]
+        public void ParseCamada_ConverteStringParaEnumCorreto(string entrada, CamadaArtefato esperado)
+        {
+            var resultado = CamadaArtefatoExtensions.ParseCamada(entrada);
+            Assert.Equal(esperado, resultado);
+        }
+
         [Fact]
         public void DescricaoCompleta_ContemDadosFormatados()
         {
             var dto = new ArtefatoDto
             {
                 Identificador = "MINHA_PAGINA",
-                Guia = "Pages",
-                Camada = "20",
+                Tipo = TipoArtefato.Page,
+                Camada = CamadaArtefato.Camada20,
                 Status = StatusArtefato.Novo
             };
 
             Assert.Equal("MINHA_PAGINA [Pages] [Novo] (Camada 20)", dto.DescricaoCompleta);
             Assert.Equal("Camada 20", dto.CamadaFormatada);
+            Assert.Equal("Pages", dto.Guia);
         }
     }
 }

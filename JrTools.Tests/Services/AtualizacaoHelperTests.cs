@@ -3,6 +3,7 @@ using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
 using JrTools.Dto;
+using JrTools.Enums;
 using JrTools.Services.Db;
 using Xunit;
 
@@ -46,7 +47,7 @@ namespace JrTools.Tests.Services
             Assert.Equal(DateTime.MinValue, result.UltimaVerificacaoUtc);
             Assert.Equal(string.Empty, result.UltimaTagModalExibida);
             Assert.True(result.VerificarAutomaticamente);
-            Assert.Equal("Diario", result.Periodicidade);
+            Assert.Equal(PeriodicidadeAtualizacao.Diario, result.Periodicidade);
         }
 
         [Fact]
@@ -61,7 +62,7 @@ namespace JrTools.Tests.Services
             Assert.NotNull(result);
             Assert.Equal(string.Empty, result.UltimaTagModalExibida);
             Assert.True(result.VerificarAutomaticamente);
-            Assert.Equal("Diario", result.Periodicidade);
+            Assert.Equal(PeriodicidadeAtualizacao.Diario, result.Periodicidade);
         }
 
         [Fact]
@@ -72,7 +73,7 @@ namespace JrTools.Tests.Services
                 UltimaVerificacaoUtc = new DateTime(2026, 1, 15, 10, 30, 0, DateTimeKind.Utc),
                 UltimaTagModalExibida = "build-42-abc1234",
                 VerificarAutomaticamente = false,
-                Periodicidade = "Semanal"
+                Periodicidade = PeriodicidadeAtualizacao.Semanal
             };
 
             await AtualizacaoHelper.SalvarAsync(esperado);

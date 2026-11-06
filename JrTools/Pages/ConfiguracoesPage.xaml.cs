@@ -666,7 +666,7 @@ namespace JrTools.Pages
                 ToggleVerificarAtualizacoes.IsOn = cfg.VerificarAutomaticamente;
                 ComboPeriodicidadeAtualizacao.IsEnabled = cfg.VerificarAutomaticamente;
 
-                var periodicidade = string.IsNullOrWhiteSpace(cfg.Periodicidade) ? "Diario" : cfg.Periodicidade;
+                var periodicidade = cfg.Periodicidade.ToString();
                 foreach (var item in ComboPeriodicidadeAtualizacao.Items.OfType<ComboBoxItem>())
                 {
                     if (string.Equals(item.Tag?.ToString(), periodicidade, StringComparison.OrdinalIgnoreCase))
@@ -714,8 +714,11 @@ namespace JrTools.Pages
             if (ComboPeriodicidadeAtualizacao.SelectedItem is ComboBoxItem item && item.Tag is string tag)
             {
                 var cfg = await AtualizacaoHelper.LerAsync();
-                cfg.Periodicidade = tag;
-                await AtualizacaoHelper.SalvarAsync(cfg);
+                if (Enum.TryParse<PeriodicidadeAtualizacao>(tag, true, out var periodicidade))
+                {
+                    cfg.Periodicidade = periodicidade;
+                    await AtualizacaoHelper.SalvarAsync(cfg);
+                }
             }
         }
 

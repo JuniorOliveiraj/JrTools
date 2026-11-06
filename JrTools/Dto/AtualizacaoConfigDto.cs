@@ -1,4 +1,6 @@
 using System;
+using System.Text.Json.Serialization;
+using JrTools.Enums;
 
 namespace JrTools.Dto
 {
@@ -7,6 +9,8 @@ namespace JrTools.Dto
         public DateTime UltimaVerificacaoUtc { get; set; } = DateTime.MinValue;
         public string UltimaTagModalExibida { get; set; } = string.Empty;
         public bool VerificarAutomaticamente { get; set; } = true;
-        public string Periodicidade { get; set; } = "Diario";
+
+        [JsonConverter(typeof(JsonStringEnumConverter))]
+        public PeriodicidadeAtualizacao Periodicidade { get; set; } = PeriodicidadeAtualizacao.Diario;
     }
 }

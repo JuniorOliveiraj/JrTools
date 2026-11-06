@@ -1,4 +1,5 @@
 using JrTools.Dto;
+using JrTools.Enums;
 using JrTools.Services.Db;
 using JrTools;
 using System;
@@ -149,15 +150,23 @@ namespace JrTools.Services
             }
         }
 
+        internal static TimeSpan ObterIntervaloPeriodicidade(PeriodicidadeAtualizacao periodicidade)
+        {
+            return periodicidade switch
+            {
+                PeriodicidadeAtualizacao.Semanal => TimeSpan.FromDays(7),
+                PeriodicidadeAtualizacao.Abertura => IntervaloMinimoEntreChecagens,
+                PeriodicidadeAtualizacao.Desativado => TimeSpan.MaxValue,
+                _ => TimeSpan.FromHours(24) // Diario padrão
+            };
+        }
+
         internal static TimeSpan ObterIntervaloPeriodicidade(string? periodicidade)
         {
-            return periodicidade?.ToLowerInvariant() switch
-            {
-                "semanal" => TimeSpan.FromDays(7),
-                "abertura" => IntervaloMinimoEntreChecagens,
-                "desativado" => TimeSpan.MaxValue,
-                _ => TimeSpan.FromHours(24) // "diario" padrão
-            };
+            if (Enum.TryParse<PeriodicidadeAtualizacao>(periodicidade, true, out var parsed))
+                return ObterIntervaloPeriodicidade(parsed);
+
+            return TimeSpan.FromHours(24);
         }
 
         /// <summary>
@@ -181,7 +190,7 @@ namespace JrTools.Services
 
             if (!forcar)
             {
-                if (!cfg.VerificarAutomaticamente || string.Equals(cfg.Periodicidade, "Desativado", StringComparison.OrdinalIgnoreCase))
+                if (!cfg.VerificarAutomaticamente || cfg.Periodicidade == PeriodicidadeAtualizacao.Desativado)
                     return null;
 
                 var intervalo = ObterIntervaloPeriodicidade(cfg.Periodicidade);

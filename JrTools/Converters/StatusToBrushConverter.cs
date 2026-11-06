@@ -2,7 +2,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Media;
 using System;
-using JrTools.Dto;
+using JrTools.Enums;
 
 namespace JrTools.Converters
 {

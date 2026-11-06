@@ -39,6 +39,15 @@ namespace JrTools.Tests.Services
         // ── ObterIntervaloPeriodicidade ──────────────────────────────────────────
 
         [Theory]
+        [InlineData(JrTools.Enums.PeriodicidadeAtualizacao.Semanal, 7)]
+        [InlineData(JrTools.Enums.PeriodicidadeAtualizacao.Diario, 1)]
+        public void ObterIntervaloPeriodicidade_ComEnum_RetornaIntervaloCorretoEmDias(JrTools.Enums.PeriodicidadeAtualizacao periodicidade, int diasEsperados)
+        {
+            var intervalo = UpdateService.ObterIntervaloPeriodicidade(periodicidade);
+            Assert.Equal(TimeSpan.FromDays(diasEsperados), intervalo);
+        }
+
+        [Theory]
         [InlineData("Semanal", 7)]
         [InlineData("semanal", 7)]
         [InlineData("Diario", 1)]
@@ -53,14 +62,14 @@ namespace JrTools.Tests.Services
         [Fact]
         public void ObterIntervaloPeriodicidade_Abertura_RetornaIntervaloMinimo()
         {
-            var intervalo = UpdateService.ObterIntervaloPeriodicidade("Abertura");
+            var intervalo = UpdateService.ObterIntervaloPeriodicidade(JrTools.Enums.PeriodicidadeAtualizacao.Abertura);
             Assert.Equal(TimeSpan.FromMinutes(1), intervalo);
         }
 
         [Fact]
         public void ObterIntervaloPeriodicidade_Desativado_RetornaTimeSpanMax()
         {
-            var intervalo = UpdateService.ObterIntervaloPeriodicidade("Desativado");
+            var intervalo = UpdateService.ObterIntervaloPeriodicidade(JrTools.Enums.PeriodicidadeAtualizacao.Desativado);
             Assert.Equal(TimeSpan.MaxValue, intervalo);
         }
 

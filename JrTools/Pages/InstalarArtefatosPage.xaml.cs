@@ -1,9 +1,11 @@
 using JrTools.Dto;
+using JrTools.Enums;
 using JrTools.Services;
 using JrTools.Services.Db;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -362,14 +364,14 @@ namespace JrTools.Pages
             // Popula ComboBox de Status se não populado
             if (CmbStatusArtefato.ItemsSource == null)
             {
-                CmbStatusArtefato.ItemsSource = new System.Collections.Generic.List<string>
+                CmbStatusArtefato.ItemsSource = new List<FiltroOpcao<FiltroStatusArtefato>>
                 {
-                    "Todos os Artefatos",
-                    "Somente Pendentes (Novos/Modificados)",
-                    "Apenas Novos (FileOnly)",
-                    "Apenas Modificados (Diferent)",
-                    "Apenas Instalados (Equal)",
-                    "Apenas Excluídos (DatabaseOnly)"
+                    new("Todos os Artefatos", FiltroStatusArtefato.Todos),
+                    new("Somente Pendentes (Novos/Modificados)", FiltroStatusArtefato.SomentePendentes),
+                    new("Apenas Novos (FileOnly)", FiltroStatusArtefato.ApenasNovos),
+                    new("Apenas Modificados (Diferent)", FiltroStatusArtefato.ApenasModificados),
+                    new("Apenas Instalados (Equal)", FiltroStatusArtefato.ApenasInstalados),
+                    new("Apenas Excluídos (DatabaseOnly)", FiltroStatusArtefato.ApenasExcluidos)
                 };
                 CmbStatusArtefato.SelectedIndex = 0;
             }
@@ -380,16 +382,18 @@ namespace JrTools.Pages
             {
                 _todosArtefatos = await Task.Run(() => _artefatoService.CarregarArtefatos(_webAppPath));
 
-                // Popula ComboBox de Guias
-                var guias = new System.Collections.Generic.List<string> { "Todas" };
-                guias.AddRange(_todosArtefatos.Select(a => a.Guia).Distinct().OrderBy(g => g));
-                CmbGuiaArtefato.ItemsSource = guias;
+                // Popula ComboBox de Guias com tipos fortemente tipados
+                var opcoesGuia = new List<FiltroOpcao<TipoArtefato?>> { new("Todas", null) };
+                opcoesGuia.AddRange(_todosArtefatos.Select(a => a.Tipo).Distinct().OrderBy(t => t.ToDescricao())
+                    .Select(t => new FiltroOpcao<TipoArtefato?>(t.ToDescricao(), t)));
+                CmbGuiaArtefato.ItemsSource = opcoesGuia;
                 CmbGuiaArtefato.SelectedIndex = 0;
 
-                // Popula ComboBox de Camadas
-                var camadas = new System.Collections.Generic.List<string> { "Todas" };
-                camadas.AddRange(_todosArtefatos.Select(a => a.Camada).Distinct().OrderBy(c => c));
-                CmbCamadaArtefato.ItemsSource = camadas;
+                // Popula ComboBox de Camadas com camadas fortemente tipadas
+                var opcoesCamada = new List<FiltroOpcao<CamadaArtefato?>> { new("Todas", null) };
+                opcoesCamada.AddRange(_todosArtefatos.Select(a => a.Camada).Distinct().OrderBy(c => (int)c)
+                    .Select(c => new FiltroOpcao<CamadaArtefato?>(c.ToDescricao(), c)));
+                CmbCamadaArtefato.ItemsSource = opcoesCamada;
                 CmbCamadaArtefato.SelectedIndex = 0;
 
                 FiltrarArtefatos();
@@ -469,29 +473,32 @@ namespace JrTools.Pages
         {
             if (_todosArtefatos == null) return;
 
-            string statusSel = CmbStatusArtefato.SelectedItem as string ?? "Todos os Artefatos";
-            string guiaSel = CmbGuiaArtefato.SelectedItem as string ?? "Todas";
-            string camadaSel = CmbCamadaArtefato.SelectedItem as string ?? "Todas";
             string busca = TxtBuscaArtefato.Text?.Trim() ?? string.Empty;
 
             var filtrados = _todosArtefatos.AsEnumerable();
 
-            if (statusSel.StartsWith("Somente Pendentes"))
-                filtrados = filtrados.Where(a => a.IsPendente);
-            else if (statusSel.StartsWith("Apenas Novos"))
-                filtrados = filtrados.Where(a => a.Status == StatusArtefato.Novo);
-            else if (statusSel.StartsWith("Apenas Modificados"))
-                filtrados = filtrados.Where(a => a.Status == StatusArtefato.Modificado);
-            else if (statusSel.StartsWith("Apenas Instalados"))
-                filtrados = filtrados.Where(a => a.Status == StatusArtefato.Instalado);
-            else if (statusSel.StartsWith("Apenas Excluídos"))
-                filtrados = filtrados.Where(a => a.Status == StatusArtefato.Excluido);
+            if (CmbStatusArtefato.SelectedItem is FiltroOpcao<FiltroStatusArtefato> optStatus)
+            {
+                filtrados = optStatus.Valor switch
+                {
+                    FiltroStatusArtefato.SomentePendentes => filtrados.Where(a => a.IsPendente),
+                    FiltroStatusArtefato.ApenasNovos => filtrados.Where(a => a.Status == StatusArtefato.Novo),
+                    FiltroStatusArtefato.ApenasModificados => filtrados.Where(a => a.Status == StatusArtefato.Modificado),
+                    FiltroStatusArtefato.ApenasInstalados => filtrados.Where(a => a.Status == StatusArtefato.Instalado),
+                    FiltroStatusArtefato.ApenasExcluidos => filtrados.Where(a => a.Status == StatusArtefato.Excluido),
+                    _ => filtrados
+                };
+            }
 
-            if (guiaSel != "Todas")
-                filtrados = filtrados.Where(a => a.Guia.Equals(guiaSel, StringComparison.OrdinalIgnoreCase));
+            if (CmbGuiaArtefato.SelectedItem is FiltroOpcao<TipoArtefato?> optGuia && optGuia.Valor.HasValue)
+            {
+                filtrados = filtrados.Where(a => a.Tipo == optGuia.Valor.Value);
+            }
 
-            if (camadaSel != "Todas")
-                filtrados = filtrados.Where(a => a.Camada.Equals(camadaSel, StringComparison.OrdinalIgnoreCase));
+            if (CmbCamadaArtefato.SelectedItem is FiltroOpcao<CamadaArtefato?> optCamada && optCamada.Valor.HasValue)
+            {
+                filtrados = filtrados.Where(a => a.Camada == optCamada.Valor.Value);
+            }
 
             if (!string.IsNullOrWhiteSpace(busca))
                 filtrados = filtrados.Where(a => a.Identificador.Contains(busca, StringComparison.OrdinalIgnoreCase) ||
@@ -618,5 +625,22 @@ namespace JrTools.Pages
                 await wes.ArtifactsInstallSelectiveAsync(_webAppPath, arquivosRelativos, CriarProgresso());
             });
         }
+    }
+
+    /// <summary>
+    /// Item fortemente tipado para ComboBoxes de filtro.
+    /// </summary>
+    public class FiltroOpcao<T>
+    {
+        public string Rotulo { get; }
+        public T Valor { get; }
+
+        public FiltroOpcao(string rotulo, T valor)
+        {
+            Rotulo = rotulo;
+            Valor = valor;
+        }
+
+        public override string ToString() => Rotulo;
     }
 }
