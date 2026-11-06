@@ -16,6 +16,7 @@ namespace JrTools
         private Window? _window;
         public static Window MainWindow { get; private set; }
         private DispatcherQueueTimer? _notificationTimer;
+        private DispatcherQueueTimer? _updateNotificationTimer;
 
         /// <summary>
         /// Initializes the singleton application object.
@@ -84,9 +85,9 @@ namespace JrTools
             _window.Activate();
 
             StartNotificationTimer();
+            StartUpdateTimer();
 
-            // Checa atualização uma única vez, na abertura do app — nenhuma outra ação
-            // dentro da sessão dispara uma nova checagem.
+            // Checa atualização na abertura do app de acordo com a periodicidade configurada
             _ = VerificarAtualizacaoNaAberturaAsync();
         }
 
@@ -105,6 +106,39 @@ namespace JrTools
             catch (Exception ex)
             {
                 LogCrash(ex, "VerificarAtualizacaoNaAberturaAsync");
+            }
+        }
+
+        private void StartUpdateTimer()
+        {
+            // Cria um timer periódico para verificar novas releases em background enquanto o app estiver aberto
+            _updateNotificationTimer = DispatcherQueue.GetForCurrentThread().CreateTimer();
+            _updateNotificationTimer.Interval = TimeSpan.FromMinutes(30);
+            _updateNotificationTimer.Tick += async (s, e) =>
+            {
+                await VerificarAtualizacaoPeriodicaAsync();
+            };
+            _updateNotificationTimer.Start();
+        }
+
+        private async Task VerificarAtualizacaoPeriodicaAsync()
+        {
+            try
+            {
+                var atualizacao = await new UpdateService().VerificarAsync(forcar: false);
+                if (atualizacao != null && _window is JrTools.MainWindow mainWindow)
+                {
+                    NotificationService.Instance.ShowNotification(
+                        "Atualização do JrTools disponível",
+                        $"A versão {atualizacao.Tag} está disponível para atualização. Abra o aplicativo para atualizar agora."
+                    );
+
+                    mainWindow.DispatcherQueue.TryEnqueue(() => mainWindow.ExibirAtualizacaoDisponivel(atualizacao));
+                }
+            }
+            catch (Exception ex)
+            {
+                LogCrash(ex, "VerificarAtualizacaoPeriodicaAsync");
             }
         }
 

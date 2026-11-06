@@ -37,6 +37,7 @@ namespace JrTools.Pages
             await CarregarDadosPessoais();
             CarregarMsBuildVersions();
             await CarregarIisPools();
+            await CarregarConfiguracoesAtualizacao();
         }
 
         #region Parametrizações
@@ -647,6 +648,122 @@ namespace JrTools.Pages
                 SenhaSiscon.Visibility = Visibility.Visible;
                 SenhaSiscon.Password = _dadosPessoais.SenhaSiscon ?? "";
                 SenhaSisconVisible.Text = new string('*', SenhaSiscon.Password.Length);
+            }
+        }
+
+        #endregion
+
+        #region Atualizações
+
+        private bool _atualizacaoCarregando = false;
+
+        private async System.Threading.Tasks.Task CarregarConfiguracoesAtualizacao()
+        {
+            _atualizacaoCarregando = true;
+            try
+            {
+                var cfg = await AtualizacaoHelper.LerAsync();
+                ToggleVerificarAtualizacoes.IsOn = cfg.VerificarAutomaticamente;
+                ComboPeriodicidadeAtualizacao.IsEnabled = cfg.VerificarAutomaticamente;
+
+                var periodicidade = string.IsNullOrWhiteSpace(cfg.Periodicidade) ? "Diario" : cfg.Periodicidade;
+                foreach (var item in ComboPeriodicidadeAtualizacao.Items.OfType<ComboBoxItem>())
+                {
+                    if (string.Equals(item.Tag?.ToString(), periodicidade, StringComparison.OrdinalIgnoreCase))
+                    {
+                        ComboPeriodicidadeAtualizacao.SelectedItem = item;
+                        break;
+                    }
+                }
+                if (ComboPeriodicidadeAtualizacao.SelectedItem == null && ComboPeriodicidadeAtualizacao.Items.Count > 1)
+                {
+                    ComboPeriodicidadeAtualizacao.SelectedIndex = 1; // Diario
+                }
+
+                var versao = UpdateService.VersaoAtual();
+                TxtVersaoAtualInfo.Text = string.IsNullOrEmpty(versao)
+                    ? "Versão instalada: Ambiente de Desenvolvimento (sem version.txt)"
+                    : $"Versão instalada: {versao}";
+
+                TxtUltimaVerificacaoInfo.Text = cfg.UltimaVerificacaoUtc == DateTime.MinValue
+                    ? "Última verificação: Nunca"
+                    : $"Última verificação: {cfg.UltimaVerificacaoUtc.ToLocalTime():dd/MM/yyyy HH:mm}";
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Erro ao carregar configurações de atualização: {ex.Message}");
+            }
+            finally
+            {
+                _atualizacaoCarregando = false;
+            }
+        }
+
+        private async void ToggleVerificarAtualizacoes_Toggled(object sender, RoutedEventArgs e)
+        {
+            if (_atualizacaoCarregando) return;
+            ComboPeriodicidadeAtualizacao.IsEnabled = ToggleVerificarAtualizacoes.IsOn;
+            var cfg = await AtualizacaoHelper.LerAsync();
+            cfg.VerificarAutomaticamente = ToggleVerificarAtualizacoes.IsOn;
+            await AtualizacaoHelper.SalvarAsync(cfg);
+        }
+
+        private async void ComboPeriodicidadeAtualizacao_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_atualizacaoCarregando) return;
+            if (ComboPeriodicidadeAtualizacao.SelectedItem is ComboBoxItem item && item.Tag is string tag)
+            {
+                var cfg = await AtualizacaoHelper.LerAsync();
+                cfg.Periodicidade = tag;
+                await AtualizacaoHelper.SalvarAsync(cfg);
+            }
+        }
+
+        private async void BtnVerificarAtualizacoesAgora_Click(object sender, RoutedEventArgs e)
+        {
+            BtnVerificarAtualizacoesAgora.IsEnabled = false;
+            InfoBarAtualizacaoStatus.IsOpen = false;
+
+            try
+            {
+                var updateService = new UpdateService();
+                var atualizacao = await updateService.VerificarAsync(forcar: true);
+
+                TxtUltimaVerificacaoInfo.Text = $"Última verificação: {DateTime.Now:dd/MM/yyyy HH:mm}";
+
+                if (atualizacao != null)
+                {
+                    InfoBarAtualizacaoStatus.Severity = InfoBarSeverity.Success;
+                    InfoBarAtualizacaoStatus.Title = "Nova versão disponível!";
+                    InfoBarAtualizacaoStatus.Message = $"A versão {atualizacao.Tag} foi encontrada.";
+                    InfoBarAtualizacaoStatus.IsOpen = true;
+
+                    if (App.MainWindow is MainWindow mw)
+                    {
+                        mw.ExibirAtualizacaoDisponivel(atualizacao);
+                    }
+                }
+                else
+                {
+                    var versao = UpdateService.VersaoAtual();
+                    InfoBarAtualizacaoStatus.Severity = InfoBarSeverity.Informational;
+                    InfoBarAtualizacaoStatus.Title = "Você já está atualizado";
+                    InfoBarAtualizacaoStatus.Message = string.IsNullOrEmpty(versao)
+                        ? "Executando em modo de desenvolvimento. Nenhuma atualização aplicável."
+                        : $"A versão instalada ({versao}) é a mais recente disponível.";
+                    InfoBarAtualizacaoStatus.IsOpen = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                InfoBarAtualizacaoStatus.Severity = InfoBarSeverity.Error;
+                InfoBarAtualizacaoStatus.Title = "Erro ao verificar atualizações";
+                InfoBarAtualizacaoStatus.Message = ex.Message;
+                InfoBarAtualizacaoStatus.IsOpen = true;
+            }
+            finally
+            {
+                BtnVerificarAtualizacoesAgora.IsEnabled = true;
             }
         }
 

@@ -36,6 +36,34 @@ namespace JrTools.Tests.Services
             Assert.Equal(-1, UpdateService.ExtrairRunNumber(tag));
         }
 
+        // ── ObterIntervaloPeriodicidade ──────────────────────────────────────────
+
+        [Theory]
+        [InlineData("Semanal", 7)]
+        [InlineData("semanal", 7)]
+        [InlineData("Diario", 1)]
+        [InlineData("diario", 1)]
+        [InlineData("desconhecido", 1)]
+        public void ObterIntervaloPeriodicidade_RetornaIntervaloCorretoEmDias(string periodicidade, int diasEsperados)
+        {
+            var intervalo = UpdateService.ObterIntervaloPeriodicidade(periodicidade);
+            Assert.Equal(TimeSpan.FromDays(diasEsperados), intervalo);
+        }
+
+        [Fact]
+        public void ObterIntervaloPeriodicidade_Abertura_RetornaIntervaloMinimo()
+        {
+            var intervalo = UpdateService.ObterIntervaloPeriodicidade("Abertura");
+            Assert.Equal(TimeSpan.FromMinutes(1), intervalo);
+        }
+
+        [Fact]
+        public void ObterIntervaloPeriodicidade_Desativado_RetornaTimeSpanMax()
+        {
+            var intervalo = UpdateService.ObterIntervaloPeriodicidade("Desativado");
+            Assert.Equal(TimeSpan.MaxValue, intervalo);
+        }
+
         // ── VersaoAtual(baseDirectory) ───────────────────────────────────────────
 
         [Fact]

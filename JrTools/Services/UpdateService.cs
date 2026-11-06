@@ -149,17 +149,28 @@ namespace JrTools.Services
             }
         }
 
+        internal static TimeSpan ObterIntervaloPeriodicidade(string? periodicidade)
+        {
+            return periodicidade?.ToLowerInvariant() switch
+            {
+                "semanal" => TimeSpan.FromDays(7),
+                "abertura" => IntervaloMinimoEntreChecagens,
+                "desativado" => TimeSpan.MaxValue,
+                _ => TimeSpan.FromHours(24) // "diario" padrão
+            };
+        }
+
         /// <summary>
         /// Consulta a última release do GitHub e retorna os dados da atualização se houver
-        /// uma versão mais nova que a instalada. Por padrão só é chamado uma vez, na abertura
-        /// do app — não há polling periódico. <paramref name="forcar"/> ignora a trava de 1
-        /// minuto entre checagens, usada pelo botão de verificação manual ("Verificar
-        /// atualizações"), onde o usuário pediu explicitamente uma checagem agora.
+        /// uma versão mais nova que a instalada. <paramref name="forcar"/> ignora as configurações
+        /// de periodicidade e o intervalo mínimo, sendo usada na verificação manual do usuário.
+        /// Quando <paramref name="forcar"/> é falso, respeita as opções de verificação automática
+        /// e a frequência configurada (Abertura, Diário, Semanal ou Desativado).
         /// </summary>
         public async Task<AtualizacaoDisponivelDto?> VerificarAsync(bool forcar = false)
         {
             // VersaoAtual() faz I/O síncrono (File.Exists/File.ReadAllText); Task.Run evita
-            // bloquear a UI thread, já que este método é chamado logo na abertura do app.
+            // bloquear a UI thread, já que este método pode ser chamado na abertura ou em timers.
             var versaoAtual = await Task.Run(() => VersaoAtual());
             if (versaoAtual == null) return null;
 
@@ -167,8 +178,16 @@ namespace JrTools.Services
             if (runAtual < 0) return null;
 
             var cfg = await AtualizacaoHelper.LerAsync();
-            if (!forcar && DateTime.UtcNow - cfg.UltimaVerificacaoUtc < IntervaloMinimoEntreChecagens)
-                return null;
+
+            if (!forcar)
+            {
+                if (!cfg.VerificarAutomaticamente || string.Equals(cfg.Periodicidade, "Desativado", StringComparison.OrdinalIgnoreCase))
+                    return null;
+
+                var intervalo = ObterIntervaloPeriodicidade(cfg.Periodicidade);
+                if (DateTime.UtcNow - cfg.UltimaVerificacaoUtc < intervalo)
+                    return null;
+            }
 
             cfg.UltimaVerificacaoUtc = DateTime.UtcNow;
             await AtualizacaoHelper.SalvarAsync(cfg);

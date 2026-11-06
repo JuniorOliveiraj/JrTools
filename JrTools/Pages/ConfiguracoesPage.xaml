@@ -345,6 +345,48 @@
                     </Border>
                 </Expander.Content>
             </Expander>
+
+            <Expander Style="{StaticResource FullWidthExpanderStyle}" IsExpanded="True">
+                <Expander.Header>
+                    <TextBlock Text="Atualizações do JrTools" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                </Expander.Header>
+                <Expander.Content>
+                    <Border Style="{StaticResource CardStyle}" Margin="0,8,0,0">
+                        <StackPanel Spacing="16">
+                            <ToggleSwitch x:Name="ToggleVerificarAtualizacoes"
+                                          Header="Buscar atualizações automaticamente"
+                                          Toggled="ToggleVerificarAtualizacoes_Toggled"/>
+
+                            <ComboBox x:Name="ComboPeriodicidadeAtualizacao"
+                                      Header="Frequência de verificação"
+                                      HorizontalAlignment="Stretch"
+                                      SelectionChanged="ComboPeriodicidadeAtualizacao_SelectionChanged">
+                                <ComboBoxItem Content="A cada abertura do aplicativo" Tag="Abertura"/>
+                                <ComboBoxItem Content="Diariamente (a cada 24 horas)" Tag="Diario"/>
+                                <ComboBoxItem Content="Semanalmente (a cada 7 dias)" Tag="Semanal"/>
+                            </ComboBox>
+
+                            <StackPanel Spacing="4">
+                                <TextBlock x:Name="TxtVersaoAtualInfo"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           FontSize="12"/>
+                                <TextBlock x:Name="TxtUltimaVerificacaoInfo"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           FontSize="12"/>
+                            </StackPanel>
+
+                            <Button x:Name="BtnVerificarAtualizacoesAgora"
+                                    Content="Verificar atualizações agora"
+                                    Click="BtnVerificarAtualizacoesAgora_Click"
+                                    HorizontalAlignment="Left"/>
+
+                            <InfoBar x:Name="InfoBarAtualizacaoStatus"
+                                     IsOpen="False"
+                                     IsClosable="True"/>
+                        </StackPanel>
+                    </Border>
+                </Expander.Content>
+            </Expander>
         </StackPanel>
     </ScrollViewer>
 </Page>

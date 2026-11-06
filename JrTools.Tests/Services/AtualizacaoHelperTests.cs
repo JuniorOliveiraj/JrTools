@@ -45,6 +45,8 @@ namespace JrTools.Tests.Services
             Assert.NotNull(result);
             Assert.Equal(DateTime.MinValue, result.UltimaVerificacaoUtc);
             Assert.Equal(string.Empty, result.UltimaTagModalExibida);
+            Assert.True(result.VerificarAutomaticamente);
+            Assert.Equal("Diario", result.Periodicidade);
         }
 
         [Fact]
@@ -58,6 +60,8 @@ namespace JrTools.Tests.Services
 
             Assert.NotNull(result);
             Assert.Equal(string.Empty, result.UltimaTagModalExibida);
+            Assert.True(result.VerificarAutomaticamente);
+            Assert.Equal("Diario", result.Periodicidade);
         }
 
         [Fact]
@@ -66,7 +70,9 @@ namespace JrTools.Tests.Services
             var esperado = new AtualizacaoConfigDto
             {
                 UltimaVerificacaoUtc = new DateTime(2026, 1, 15, 10, 30, 0, DateTimeKind.Utc),
-                UltimaTagModalExibida = "build-42-abc1234"
+                UltimaTagModalExibida = "build-42-abc1234",
+                VerificarAutomaticamente = false,
+                Periodicidade = "Semanal"
             };
 
             await AtualizacaoHelper.SalvarAsync(esperado);
@@ -74,6 +80,8 @@ namespace JrTools.Tests.Services
 
             Assert.Equal(esperado.UltimaVerificacaoUtc, carregado.UltimaVerificacaoUtc);
             Assert.Equal(esperado.UltimaTagModalExibida, carregado.UltimaTagModalExibida);
+            Assert.Equal(esperado.VerificarAutomaticamente, carregado.VerificarAutomaticamente);
+            Assert.Equal(esperado.Periodicidade, carregado.Periodicidade);
         }
 
         [Fact]
