@@ -107,6 +107,12 @@ namespace BennerSmartInstaller.Services
                                 if (statusStr.Equals("FileOnly", StringComparison.OrdinalIgnoreCase)) typeFileOnly++;
                                 else if (statusStr.Equals("Diferent", StringComparison.OrdinalIgnoreCase) || statusStr.Equals("Different", StringComparison.OrdinalIgnoreCase)) typeDifferent++;
                                 else if (statusStr.Equals("DatabaseOnly", StringComparison.OrdinalIgnoreCase)) typeDbOnly++;
+
+                                object nameObj = rowType.GetProperty("FileName")?.GetValue(row) ?? rowType.GetProperty("Name")?.GetValue(row);
+                                if (nameObj != null)
+                                {
+                                    Console.WriteLine($"[COMPARE_ITEM] Name={nameObj}; Status={statusStr}");
+                                }
                             }
                         }
                     }

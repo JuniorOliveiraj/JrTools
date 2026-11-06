@@ -368,7 +368,8 @@ namespace JrTools.Pages
                     "Somente Pendentes (Novos/Modificados)",
                     "Apenas Novos (FileOnly)",
                     "Apenas Modificados (Diferent)",
-                    "Apenas Instalados (Equal)"
+                    "Apenas Instalados (Equal)",
+                    "Apenas Excluídos (DatabaseOnly)"
                 };
                 CmbStatusArtefato.SelectedIndex = 0;
             }
@@ -429,11 +430,11 @@ namespace JrTools.Pages
                         if (statusDict.TryGetValue(art.NomeArquivo, out string st) ||
                             statusDict.TryGetValue(art.Identificador, out st))
                         {
-                            art.Status = st;
+                            art.Status = StatusArtefatoExtensions.ParseStatus(st);
                         }
                         else
                         {
-                            art.Status = "Equal";
+                            art.Status = StatusArtefato.Instalado;
                         }
 
                         if (art.IsPendente) pendentesCount++;
@@ -478,11 +479,13 @@ namespace JrTools.Pages
             if (statusSel.StartsWith("Somente Pendentes"))
                 filtrados = filtrados.Where(a => a.IsPendente);
             else if (statusSel.StartsWith("Apenas Novos"))
-                filtrados = filtrados.Where(a => a.Status.Equals("FileOnly", StringComparison.OrdinalIgnoreCase) || a.Status.Equals("Novo", StringComparison.OrdinalIgnoreCase));
+                filtrados = filtrados.Where(a => a.Status == StatusArtefato.Novo);
             else if (statusSel.StartsWith("Apenas Modificados"))
-                filtrados = filtrados.Where(a => a.Status.Equals("Diferent", StringComparison.OrdinalIgnoreCase) || a.Status.Equals("Modificado", StringComparison.OrdinalIgnoreCase));
+                filtrados = filtrados.Where(a => a.Status == StatusArtefato.Modificado);
             else if (statusSel.StartsWith("Apenas Instalados"))
-                filtrados = filtrados.Where(a => a.Status.Equals("Equal", StringComparison.OrdinalIgnoreCase));
+                filtrados = filtrados.Where(a => a.Status == StatusArtefato.Instalado);
+            else if (statusSel.StartsWith("Apenas Excluídos"))
+                filtrados = filtrados.Where(a => a.Status == StatusArtefato.Excluido);
 
             if (guiaSel != "Todas")
                 filtrados = filtrados.Where(a => a.Guia.Equals(guiaSel, StringComparison.OrdinalIgnoreCase));

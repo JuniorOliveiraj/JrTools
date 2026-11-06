@@ -2,6 +2,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Media;
 using System;
+using JrTools.Dto;
 
 namespace JrTools.Converters
 {
@@ -9,12 +10,19 @@ namespace JrTools.Converters
     {
         public object Convert(object value, Type targetType, object parameter, string language)
         {
-            string status = value as string ?? string.Empty;
+            StatusArtefato status = value switch
+            {
+                StatusArtefato s => s,
+                string str => StatusArtefatoExtensions.ParseStatus(str),
+                _ => StatusArtefato.NaoVerificado
+            };
+
             string key = status switch
             {
-                var s when s.Equals("Equal", StringComparison.OrdinalIgnoreCase) => "SystemFillColorSuccessBrush",
-                var s when s.Equals("Diferent", StringComparison.OrdinalIgnoreCase) || s.Equals("Modificado", StringComparison.OrdinalIgnoreCase) => "SystemFillColorCautionBrush",
-                var s when s.Equals("FileOnly", StringComparison.OrdinalIgnoreCase) || s.Equals("Novo", StringComparison.OrdinalIgnoreCase) => "SystemFillColorAttentionBrush",
+                StatusArtefato.Instalado => "SystemFillColorSuccessBrush",
+                StatusArtefato.Modificado => "SystemFillColorCautionBrush",
+                StatusArtefato.Novo => "SystemFillColorAttentionBrush",
+                StatusArtefato.Excluido => "SystemFillColorCriticalBrush",
                 _ => "TextFillColorSecondaryBrush"
             };
 
