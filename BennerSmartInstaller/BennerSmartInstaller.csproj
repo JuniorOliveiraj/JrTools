@@ -9,6 +9,7 @@
     <RootNamespace>BennerSmartInstaller</RootNamespace>
     <AssemblyName>BennerSmartInstaller</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <RuntimeIdentifiers>win;win-x86;win-x64;win7-x86</RuntimeIdentifiers>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <OutputPath>bin\$(Configuration)\</OutputPath>
@@ -42,6 +43,18 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
+    <Compile Include="Cli\CommandLineArgs.cs" />
+    <Compile Include="Cli\CommandLineParser.cs" />
+    <Compile Include="Bootstrapping\AssemblyResolver.cs" />
+    <Compile Include="Bootstrapping\WebConfigLoader.cs" />
+    <Compile Include="Bootstrapping\MemoryOptimizer.cs" />
+    <Compile Include="Bootstrapping\BennerEnvironmentInitializer.cs" />
+    <Compile Include="DynamicProxy\DynamicTypeGenerator.cs" />
+    <Compile Include="Artifacts\ArtifactModelFactory.cs" />
+    <Compile Include="Services\ArtifactDependencyResolver.cs" />
+    <Compile Include="Services\ArtifactInstallerService.cs" />
+    <Compile Include="Services\ArtifactComparatorService.cs" />
+    <Compile Include="Services\InteractiveServerService.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

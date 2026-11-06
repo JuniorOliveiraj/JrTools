@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -29,47 +31,18 @@ namespace JrTools.Services
         public Task<int> PagesGenerateAsync(IProgress<string> progresso)
             => RunAsync("pages generate", progresso, "[WES PAGES GENERATE]");
 
-        public Task<int> ArtifactsInstallSelectiveAsync(string webAppPath, System.Collections.Generic.List<string> relativeFiles, IProgress<string> progresso)
+        public async Task<int> ArtifactsInstallSelectiveAsync(string webAppPath, List<string> relativeFiles, IProgress<string> progresso)
         {
-            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            
-            // Procura o executável mais recente compilado
-            string candidateLocal = System.IO.Path.Combine(baseDir, "BennerSmartInstaller.exe");
-            string candidateDebug = System.IO.Path.GetFullPath(System.IO.Path.Combine(baseDir, @"..\..\..\..\BennerSmartInstaller\bin\Debug\BennerSmartInstaller.exe"));
-            string binInstaller = System.IO.Path.Combine(webAppPath, "Bin", "BennerSmartInstaller.exe");
+            string installerExe = SmartInstallerDaemon.ResolverInstallerExe(webAppPath);
 
-            string sourceInstaller = null;
-            if (System.IO.File.Exists(candidateLocal))
+            if (File.Exists(installerExe))
             {
-                sourceInstaller = candidateLocal;
-            }
-            if (System.IO.File.Exists(candidateDebug) && (sourceInstaller == null || System.IO.File.GetLastWriteTimeUtc(candidateDebug) > System.IO.File.GetLastWriteTimeUtc(sourceInstaller)))
-            {
-                sourceInstaller = candidateDebug;
-            }
-
-            if (System.IO.File.Exists(sourceInstaller))
-            {
-                try
-                {
-                    if (!System.IO.File.Exists(binInstaller) || System.IO.File.GetLastWriteTimeUtc(sourceInstaller) > System.IO.File.GetLastWriteTimeUtc(binInstaller))
-                    {
-                        System.IO.File.Copy(sourceInstaller, binInstaller, true);
-                    }
-                }
-                catch { }
-            }
-
-            string installerExe = System.IO.File.Exists(binInstaller) ? binInstaller : sourceInstaller;
-
-            if (System.IO.File.Exists(installerExe))
-            {
-                string tempFile = null;
+                string? tempFile = null;
                 string artifactsArg;
                 if (relativeFiles.Count > 5 || string.Join(";", relativeFiles).Length > 1000)
                 {
-                    tempFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"smart_install_files_{Guid.NewGuid():N}.txt");
-                    System.IO.File.WriteAllLines(tempFile, relativeFiles);
+                    tempFile = Path.Combine(Path.GetTempPath(), $"smart_install_files_{Guid.NewGuid():N}.txt");
+                    await File.WriteAllLinesAsync(tempFile, relativeFiles);
                     artifactsArg = tempFile;
                 }
                 else
@@ -77,71 +50,50 @@ namespace JrTools.Services
                     artifactsArg = string.Join(";", relativeFiles);
                 }
 
-                string args = $"install -a \"{webAppPath}\" -f \"{artifactsArg}\"";
-                return Task.Run(async () =>
+                try
                 {
-                    try
+                    // Tenta executar via Worker Persistente (0ms boot, mantém conexão viva)
+                    int daemonExitCode = await SmartInstallerDaemon.ExecuteCommandAsync(webAppPath, $"INSTALL {artifactsArg}", progresso);
+                    if (daemonExitCode >= 0)
                     {
-                        return await RunProcessAsync(installerExe, args, progresso, "[SMART INSTALL SELETIVO]");
+                        return daemonExitCode;
                     }
-                    finally
+
+                    // Fallback para processo isolado
+                    progresso?.Report("[SMART INSTALL] Executando em processo isolado de fallback...");
+                    string args = $"install -a \"{webAppPath}\" -f \"{artifactsArg}\"";
+                    return await RunProcessAsync(installerExe, args, progresso, "[SMART INSTALL SELETIVO]");
+                }
+                finally
+                {
+                    if (!string.IsNullOrEmpty(tempFile) && File.Exists(tempFile))
                     {
-                        if (!string.IsNullOrEmpty(tempFile) && System.IO.File.Exists(tempFile))
-                        {
-                            try { System.IO.File.Delete(tempFile); } catch { }
-                        }
+                        try { File.Delete(tempFile); } catch { }
                     }
-                });
+                }
             }
 
             // Fallback para wes.exe nativo caso o utilitário externo não esteja presente
             progresso?.Report("[WES ARTIFACTS] BennerSmartInstaller.exe não localizado. Instalando artefatos da camada específico via wes.exe...");
-            return ArtifactsInstallLayerAsync("especifico", progresso);
+            return await ArtifactsInstallLayerAsync("especifico", progresso);
         }
 
-        public async Task<System.Collections.Generic.Dictionary<string, string>> ArtifactsCompareAsync(string webAppPath, IProgress<string> progresso = null)
+        public async Task<Dictionary<string, string>> ArtifactsCompareAsync(string webAppPath, IProgress<string>? progresso = null)
         {
-            var result = new System.Collections.Generic.Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            string installerExe = SmartInstallerDaemon.ResolverInstallerExe(webAppPath);
 
-            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            string candidateLocal = System.IO.Path.Combine(baseDir, "BennerSmartInstaller.exe");
-            string candidateDebug = System.IO.Path.GetFullPath(System.IO.Path.Combine(baseDir, @"..\..\..\..\BennerSmartInstaller\bin\Debug\BennerSmartInstaller.exe"));
-            string binInstaller = System.IO.Path.Combine(webAppPath, "Bin", "BennerSmartInstaller.exe");
+            if (!File.Exists(installerExe)) return result;
 
-            string sourceInstaller = null;
-            if (System.IO.File.Exists(candidateLocal)) sourceInstaller = candidateLocal;
-            if (System.IO.File.Exists(candidateDebug) && (sourceInstaller == null || System.IO.File.GetLastWriteTimeUtc(candidateDebug) > System.IO.File.GetLastWriteTimeUtc(sourceInstaller)))
+            void ParseCompareLine(string? line)
             {
-                sourceInstaller = candidateDebug;
-            }
-
-            if (System.IO.File.Exists(sourceInstaller))
-            {
-                try
-                {
-                    if (!System.IO.File.Exists(binInstaller) || System.IO.File.GetLastWriteTimeUtc(sourceInstaller) > System.IO.File.GetLastWriteTimeUtc(binInstaller))
-                    {
-                        System.IO.File.Copy(sourceInstaller, binInstaller, true);
-                    }
-                }
-                catch { }
-            }
-
-            string installerExe = System.IO.File.Exists(binInstaller) ? binInstaller : sourceInstaller;
-            if (!System.IO.File.Exists(installerExe)) return result;
-
-            string args = $"compare -a \"{webAppPath}\"";
-
-            var compareProgress = new Progress<string>(line =>
-            {
-                progresso?.Report(line);
                 if (line != null && line.Contains("[COMPARE_ITEM]"))
                 {
                     int idx = line.IndexOf("[COMPARE_ITEM]");
                     string itemPart = line.Substring(idx + "[COMPARE_ITEM]".Length).Trim();
                     var parts = itemPart.Split(';');
-                    string name = null;
-                    string status = null;
+                    string? name = null;
+                    string? status = null;
                     foreach (var part in parts)
                     {
                         var kv = part.Split('=');
@@ -157,11 +109,29 @@ namespace JrTools.Services
                         result[name] = status;
                     }
                 }
+            }
+
+            // 1. Tenta executar via Worker Persistente
+            int daemonExitCode = await SmartInstallerDaemon.ExecuteCommandAsync(webAppPath, "COMPARE", progresso, ParseCompareLine);
+            if (daemonExitCode >= 0)
+            {
+                return result;
+            }
+
+            // 2. Fallback para processo isolado
+            progresso?.Report("[SMART COMPARE] Executando comparação em processo isolado de fallback...");
+            string args = $"compare -a \"{webAppPath}\"";
+            var compareProgress = new Progress<string>(line =>
+            {
+                progresso?.Report(line);
+                ParseCompareLine(line);
             });
 
             await RunProcessAsync(installerExe, args, compareProgress, "[COMPARE ARTIFACTS]");
             return result;
         }
+
+        private static string ResolverInstallerExe(string webAppPath) => SmartInstallerDaemon.ResolverInstallerExe(webAppPath);
 
         private Task<int> RunProcessAsync(string exePath, string arguments, IProgress<string> progresso, string titulo)
         {
@@ -208,7 +178,7 @@ namespace JrTools.Services
             {
                 FileName = _wesExePath,
                 Arguments = arguments,
-                WorkingDirectory = System.IO.Path.GetDirectoryName(_wesExePath),
+                WorkingDirectory = Path.GetDirectoryName(_wesExePath),
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,

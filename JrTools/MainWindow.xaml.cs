@@ -39,6 +39,15 @@ namespace JrTools
             if (AppWindowTitleBar.IsCustomizationSupported())
                 appWindow.SetIcon(@"Assets\PERFIL.ico");
 
+            Closed += async (s, e) =>
+            {
+                try
+                {
+                    await Services.SmartInstallerDaemon.StopDaemonAsync();
+                }
+                catch { }
+            };
+
             ContentFrame.Navigated += ContentFrame_Navigated;
 
             NavigarPara("Home");
