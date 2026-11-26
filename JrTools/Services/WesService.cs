@@ -78,12 +78,16 @@ namespace JrTools.Services
             return await ArtifactsInstallLayerAsync("especifico", progresso);
         }
 
-        public async Task<Dictionary<string, string>> ArtifactsCompareAsync(string webAppPath, IProgress<string>? progresso = null)
+        /// <summary>
+        /// Retorna somente os artefatos pendentes (Novo/Modificado). Dicionário vazio = comparação OK e tudo
+        /// atualizado; null = a comparação falhou (instalador ausente ou erro).
+        /// </summary>
+        public async Task<Dictionary<string, string>?> ArtifactsCompareAsync(string webAppPath, IProgress<string>? progresso = null)
         {
             var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             string installerExe = SmartInstallerDaemon.ResolverInstallerExe(webAppPath);
 
-            if (!File.Exists(installerExe)) return result;
+            if (!File.Exists(installerExe)) return null;
 
             void ParseCompareLine(string? line)
             {
@@ -115,7 +119,7 @@ namespace JrTools.Services
             int daemonExitCode = await SmartInstallerDaemon.ExecuteCommandAsync(webAppPath, "COMPARE", progresso, ParseCompareLine);
             if (daemonExitCode >= 0)
             {
-                return result;
+                return daemonExitCode == 0 ? result : null;
             }
 
             // 2. Fallback para processo isolado
@@ -127,8 +131,8 @@ namespace JrTools.Services
                 ParseCompareLine(line);
             });
 
-            await RunProcessAsync(installerExe, args, compareProgress, "[COMPARE ARTIFACTS]");
-            return result;
+            int exitCode = await RunProcessAsync(installerExe, args, compareProgress, "[COMPARE ARTIFACTS]");
+            return exitCode == 0 ? result : null;
         }
 
         private static string ResolverInstallerExe(string webAppPath) => SmartInstallerDaemon.ResolverInstallerExe(webAppPath);

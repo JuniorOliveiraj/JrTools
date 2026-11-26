@@ -396,12 +396,9 @@ namespace JrTools.Pages
                 CmbCamadaArtefato.ItemsSource = opcoesCamada;
                 CmbCamadaArtefato.SelectedIndex = 0;
 
+                // A comparação com o banco é custosa (MD5 de ~30 mil arquivos): só roda quando o
+                // usuário clica em "Comparar DB (Status)". Até lá os artefatos ficam "Não Verificado".
                 FiltrarArtefatos();
-
-                // Sem isso, todo artefato fica com Status = "Não Verificado" (fora do filtro
-                // "Somente Pendentes") até o usuário clicar manualmente em "Comparar DB" —
-                // resultando numa lista vazia mesmo havendo artefatos novos/modificados de verdade.
-                await CompararComBancoDadosAsync();
             }
             finally
             {
@@ -426,8 +423,9 @@ namespace JrTools.Pages
                 var wes = new WesService(_wesExePath);
                 var statusDict = await wes.ArtifactsCompareAsync(_webAppPath, CriarProgresso());
 
-                if (statusDict != null && statusDict.Count > 0)
+                if (statusDict != null)
                 {
+                    // Dicionário vazio = comparação concluída e nenhum pendente (itens ausentes = Instalado).
                     int pendentesCount = 0;
                     foreach (var art in _todosArtefatos)
                     {
@@ -451,8 +449,8 @@ namespace JrTools.Pages
                 else
                 {
                     InfoBarAviso.Severity = InfoBarSeverity.Warning;
-                    InfoBarAviso.Title = "Comparação concluída sem dados";
-                    InfoBarAviso.Message = "Não foi possível obter a comparação do banco de dados ou todos estão atualizados.";
+                    InfoBarAviso.Title = "Falha na comparação";
+                    InfoBarAviso.Message = "Não foi possível obter a comparação do banco de dados. Verifique o log de execução.";
                 }
             }
             catch (Exception ex)
@@ -608,15 +606,12 @@ namespace JrTools.Pages
                 return;
             }
 
-            var dependencias = _artefatoService.ResolverDependencias(selecionados, _todosArtefatos);
+            // Só envia o que foi marcado. As dependências reais (Tarefa→Página→Visão) que ainda NÃO existem no
+            // banco são resolvidas pelo instalador ([AUTO-DEPENDÊNCIA]). O ResolverDependencias antigo varria
+            // qualquer "AGA_*" nos XMLs e expandia 99 artefatos marcados para 2.372.
+            AppendLog($"[SMART INSTALL] Iniciando instalação para {selecionados.Count} artefato(s) selecionado(s).");
 
-            AppendLog($"[SMART INSTALL] Iniciando instalação para {selecionados.Count} artefato(s) selecionado(s) e {dependencias.Count - selecionados.Count} dependência(s) encontrada(s).");
-            foreach (var dep in dependencias)
-            {
-                AppendLog($"  -> Requer: {dep.Guia} / {dep.Identificador} (Camada {dep.Camada})");
-            }
-
-            var arquivosRelativos = dependencias.Select(d => Path.Combine("Artifacts", d.Guia, d.NomeArquivo)).ToList();
+            var arquivosRelativos = selecionados.Select(d => Path.Combine("Artifacts", d.Guia, d.NomeArquivo)).ToList();
 
             AppendLog($"[SMART INSTALL SELETIVO] Executando instalador nativo cirúrgico para {arquivosRelativos.Count} arquivo(s)...");
 

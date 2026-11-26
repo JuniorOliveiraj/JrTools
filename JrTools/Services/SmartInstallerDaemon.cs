@@ -231,19 +231,23 @@ namespace JrTools.Services
         {
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
             string candidateLocal = Path.Combine(baseDir, "BennerSmartInstaller.exe");
-            string candidateDebug = Path.GetFullPath(Path.Combine(baseDir, @"..\..\..\..\BennerSmartInstaller\bin\Debug\BennerSmartInstaller.exe"));
-            string candidateRelease = Path.GetFullPath(Path.Combine(baseDir, @"..\..\..\..\BennerSmartInstaller\bin\Release\BennerSmartInstaller.exe"));
             string binInstaller = Path.Combine(webAppPath, "Bin", "BennerSmartInstaller.exe");
 
             string? sourceInstaller = null;
             if (File.Exists(candidateLocal)) sourceInstaller = candidateLocal;
-            if (File.Exists(candidateDebug) && (sourceInstaller == null || File.GetLastWriteTimeUtc(candidateDebug) > File.GetLastWriteTimeUtc(sourceInstaller)))
+
+            // O caminho antigo (..\..\..\..) errava a profundidade (o exe roda em bin\x64\Debug\net8.0-...),
+            // então a saída recém-compilada do BennerSmartInstaller nunca era encontrada. Sobe até achar.
+            for (var dir = new DirectoryInfo(baseDir); dir != null; dir = dir.Parent)
             {
-                sourceInstaller = candidateDebug;
-            }
-            if (File.Exists(candidateRelease) && (sourceInstaller == null || File.GetLastWriteTimeUtc(candidateRelease) > File.GetLastWriteTimeUtc(sourceInstaller)))
-            {
-                sourceInstaller = candidateRelease;
+                foreach (var cfg in new[] { "Debug", "Release" })
+                {
+                    string candidate = Path.Combine(dir.FullName, "BennerSmartInstaller", "bin", cfg, "BennerSmartInstaller.exe");
+                    if (File.Exists(candidate) && (sourceInstaller == null || File.GetLastWriteTimeUtc(candidate) > File.GetLastWriteTimeUtc(sourceInstaller)))
+                    {
+                        sourceInstaller = candidate;
+                    }
+                }
             }
 
             if (File.Exists(sourceInstaller))
