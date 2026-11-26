@@ -49,8 +49,10 @@ namespace BennerSmartInstaller
                 else
                 {
                     var installer = new ArtifactInstallerService(cli.WebAppPath, binDir);
-                    installer.Execute(cli.FilesArg);
-                    Console.WriteLine("\n[SUCESSO] Instalação concluída com êxito!");
+                    installer.Execute(cli.FilesArg, cli.DryRun);
+                    Console.WriteLine(cli.DryRun
+                        ? "\n[SUCESSO] Simulação concluída (nada foi gravado)."
+                        : "\n[SUCESSO] Instalação concluída com êxito!");
                 }
                 Environment.Exit(0);
             }

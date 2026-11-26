@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -51,6 +53,19 @@ namespace BennerSmartInstaller.Services
                 throw new InvalidOperationException("WebArtifactSyncronizerFactory.Create não foi localizado.");
             }
 
+            var profiler = new StepProfiler("COMPARE");
+            // SMARTINSTALL_NOCACHE=1 força a comparação original da plataforma (sem cache de hash).
+            var hashCache = Environment.GetEnvironmentVariable("SMARTINSTALL_NOCACHE") == "1"
+                ? null
+                : new LocalHashCache(_webAppPath);
+            if (hashCache != null) Console.WriteLine($"[CACHE] {hashCache.Count} hash(es) em cache carregado(s).");
+
+            _indexReader = null;
+            if (Environment.GetEnvironmentVariable("SMARTINSTALL_PLATFORM_INDEX") != "1")
+            {
+                try { _indexReader = new IndexDbReader(_binDir); }
+                catch (Exception ex) { Console.WriteLine($"[AVISO COMPARE] Leitura direta do índice indisponível ({ex.Message}); usando o indexer da plataforma."); }
+            }
             int totalCount = 0;
             int pendingCount = 0;
 
@@ -75,45 +90,45 @@ namespace BennerSmartInstaller.Services
                     var appPathProp = syncronizerObj.GetType().GetProperty("ApplicationPath");
                     appPathProp?.SetValue(syncronizerObj, _webAppPath);
 
-                    var compareMethod = syncronizerObj.GetType().GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-                        .FirstOrDefault(m => m.Name.Equals("CompareArtifacts", StringComparison.OrdinalIgnoreCase));
+                    List<KeyValuePair<string, string>> rows = null;
 
-                    if (compareMethod == null) continue;
-
-                    object gridRowsObj = null;
-                    if (compareMethod.GetParameters().Length == 1)
+                    // Caminho rápido: índice do banco (plataforma) + MD5 local com cache persistente.
+                    if (hashCache != null)
                     {
-                        gridRowsObj = compareMethod.Invoke(syncronizerObj, new object[] { false });
-                    }
-                    else if (compareMethod.GetParameters().Length == 0)
-                    {
-                        gridRowsObj = compareMethod.Invoke(syncronizerObj, null);
-                    }
-
-                    if (gridRowsObj is IEnumerable gridRows)
-                    {
-                        foreach (var row in gridRows)
+                        try
                         {
-                            if (row == null) continue;
-                            typeTotal++;
+                            rows = FastCompare(syncronizerObj, typeName, profiler, hashCache);
+                        }
+                        catch (Exception fastEx)
+                        {
+                            var realFast = fastEx;
+                            while (realFast is TargetInvocationException && realFast.InnerException != null) realFast = realFast.InnerException;
+                            Console.WriteLine($"[AVISO COMPARE] Comparação rápida indisponível para {typeName} ({realFast.Message}); usando comparação da plataforma.");
+                        }
+                    }
 
-                            Type rowType = row.GetType();
-                            object statusObj = rowType.GetProperty("Status")?.GetValue(row);
-                            string statusStr = statusObj?.ToString() ?? "Equal";
+                    if (rows == null)
+                    {
+                        var swType = System.Diagnostics.Stopwatch.StartNew();
+                        rows = LegacyCompare(syncronizerObj);
+                        if (rows == null) continue;
+                        // CompareArtifacts = índice no banco + MD5 de todos os arquivos locais do tipo
+                        profiler.Add($"CompareArtifacts[{typeName}] (plataforma)", swType.Elapsed);
+                    }
 
-                            if (!statusStr.Equals("Equal", StringComparison.OrdinalIgnoreCase))
-                            {
-                                typePending++;
-                                if (statusStr.Equals("FileOnly", StringComparison.OrdinalIgnoreCase)) typeFileOnly++;
-                                else if (statusStr.Equals("Diferent", StringComparison.OrdinalIgnoreCase) || statusStr.Equals("Different", StringComparison.OrdinalIgnoreCase)) typeDifferent++;
-                                else if (statusStr.Equals("DatabaseOnly", StringComparison.OrdinalIgnoreCase)) typeDbOnly++;
+                    foreach (var row in rows)
+                    {
+                        typeTotal++;
+                        string statusStr = row.Value;
 
-                                object nameObj = rowType.GetProperty("FileName")?.GetValue(row) ?? rowType.GetProperty("Name")?.GetValue(row);
-                                if (nameObj != null)
-                                {
-                                    Console.WriteLine($"[COMPARE_ITEM] Name={nameObj}; Status={statusStr}");
-                                }
-                            }
+                        if (!statusStr.Equals("Equal", StringComparison.OrdinalIgnoreCase))
+                        {
+                            typePending++;
+                            if (statusStr.Equals("FileOnly", StringComparison.OrdinalIgnoreCase)) typeFileOnly++;
+                            else if (statusStr.Equals("Diferent", StringComparison.OrdinalIgnoreCase) || statusStr.Equals("Different", StringComparison.OrdinalIgnoreCase)) typeDifferent++;
+                            else if (statusStr.Equals("DatabaseOnly", StringComparison.OrdinalIgnoreCase)) typeDbOnly++;
+
+                            Console.WriteLine($"[COMPARE_ITEM] Name={row.Key}; Status={statusStr}");
                         }
                     }
 
@@ -139,9 +154,131 @@ namespace BennerSmartInstaller.Services
             Console.WriteLine(new string('-', 75));
             Console.WriteLine($"[SMART COMPARE] Total Geral: {pendingCount} pendente(s) de {totalCount} analisados.");
 
+            if (hashCache != null)
+            {
+                Console.WriteLine($"[CACHE] hits={hashCache.Hits}, recalculados={hashCache.Misses}.");
+                hashCache.Save(true);
+            }
+
+            profiler.PrintSummary();
+
             // Libera memória de coleções e working set
             summary.Clear();
             MemoryOptimizer.TrimMemory();
+        }
+
+        private IndexDbReader _indexReader;
+
+        private const BindingFlags AnyInstance = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+
+        /// <summary>
+        /// Mesma regra de WebArtifactSyncronizerBase.CompareArtifacts(false), mas com MD5 em cache e sem
+        /// modificar dicionário em paralelo: ignora camada 60 e 50 (cliente); DatabaseOnly exclui camada 50.
+        /// </summary>
+        private List<KeyValuePair<string, string>> FastCompare(object sync, string typeName, StepProfiler profiler, LocalHashCache cache)
+        {
+            Type t = sync.GetType();
+            string dir = t.GetProperty("ArtifactPath", AnyInstance)?.GetValue(sync, null) as string;
+            if (string.IsNullOrEmpty(dir)) throw new InvalidOperationException("ArtifactPath indisponível");
+
+            Dictionary<string, string> db = null;
+
+            // Padrão: SELECT direto em W_INDICEARTEFATOS (~100 ms por tipo). O indexer da plataforma
+            // (CallDatabaseIndexerTask) também reindexa artefatos do banco ainda não indexados e custa
+            // ~22 s só para Views; use SMARTINSTALL_PLATFORM_INDEX=1 para forçá-lo.
+            if (_indexReader != null)
+            {
+                int tipo = Convert.ToInt32(t.GetProperty("ArtifactIndexType", AnyInstance).GetValue(sync, null));
+                db = profiler.Measure($"Índice no banco[{typeName}] (SELECT direto)", () => _indexReader.Read(tipo));
+            }
+
+            if (db == null)
+            {
+                var indexer = t.GetMethods(AnyInstance).FirstOrDefault(m => m.Name == "CallDatabaseIndexerTask" && m.GetParameters().Length == 1);
+                if (indexer == null) throw new InvalidOperationException("CallDatabaseIndexerTask não localizado");
+                db = profiler.Measure($"Índice no banco[{typeName}] (indexer da plataforma)",
+                    () => indexer.Invoke(sync, new object[] { false }) as Dictionary<string, string>);
+                if (db == null) throw new InvalidOperationException("índice do banco retornou nulo");
+                db = new Dictionary<string, string>(db);
+            }
+
+            string[] files = Directory.Exists(dir)
+                ? Directory.GetFiles(dir, "*.*.xml", SearchOption.TopDirectoryOnly)
+                : new string[0];
+            Array.Sort(files, StringComparer.OrdinalIgnoreCase);
+
+            int hits0 = cache.Hits, miss0 = cache.Misses;
+            var hashes = new ConcurrentDictionary<string, string>();
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            Parallel.ForEach(files, new ParallelOptions { MaxDegreeOfParallelism = Math.Min(4, Environment.ProcessorCount) }, file =>
+            {
+                string name = Path.GetFileName(file);
+                int layer = GetLayer(name);
+                if (layer == 50 || layer == 60) return;
+                hashes[name] = cache.GetHash(file);
+            });
+            profiler.Add($"MD5 local[{typeName}] ({files.Length} arq., cache hits={cache.Hits - hits0}, recalculados={cache.Misses - miss0})", sw.Elapsed);
+
+            var rows = new List<KeyValuePair<string, string>>(files.Length);
+            foreach (string file in files)
+            {
+                string name = Path.GetFileName(file);
+                string hash;
+                if (!hashes.TryGetValue(name, out hash)) continue;
+
+                string status;
+                string dbHash;
+                if (!db.TryGetValue(name, out dbHash)) status = "FileOnly";
+                else status = dbHash.Split(',').Contains(hash) ? "Equal" : "Diferent";
+
+                if (status == "Diferent" && StepProfiler.DeepMode)
+                    Console.WriteLine($"[PROFILE] DIFF {name}: arquivo={hash} banco={dbHash}");
+
+                db.Remove(name);
+                rows.Add(new KeyValuePair<string, string>(name, status));
+            }
+
+            foreach (string key in db.Keys)
+            {
+                if (GetLayer(key) != 50)
+                    rows.Add(new KeyValuePair<string, string>(key, "DatabaseOnly"));
+            }
+            return rows;
+        }
+
+        private static int GetLayer(string artifactFileName)
+        {
+            var parts = artifactFileName.Split('.');
+            int layer;
+            return parts.Length >= 2 && int.TryParse(parts[parts.Length - 2], out layer) ? layer : -1;
+        }
+
+        /// <summary>Comparação original da plataforma (CompareArtifacts), convertida para (nome, status).</summary>
+        private static List<KeyValuePair<string, string>> LegacyCompare(object sync)
+        {
+            var compareMethod = sync.GetType().GetMethods(AnyInstance)
+                .FirstOrDefault(m => m.Name.Equals("CompareArtifacts", StringComparison.OrdinalIgnoreCase));
+            if (compareMethod == null) return null;
+
+            object gridRowsObj = null;
+            if (compareMethod.GetParameters().Length == 1) gridRowsObj = compareMethod.Invoke(sync, new object[] { false });
+            else if (compareMethod.GetParameters().Length == 0) gridRowsObj = compareMethod.Invoke(sync, null);
+
+            var rows = new List<KeyValuePair<string, string>>();
+            if (gridRowsObj is IEnumerable gridRows)
+            {
+                foreach (var row in gridRows)
+                {
+                    if (row == null) continue;
+                    Type rowType = row.GetType();
+                    string status = rowType.GetProperty("Status")?.GetValue(row)?.ToString() ?? "Equal";
+                    object nameObj = rowType.GetProperty("ArtifactName")?.GetValue(row)
+                        ?? rowType.GetProperty("FileName")?.GetValue(row)
+                        ?? rowType.GetProperty("Name")?.GetValue(row);
+                    rows.Add(new KeyValuePair<string, string>(nameObj?.ToString() ?? string.Empty, status));
+                }
+            }
+            return rows;
         }
     }
 }

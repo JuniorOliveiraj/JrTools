@@ -73,13 +73,16 @@ namespace BennerSmartInstaller.Services
                         Console.WriteLine($"[CMD_END:ERROR:{realEx.Message}]");
                     }
                 }
-                else if (line.StartsWith("INSTALL ", StringComparison.OrdinalIgnoreCase))
+                else if (line.StartsWith("INSTALL ", StringComparison.OrdinalIgnoreCase) ||
+                         line.StartsWith("PLAN ", StringComparison.OrdinalIgnoreCase))
                 {
-                    string filesArg = line.Substring("INSTALL ".Length).Trim();
+                    // PLAN = simulação (resolve dependências e lista a fila, sem gravar na base)
+                    bool dryRun = line.StartsWith("PLAN ", StringComparison.OrdinalIgnoreCase);
+                    string filesArg = line.Substring(line.IndexOf(' ') + 1).Trim();
                     try
                     {
                         var installer = new ArtifactInstallerService(_webAppPath, _binDir);
-                        installer.Execute(filesArg);
+                        installer.Execute(filesArg, dryRun);
                         Console.WriteLine("[CMD_END:SUCCESS]");
                     }
                     catch (Exception ex)

@@ -72,9 +72,9 @@ namespace BennerSmartInstaller.Services
                             string pageId = m.Groups[1].Value.Trim();
                             if (!_existingPages.Contains(pageId))
                             {
-                                string pageFile = FindArtifactFile("Pages", pageId);
-                                if (pageFile != null && !resolvedFiles.Contains(pageFile))
+                                foreach (string pageFile in FindArtifactFiles("Pages", pageId))
                                 {
+                                    if (resolvedFiles.Contains(pageFile)) continue;
                                     Console.WriteLine($"[AUTO-DEPENDÊNCIA] Tarefa '{fileName}' requer Página '{Path.GetFileName(pageFile)}' (adicionada à fila)");
                                     queue.Enqueue(pageFile);
                                     addedCount++;
@@ -93,9 +93,9 @@ namespace BennerSmartInstaller.Services
                             string taskId = m.Groups[1].Value.Trim();
                             if (!_existingTasks.Contains(taskId))
                             {
-                                string subTaskFile = FindArtifactFile("Tasks", taskId);
-                                if (subTaskFile != null && !resolvedFiles.Contains(subTaskFile))
+                                foreach (string subTaskFile in FindArtifactFiles("Tasks", taskId))
                                 {
+                                    if (resolvedFiles.Contains(subTaskFile)) continue;
                                     Console.WriteLine($"[AUTO-DEPENDÊNCIA] Tarefa '{fileName}' requer Sub-Tarefa '{Path.GetFileName(subTaskFile)}' (adicionada à fila)");
                                     queue.Enqueue(subTaskFile);
                                     addedCount++;
@@ -113,9 +113,9 @@ namespace BennerSmartInstaller.Services
                         string viewId = m.Groups[1].Value.Trim();
                         if (!_existingViews.Contains(viewId))
                         {
-                            string viewFile = FindArtifactFile("Views", viewId);
-                            if (viewFile != null && !resolvedFiles.Contains(viewFile))
+                            foreach (string viewFile in FindArtifactFiles("Views", viewId))
                             {
+                                if (resolvedFiles.Contains(viewFile)) continue;
                                 Console.WriteLine($"[AUTO-DEPENDÊNCIA] Página '{fileName}' requer Visão '{Path.GetFileName(viewFile)}' (adicionada à fila)");
                                 queue.Enqueue(viewFile);
                                 addedCount++;
@@ -145,19 +145,33 @@ namespace BennerSmartInstaller.Services
             return filePath;
         }
 
-        private string FindArtifactFile(string folder, string artifactId)
+        /// <summary>
+        /// Todos os arquivos locais do artefato (uma por camada), exceto camadas 50 (cliente) e 60 (usuário),
+        /// que a plataforma não instala. O padrão "{id}.*.xml" também casa ids que apenas começam com "{id}.",
+        /// então o nome base é conferido.
+        /// </summary>
+        private IEnumerable<string> FindArtifactFiles(string folder, string artifactId)
         {
             string dir = Path.Combine(_webAppPath, "Artifacts", folder);
-            if (!Directory.Exists(dir)) return null;
+            if (!Directory.Exists(dir)) return new string[0];
 
             try
             {
-                var files = Directory.GetFiles(dir, $"{artifactId}.*.xml", SearchOption.TopDirectoryOnly);
-                return files.FirstOrDefault();
+                return Directory.GetFiles(dir, $"{artifactId}.*.xml", SearchOption.TopDirectoryOnly)
+                    .Where(f =>
+                    {
+                        var parts = Path.GetFileName(f).Split('.');
+                        int layer;
+                        if (parts.Length < 3 || !int.TryParse(parts[parts.Length - 2], out layer)) return false;
+                        if (layer == 50 || layer == 60) return false;
+                        return string.Equals(string.Join(".", parts.Take(parts.Length - 2)), artifactId, StringComparison.OrdinalIgnoreCase);
+                    })
+                    .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
             }
             catch
             {
-                return null;
+                return new string[0];
             }
         }
 
@@ -184,55 +198,17 @@ namespace BennerSmartInstaller.Services
 
             try
             {
-                string businessDll = Path.Combine(_binDir, "Benner.Tecnologia.Business.dll");
-                string commonDll = Path.Combine(_binDir, "Benner.Tecnologia.Common.dll");
-
-                if (!File.Exists(businessDll) || !File.Exists(commonDll))
-                    return set;
-
-                var businessAsm = Assembly.LoadFrom(businessDll);
-                var commonAsm = Assembly.LoadFrom(commonDll);
-
-                Type dataReaderType = businessAsm.GetType("Benner.Tecnologia.Business.DataReader.DataReader");
-                Type paramCollType = commonAsm.GetType("Benner.Tecnologia.Common.ParameterCollection");
-
-                if (dataReaderType == null || paramCollType == null)
-                    return set;
-
-                object paramColl = Activator.CreateInstance(paramCollType);
-                var addParam = paramCollType.GetMethod("Add", new[] { typeof(string), typeof(object) });
-                addParam?.Invoke(paramColl, new object[] { "TIPO", tipo });
-
-                string sql = "SELECT IDENTIFICADOR FROM W_INDICEARTEFATOS WHERE TIPO = :TIPO";
-                var ctor = dataReaderType.GetConstructor(new[] { typeof(string), paramCollType });
-
-                if (ctor != null)
+                // Antes procurava Benner.Tecnologia.Common.dll (o assembly real é Benner.Tecnologia.Common2 e não
+                // fica em WebApp\Bin), então o conjunto vinha sempre vazio e TODA dependência local era
+                // adicionada à fila, mesmo já existindo no banco. IndexDbReader usa os assemblies já carregados.
+                foreach (string rawId in new IndexDbReader(_binDir).Read(tipo).Keys)
                 {
-                    using (var reader = ctor.Invoke(new object[] { sql, paramColl }) as IDisposable)
+                    set.Add(rawId);
+                    // Remove extensões de camada (ex: .20.xml)
+                    string[] parts = rawId.Split('.');
+                    if (parts.Length > 2)
                     {
-                        if (reader is IEnumerable enumerable)
-                        {
-                            foreach (var row in enumerable)
-                            {
-                                if (row == null) continue;
-                                var indexerProp = row.GetType().GetProperties().FirstOrDefault(p => p.GetIndexParameters().Length == 1 && p.GetIndexParameters()[0].ParameterType == typeof(int));
-                                var cell = indexerProp?.GetValue(row, new object[] { 0 });
-                                var getStringMethod = cell?.GetType().GetMethod("GetString", Type.EmptyTypes);
-                                string rawId = getStringMethod?.Invoke(cell, null)?.ToString();
-
-                                if (!string.IsNullOrEmpty(rawId))
-                                {
-                                    set.Add(rawId);
-                                    // Remove extensões de camada (ex: .20.xml)
-                                    string[] parts = rawId.Split('.');
-                                    if (parts.Length > 2)
-                                    {
-                                        string baseName = string.Join(".", parts.Take(parts.Length - 2));
-                                        set.Add(baseName);
-                                    }
-                                }
-                            }
-                        }
+                        set.Add(string.Join(".", parts.Take(parts.Length - 2)));
                     }
                 }
             }

@@ -29,6 +29,11 @@ namespace BennerSmartInstaller.Cli
                 {
                     parsed.CommandMode = "server";
                 }
+                else if (args[i].Equals("--dry-run", StringComparison.OrdinalIgnoreCase) ||
+                         args[i].Equals("-n", StringComparison.OrdinalIgnoreCase))
+                {
+                    parsed.DryRun = true;
+                }
                 else if (args[i] == "-a" && i + 1 < args.Length)
                 {
                     parsed.WebAppPath = args[i + 1];

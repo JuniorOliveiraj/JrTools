@@ -54,6 +54,10 @@
     <Compile Include="Services\ArtifactDependencyResolver.cs" />
     <Compile Include="Services\ArtifactInstallerService.cs" />
     <Compile Include="Services\ArtifactComparatorService.cs" />
+    <Compile Include="Services\StepProfiler.cs" />
+    <Compile Include="Services\LocalHashCache.cs" />
+    <Compile Include="Services\IndexDbReader.cs" />
+    <Compile Include="Services\FastInstaller.cs" />
     <Compile Include="Services\InteractiveServerService.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

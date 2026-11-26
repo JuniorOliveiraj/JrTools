@@ -21,9 +21,10 @@ namespace BennerSmartInstaller.Services
             _binDir = binDir;
         }
 
-        public void Execute(string filesArg)
+        public void Execute(string filesArg, bool dryRun = false)
         {
             var sw = Stopwatch.StartNew();
+            var profiler = new StepProfiler("INSTALL");
 
             string metadataDll = Path.Combine(_binDir, "Benner.Tecnologia.Metadata.dll");
             string webAppComponentsDll = Path.Combine(_binDir, "Benner.Tecnologia.Wes.Components.WebApp.dll");
@@ -82,10 +83,13 @@ namespace BennerSmartInstaller.Services
             }
 
             // Resolução automática e inteligente de dependências antes da instalação
-            var resolver = new ArtifactDependencyResolver(_webAppPath, _binDir);
-            var relativeFiles = resolver.Resolve(rawFiles);
+            var resolver = profiler.Measure("DependencyResolver: carga W_INDICEARTEFATOS (Page/View/Task)",
+                () => new ArtifactDependencyResolver(_webAppPath, _binDir));
+            var relativeFiles = profiler.Measure("DependencyResolver: Resolve (leitura XML + regex)",
+                () => resolver.Resolve(rawFiles));
 
             var loadedArtifacts = new List<(string fileName, string fullPath, string typeName, object artifactObj)>();
+            var swLoad = Stopwatch.StartNew();
 
             foreach (var relFile in relativeFiles)
             {
@@ -127,6 +131,8 @@ namespace BennerSmartInstaller.Services
                 }
             }
 
+            profiler.Add($"Carga dos artefatos (ModelFactory) x{loadedArtifacts.Count}", swLoad.Elapsed);
+
             int count = loadedArtifacts.Count;
             if (count == 0)
             {
@@ -148,6 +154,33 @@ namespace BennerSmartInstaller.Services
                 var item = loadedArtifacts[i];
                 int faltam = count - (i + 1);
                 Console.WriteLine($"  {i + 1}/{count}. [{item.typeName}] {item.fileName} (Faltam {faltam} artefatos)");
+            }
+
+            var fastItems = loadedArtifacts
+                .Select(a => new KeyValuePair<string, object>(a.fullPath, a.artifactObj.GetType().GetProperty("Type").GetValue(a.artifactObj, null)))
+                .ToList();
+            bool tryFast = Environment.GetEnvironmentVariable("SMARTINSTALL_PLATFORM_INSTALL") != "1";
+
+            if (dryRun)
+            {
+                if (tryFast)
+                {
+                    try
+                    {
+                        var planner = new FastInstaller(_webAppPath, _binDir, metadataAsm, webAppComponentsAsm, profiler);
+                        var plan = planner.Run(fastItems, true, true);
+                        Console.WriteLine($"\n[DRY-RUN] Importaria {plan.Imported} artefato(s) + {plan.Restored} reindexação(ões) de camada superior; {plan.AlreadyUpToDate} já atualizado(s). Nada foi gravado.");
+                        profiler.PrintSummary();
+                        return;
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[AVISO SMART INSTALL] Plano rápido indisponível: {Unwrap(ex).Message}");
+                    }
+                }
+                Console.WriteLine($"\n[DRY-RUN] {count} artefato(s) seriam enviados à plataforma. Nada foi gravado.");
+                profiler.PrintSummary();
+                return;
             }
 
             // 3. InstallArtifactsManager
@@ -177,9 +210,43 @@ namespace BennerSmartInstaller.Services
             var pendingArtifacts = new List<(string fileName, string fullPath, string typeName, object artifactObj)>(loadedArtifacts);
             var failedArtifacts = new List<(string fileName, string reason)>();
             bool finished = false;
+            int attempt = 0;
+            FastInstallResult fastResult = null;
+
+            if (tryFast)
+            {
+                FastInstaller fast = null;
+                try
+                {
+                    fast = new FastInstaller(_webAppPath, _binDir, metadataAsm, webAppComponentsAsm, profiler);
+                }
+                catch (Exception ex)
+                {
+                    // Falha de binding por reflexão acontece antes de qualquer gravação: pode cair no caminho da plataforma.
+                    Console.WriteLine($"[AVISO SMART INSTALL] Instalação rápida indisponível ({Unwrap(ex).Message}); usando o caminho da plataforma.");
+                }
+
+                if (fast != null)
+                {
+                    Console.WriteLine("\n[SMART INSTALL] [Fase 1/3] Diff por hash contra o índice do banco (instalação incremental)...");
+                    Console.WriteLine("[SMART INSTALL] [Fase 2/3] Importando somente o que mudou e gerando páginas se necessário...");
+                    try
+                    {
+                        fastResult = fast.Run(fastItems, true, false);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new InvalidOperationException("Falha na instalação incremental: " + Unwrap(ex).Message, Unwrap(ex));
+                    }
+                    foreach (var f in fastResult.Failed) failedArtifacts.Add((f.Key, f.Value));
+                    pendingArtifacts.Clear();
+                    finished = true;
+                }
+            }
 
             while (!finished && pendingArtifacts.Count > 0)
             {
+                attempt++;
                 var currentBatchList = Activator.CreateInstance(listType);
                 foreach (var a in pendingArtifacts)
                 {
@@ -209,7 +276,15 @@ namespace BennerSmartInstaller.Services
                 {
                     Console.WriteLine($"\n[SMART INSTALL] [Fase 1/3] Disparando sincronização atômica para {pendingArtifacts.Count} artefato(s)...");
                     Console.WriteLine("[SMART INSTALL] [Fase 2/3] Processando sincronização no banco de dados e gerando páginas...");
-                    startInstalationMethod.Invoke(null, currentParams);
+                    if (StepProfiler.DeepMode && parameters.Length == 6)
+                    {
+                        InvokeInstallationDeep(profiler, attempt, managerType, metadataAsm, webAppComponentsAsm, currentParams);
+                    }
+                    else
+                    {
+                        profiler.Measure($"StartInstalation completo (tentativa {attempt}, {pendingArtifacts.Count} artefatos)",
+                            () => startInstalationMethod.Invoke(null, currentParams));
+                    }
                     finished = true;
                 }
                 catch (Exception batchEx)
@@ -230,7 +305,10 @@ namespace BennerSmartInstaller.Services
                         if (baseName.Contains("."))
                             baseName = baseName.Substring(0, baseName.LastIndexOf('.'));
 
-                        return errorMsg.IndexOf(baseName, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        // A plataforma cita o artefato entre aspas simples ("Erro ao importar Tarefa 'CONSUMIRIA'").
+                        // Casar por substring solta descartava artefatos sadios (ex.: 'RELATORIOS' dentro de
+                        // 'MODULO_DO_DOSSIE_RELATORIOS').
+                        return errorMsg.IndexOf("'" + baseName + "'", StringComparison.OrdinalIgnoreCase) >= 0 ||
                                errorMsg.IndexOf(item.fileName, StringComparison.OrdinalIgnoreCase) >= 0;
                     }).ToList();
 
@@ -257,6 +335,11 @@ namespace BennerSmartInstaller.Services
             sw.Stop();
             int installedCount = loadedArtifacts.Count - failedArtifacts.Count;
             Console.WriteLine($"\n[SMART INSTALL] [Fase 3/3] Processamento finalizado em {sw.Elapsed.TotalSeconds:F2}s!");
+            if (fastResult != null)
+            {
+                Console.WriteLine($"  • Importados: {fastResult.Imported}  |  Reindexados (camada superior): {fastResult.Restored}  |  Já atualizados (ignorados): {fastResult.AlreadyUpToDate}");
+                installedCount = fastResult.Imported + fastResult.Restored + fastResult.AlreadyUpToDate;
+            }
             Console.WriteLine($"  • Instalados com êxito: {installedCount}");
             if (failedArtifacts.Count > 0)
             {
@@ -267,8 +350,77 @@ namespace BennerSmartInstaller.Services
                 }
             }
 
+            profiler.PrintSummary();
+
             // Otimiza o consumo de memória imediatamente
             MemoryOptimizer.TrimMemory();
+
+            // Falha de artefato não pode terminar como "SUCESSO"/exit 0 (a UI e o daemon usam o código de saída).
+            if (failedArtifacts.Count > 0)
+            {
+                throw new InvalidOperationException(
+                    $"{failedArtifacts.Count} de {loadedArtifacts.Count} artefato(s) falharam: " +
+                    string.Join("; ", failedArtifacts.Select(f => f.fileName)));
+            }
+        }
+
+        private static Exception Unwrap(Exception ex)
+        {
+            while (ex is TargetInvocationException && ex.InnerException != null) ex = ex.InnerException;
+            return ex;
+        }
+
+        /// <summary>
+        /// Somente diagnóstico (SMARTINSTALL_PROFILE=1): reproduz InstallArtifactsManager.StartInstalation
+        /// chamando por reflexão as etapas privadas na mesma ordem, para medir cada uma separadamente.
+        /// Não é usado no fluxo normal.
+        /// </summary>
+        private static void InvokeInstallationDeep(StepProfiler profiler, int attempt, Type managerType,
+            Assembly metadataAsm, Assembly webAppComponentsAsm, object[] p)
+        {
+            const BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
+            object types = p[0], artifacts = p[1], layer = p[2], fullInstall = p[3], appPath = p[4], customer = p[5];
+            string tag = $"(tentativa {attempt})";
+
+            MethodInfo Find(string name, int args) =>
+                managerType.GetMethods(flags).FirstOrDefault(m => m.Name == name && m.GetParameters().Length == args);
+
+            var install = Find("InstallArtifacts", 5);
+            var delete = Find("DeleteArtifacts", 1);
+            var generate = Find("GeneratePages", 1);
+            if (install == null || delete == null || generate == null)
+            {
+                Console.WriteLine("[PROFILE] Etapas internas não localizadas; usando StartInstalation completo.");
+                managerType.GetMethods(flags)
+                    .First(m => m.Name.Equals("StartInstalation", StringComparison.OrdinalIgnoreCase) && m.GetParameters().Length == 6)
+                    .Invoke(null, p);
+                return;
+            }
+
+            profiler.Measure($"[plataforma] InstallArtifacts: indexer + ArtifactVersion + importação {tag}",
+                () => install.Invoke(null, new[] { types, artifacts, layer, fullInstall, customer }));
+            profiler.Measure($"[plataforma] DeleteArtifacts {tag}", () => delete.Invoke(null, new[] { types }));
+
+            bool hasPage = ((IEnumerable)types).Cast<object>().Any(t => t.ToString() == "Page");
+            var ignoreProp = managerType.GetProperty("IgnorePageGeneration", flags);
+            bool ignorePages = ignoreProp != null && (bool)ignoreProp.GetValue(null, null);
+            if (hasPage && !ignorePages)
+                profiler.Measure($"[plataforma] GeneratePages {tag}", () => generate.Invoke(null, new[] { appPath }));
+            else
+                Console.WriteLine($"[PROFILE] GeneratePages não executado {tag} (hasPage={hasPage}, ignore={ignorePages})");
+
+            var cacheHelper = metadataAsm.GetTypes().FirstOrDefault(t => t.Name == "CacheArtifactHelper");
+            var clearCache = cacheHelper?.GetMethods(flags).FirstOrDefault(m => m.Name == "ClearCache" && m.GetParameters().Length == 1);
+            if (clearCache != null)
+                profiler.Measure($"[plataforma] ClearCache por tipo {tag}", () =>
+                {
+                    foreach (var t in (IEnumerable)types) clearCache.Invoke(null, new[] { t });
+                });
+
+            var custom = webAppComponentsAsm.GetTypes().FirstOrDefault(t => t.Name == "CustomInstallArtifacts");
+            var after = custom?.GetMethods(flags).FirstOrDefault(m => m.Name == "AfterExecuteInstallArtifacts" && m.GetParameters().Length == 0);
+            if (after != null)
+                profiler.Measure($"[plataforma] AfterExecuteInstallArtifacts {tag}", () => after.Invoke(null, null));
         }
     }
 }
